@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: auth-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sms_platform}
+    username: ${DB_USERNAME:sms_admin}
+    password: ${DB_PASSWORD:sms_admin}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:identity}
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+server:
+  port: ${SERVER_PORT:8082}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info}
+
+app:
+  provisioning:
+    school-admin-default-password: ${DEFAULT_SCHOOL_ADMIN_PASSWORD:SchoolAdmin@123}
