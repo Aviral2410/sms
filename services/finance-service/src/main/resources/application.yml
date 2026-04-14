@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: finance-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sms_platform}
+    username: ${DB_USERNAME:sms_admin}
+    password: ${DB_PASSWORD:sms_admin}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:finance}
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+server:
+  port: ${SERVER_PORT:8085}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  platform-config-service-url: ${PLATFORM_CONFIG_SERVICE_URL:http://localhost:8081}
+  internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key}

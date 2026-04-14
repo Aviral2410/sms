@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: sms-platform-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: sms-platform.rules
+      rules:
+        - alert: SmsDeploymentReplicasUnavailable
+          expr: kube_deployment_status_replicas_unavailable{namespace="sms"} > 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: SMS deployment has unavailable replicas
+            description: One or more SMS deployments have unavailable replicas for at least 10 minutes.
+        - alert: SmsStatefulSetNotReady
+          expr: kube_statefulset_status_replicas_ready{namespace="sms"} < kube_statefulset_status_replicas{namespace="sms"}
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: SMS stateful workload is not fully ready
+            description: A stateful workload in the sms namespace is not fully ready.
+        - alert: SmsJobFailure
+          expr: kube_job_status_failed{namespace="sms"} > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: SMS job has failed
+            description: A Kubernetes job in the sms namespace has failed.
+        - alert: SmsPodCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total{namespace="sms"}[10m]) > 3
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: SMS pod is crash looping
+            description: A pod in the sms namespace restarted more than three times in ten minutes.
+        - alert: SmsPersistentVolumeLowSpace
+          expr: (kubelet_volume_stats_available_bytes{namespace="sms"} / kubelet_volume_stats_capacity_bytes{namespace="sms"}) < 0.15
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: SMS persistent volume is low on space
+            description: A persistent volume used by the sms namespace has less than 15 percent space remaining.

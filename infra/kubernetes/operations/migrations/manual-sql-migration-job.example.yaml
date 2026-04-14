@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: manual-sql-migration-001
+  namespace: sms
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: sms_platform
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "waiting for postgres";
+                sleep 3;
+              done
+              psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /sql/migration.sql
+          volumeMounts:
+            - name: migration-sql
+              mountPath: /sql
+      volumes:
+        - name: migration-sql
+          configMap:
+            name: sql-migration-001

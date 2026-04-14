@@ -1,0 +1,83 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgres-restore
+  namespace: sms
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: restic-restore
+          image: restic/restic:0.17.3
+          env:
+            - name: RESTIC_REPOSITORY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-backup-secrets
+                  key: RESTIC_REPOSITORY
+            - name: RESTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-backup-secrets
+                  key: RESTIC_PASSWORD
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: sms-backup-secrets
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-backup-secrets
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: sms-backup-secrets
+                  key: AWS_DEFAULT_REGION
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              restic restore latest --target /restore
+          volumeMounts:
+            - name: restore-data
+              mountPath: /restore
+      containers:
+        - name: psql-restore
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: sms_platform
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              file=$(find /restore -name '*.sql.gz' | sort | tail -n 1)
+              test -n "$file"
+              gunzip -c "$file" | psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1
+          volumeMounts:
+            - name: restore-data
+              mountPath: /restore
+      volumes:
+        - name: restore-data
+          emptyDir: {}

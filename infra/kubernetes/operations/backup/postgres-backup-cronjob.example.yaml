@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backup-cache
+  namespace: sms
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: sms
+spec:
+  schedule: "30 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          initContainers:
+            - name: pg-dump
+              image: postgres:16-alpine
+              env:
+                - name: POSTGRES_DB
+                  value: sms_platform
+                - name: POSTGRES_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-secrets
+                      key: POSTGRES_USER
+                - name: POSTGRES_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-secrets
+                      key: POSTGRES_PASSWORD
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-secrets
+                      key: POSTGRES_PASSWORD
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  ts=$(date +%Y%m%d-%H%M%S)
+                  mkdir -p /backup
+                  pg_dump -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean --if-exists | gzip > "/backup/sms-platform-${ts}.sql.gz"
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backup
+          containers:
+            - name: restic-upload
+              image: restic/restic:0.17.3
+              env:
+                - name: RESTIC_REPOSITORY
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-backup-secrets
+                      key: RESTIC_REPOSITORY
+                - name: RESTIC_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-backup-secrets
+                      key: RESTIC_PASSWORD
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-backup-secrets
+                      key: AWS_ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-backup-secrets
+                      key: AWS_SECRET_ACCESS_KEY
+                - name: AWS_DEFAULT_REGION
+                  valueFrom:
+                    secretKeyRef:
+                      name: sms-backup-secrets
+                      key: AWS_DEFAULT_REGION
+              command:
+                - sh
+                - -c
+                - |
+                  set -e
+                  restic snapshots >/dev/null 2>&1 || restic init
+                  restic backup /backup --tag postgres --host sms-cluster
+              volumeMounts:
+                - name: backup-data
+                  mountPath: /backup
+          volumes:
+            - name: backup-data
+              persistentVolumeClaim:
+                claimName: postgres-backup-cache

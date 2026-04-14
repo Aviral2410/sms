@@ -1,0 +1,3 @@
+{{- if and .Values.services.subscriptionService.enabled .Values.services.subscriptionService.pdb.enabled }}
+{{ include "sms.servicePdb" (dict "root" . "service" .Values.services.subscriptionService "serviceName" "subscription-service") }}
+{{- end }}

@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      initContainers:
+        - name: wait-for-gateway
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z api-gateway 8080; do echo waiting for api-gateway; sleep 3; done"]
+      containers:
+        - name: mcp-server
+          image: sms/mcp-server:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8084
+          env:
+            - name: PORT
+              value: "8084"
+            - name: GATEWAY_BASE_URL
+              value: http://api-gateway:8080
+            - name: MCP_REQUIRE_AUTH
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: MCP_REQUIRE_AUTH
+            - name: MCP_ENABLE_DOCKER_INSIGHTS
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: MCP_ENABLE_DOCKER_INSIGHTS
+            - name: LLM_PROVIDER
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: LLM_PROVIDER
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: GEMINI_API_KEY
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: OPENAI_API_KEY
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: OPENROUTER_API_KEY
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

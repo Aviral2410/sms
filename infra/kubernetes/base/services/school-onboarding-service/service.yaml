@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: school-onboarding-service
+spec:
+  type: ClusterIP
+  selector:
+    app: school-onboarding-service
+  ports:
+    - name: http
+      port: 8081
+      targetPort: http

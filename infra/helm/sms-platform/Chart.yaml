@@ -1,0 +1,7 @@
+apiVersion: v2
+name: sms-platform
+version: 0.1.0
+appVersion: "1.0.0"
+description: Production-oriented Helm chart for the School Management System platform
+home: https://example.com/sms-platform
+type: application

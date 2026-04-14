@@ -1,0 +1,66 @@
+.academic-structure-toolbar {
+  flex-wrap: wrap;
+}
+
+.academic-structure-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.academic-structure-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.academic-structure-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(196, 208, 241, 0.75);
+  font-size: 0.88rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transition: 160ms ease;
+}
+
+.academic-structure-tab:hover {
+  color: #f2f6ff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.academic-structure-tab.is-active {
+  color: #f7faff;
+  border-color: rgba(146, 171, 255, 0.22);
+  background: rgba(79, 127, 255, 0.18);
+}
+
+.academic-structure-search {
+  flex: 1 1 420px;
+  min-width: min(520px, 100%);
+}
+
+.academic-structure-registry {
+  padding: 22px;
+}
+
+@media (max-width: 900px) {
+  .academic-structure-tabs {
+    width: 100%;
+  }
+
+  .academic-structure-search {
+    flex-basis: 100%;
+    min-width: 100%;
+  }
+}
+

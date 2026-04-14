@@ -1,0 +1,3 @@
+{{- if .Values.services.mcpServer.enabled }}
+{{ include "sms.serviceService" (dict "root" . "service" .Values.services.mcpServer "serviceName" "mcp-server") }}
+{{- end }}

@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-identity-migration
+  namespace: sms
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flyway
+          image: flyway/flyway:10.17.3
+          env:
+            - name: FLYWAY_URL
+              value: jdbc:postgresql://postgres:5432/sms_platform
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_USER
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+          args:
+            - -schemas=identity
+            - -locations=filesystem:/flyway/sql/identity
+            - migrate
+          volumeMounts:
+            - name: migration-sql
+              mountPath: /flyway/sql/identity
+      volumes:
+        - name: migration-sql
+          configMap:
+            name: flyway-identity-sql

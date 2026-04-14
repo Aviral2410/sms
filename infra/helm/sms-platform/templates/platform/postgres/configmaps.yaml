@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-postgres-init-sql
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "postgres-init-sql") | indent 4 }}
+data:
+  00-extensions.sql: |-
+{{ .Files.Get "files/postgres-init/00-extensions.sql" | indent 4 }}
+  01-create-schemas.sql: |-
+{{ .Files.Get "files/postgres-init/01-create-schemas.sql" | indent 4 }}
+  02-onboarding-tables.sql: |-
+{{ .Files.Get "files/postgres-init/02-onboarding-tables.sql" | indent 4 }}
+  03-onboarding-seed.sql: |-
+{{ .Files.Get "files/postgres-init/03-onboarding-seed.sql" | indent 4 }}
+  04-identity-admin.sql: |-
+{{ .Files.Get "files/postgres-init/04-identity-admin.sql" | indent 4 }}
+  05-schoolops-tables.sql: |-
+{{ .Files.Get "files/postgres-init/05-schoolops-tables.sql" | indent 4 }}
+  06-schoolops-extended-modules.sql: |-
+{{ .Files.Get "files/postgres-init/06-schoolops-extended-modules.sql" | indent 4 }}
+  07-subscription-tables.sql: |-
+{{ .Files.Get "files/postgres-init/07-subscription-tables.sql" | indent 4 }}
+  08-subscription-seed.sql: |-
+{{ .Files.Get "files/postgres-init/08-subscription-seed.sql" | indent 4 }}
+  09-finance-tables.sql: |-
+{{ .Files.Get "files/postgres-init/09-finance-tables.sql" | indent 4 }}
+  10-platform-config.sql: |-
+{{ .Files.Get "files/postgres-init/10-platform-config.sql" | indent 4 }}
+  11-platform-settings.sql: |-
+{{ .Files.Get "files/postgres-init/11-platform-settings.sql" | indent 4 }}
+  12-transport-management.sql: |-
+{{ .Files.Get "files/postgres-init/12-transport-management.sql" | indent 4 }}
+  13-communication-tables.sql: |-
+{{ .Files.Get "files/postgres-init/13-communication-tables.sql" | indent 4 }}
+  14-onboarding-selected-plan.sql: |-
+{{ .Files.Get "files/postgres-init/14-onboarding-selected-plan.sql" | indent 4 }}
+  15-platform-config-hardening.sql: |-
+{{ .Files.Get "files/postgres-init/15-platform-config-hardening.sql" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-postgres-repair-sql
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "postgres-repair-sql") | indent 4 }}
+data:
+  01-repair-core.sql: |-
+{{ .Files.Get "files/postgres-repair/01-repair-core.sql" | indent 4 }}
+  02-repair-communication.sql: |-
+{{ .Files.Get "files/postgres-repair/02-repair-communication.sql" | indent 4 }}

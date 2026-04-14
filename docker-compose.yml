@@ -1,0 +1,347 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sms-postgres
+    environment:
+      POSTGRES_DB: sms_platform
+      POSTGRES_USER: ${POSTGRES_USER:-sms_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql-v1/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sms_admin -d sms_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - sms_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: sms-redis
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - sms_net
+
+  emqx:
+    image: emqx/emqx:5.8.0
+    container_name: sms-mqtt-broker
+    ports:
+      - "127.0.0.1:1883:1883"
+      - "127.0.0.1:8087:8083"
+      - "127.0.0.1:18083:18083"
+    environment:
+      EMQX_DASHBOARD__DEFAULT_USERNAME: ${EMQX_DASHBOARD_USERNAME:-admin}
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_DASHBOARD_PASSWORD:-sms_admin}
+    healthcheck:
+      test: ["CMD", "emqx_ctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sms_net
+
+  db-repair:
+    image: postgres:16-alpine
+    container_name: sms-db-repair
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+    volumes:
+      - ./infra/postgres/repair:/repair:ro
+    command: >
+      sh -c "psql -h postgres -U sms_admin -d sms_platform -v ON_ERROR_STOP=1 -f /repair/01-repair-core.sql"
+    restart: "no"
+    networks:
+      - sms_net
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./services/auth-service/Dockerfile
+    container_name: sms-auth-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"server.port":8082}'
+      BOOTSTRAP_SUPERADMIN_ENABLED: ${BOOTSTRAP_SUPERADMIN_ENABLED:-false}
+      BOOTSTRAP_SUPERADMIN_EMAIL: ${BOOTSTRAP_SUPERADMIN_EMAIL:-}
+      BOOTSTRAP_SUPERADMIN_PASSWORD: ${BOOTSTRAP_SUPERADMIN_PASSWORD:-}
+      BOOTSTRAP_SUPERADMIN_FULL_NAME: ${BOOTSTRAP_SUPERADMIN_FULL_NAME:-Platform Super Admin}
+
+      # MQTT
+      APP_MQTT_BROKER_URL: tcp://sms-mqtt-broker:1883
+      MQTT_CLIENT_ID: auth-service
+      APP_JWT_SECRET: ${JWT_SECRET_KEY:-dev-jwt-secret-change-me}
+    ports:
+      - "127.0.0.1:8082:8082"
+    depends_on:
+      db-repair:
+        condition: service_completed_successfully
+      emqx:
+        condition: service_healthy
+    networks:
+      - sms_net
+
+  school-onboarding-service:
+    build:
+      context: .
+      dockerfile: ./services/school-onboarding-service/Dockerfile
+    container_name: sms-school-onboarding-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"server.port":8081}'
+      AUTH_SERVICE_URL: http://auth-service:8082
+      COMMUNICATION_SERVICE_URL: http://communication-service:8089
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8086
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key}
+      PLATFORM_CONFIG_ENCRYPTION_KEY: ${PLATFORM_CONFIG_ENCRYPTION_KEY:-dev-platform-config-encryption-key}
+
+      # MQTT
+      APP_MQTT_BROKER_URL: tcp://sms-mqtt-broker:1883
+      MQTT_CLIENT_ID: onboarding-service
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      db-repair:
+        condition: service_completed_successfully
+      emqx:
+        condition: service_healthy
+    networks:
+      - sms_net
+
+  school-operations-service:
+    build:
+      context: .
+      dockerfile: ./services/school-operations-service/Dockerfile
+    container_name: sms-school-operations-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"server.port":8083}'
+      AUTH_SERVICE_URL: http://auth-service:8082
+      COMMUNICATION_SERVICE_URL: http://communication-service:8089
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8086
+      PLATFORM_CONFIG_SERVICE_URL: http://school-onboarding-service:8081
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key}
+
+      # MQTT
+      APP_MQTT_BROKER_URL: tcp://sms-mqtt-broker:1883
+      MQTT_CLIENT_ID: school-operations-service
+
+      # LLM
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+    ports:
+      - "127.0.0.1:8083:8083"
+    depends_on:
+      db-repair:
+        condition: service_completed_successfully
+      auth-service:
+        condition: service_started
+      emqx:
+        condition: service_healthy
+    networks:
+      - sms_net
+
+  communication-service:
+    build:
+      context: .
+      dockerfile: ./services/communication-service/Dockerfile
+    container_name: sms-communication-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"server.port":8089}'
+      DB_SCHEMA: communication
+
+      # MQTT
+      APP_MQTT_BROKER_URL: tcp://sms-mqtt-broker:1883
+      MQTT_CLIENT_ID: communication-service
+    ports:
+      - "127.0.0.1:8089:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy
+    networks:
+      - sms_net
+
+  finance-service:
+    build:
+      context: .
+      dockerfile: ./services/finance-service/Dockerfile
+    container_name: sms-finance-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"server.port":8085}'
+      DB_SCHEMA: finance
+      PLATFORM_CONFIG_SERVICE_URL: http://school-onboarding-service:8081
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-dev-internal-api-key}
+
+      # MQTT
+      APP_MQTT_BROKER_URL: tcp://sms-mqtt-broker:1883
+      MQTT_CLIENT_ID: finance-service
+    ports:
+      - "127.0.0.1:8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      emqx:
+        condition: service_healthy
+    networks:
+      - sms_net
+
+  subscription-service:
+    build:
+      context: .
+      dockerfile: ./services/subscription-service/Dockerfile
+    container_name: sms-subscription-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"server.port":8086}'
+      DB_SCHEMA: subscription
+
+      # MQTT
+      APP_MQTT_BROKER_URL: tcp://sms-mqtt-broker:1883
+      MQTT_CLIENT_ID: subscription-service
+    ports:
+      - "127.0.0.1:8086:8086"
+    depends_on:
+      db-repair:
+        condition: service_completed_successfully
+      emqx:
+        condition: service_healthy
+    networks:
+      - sms_net
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: ./services/api-gateway/Dockerfile
+    container_name: sms-api-gateway
+    environment:
+      SERVER_PORT: 8080
+      ONBOARDING_SERVICE_URL: http://sms-school-onboarding-service:8081
+      AUTH_SERVICE_URL: http://sms-auth-service:8082
+      SCHOOL_OPERATIONS_SERVICE_URL: http://sms-school-operations-service:8083
+      FINANCE_SERVICE_URL: http://sms-finance-service:8085
+      COMMUNICATION_SERVICE_URL: http://sms-communication-service:8089
+      AI_INTERACTION_SERVICE_URL: http://sms-ai-interaction-service:8090
+      SUBSCRIPTION_SERVICE_URL: http://sms-subscription-service:8086
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      APP_JWT_SECRET: ${JWT_SECRET_KEY:-dev-jwt-secret-change-me}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sms_platform
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-sms_admin}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-sms_admin}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - school-onboarding-service
+      - auth-service
+      - school-operations-service
+      - ai-interaction-service
+      - subscription-service
+      - redis
+    networks:
+      - sms_net
+
+  ai-interaction-service:
+    build:
+      context: .
+      dockerfile: ./services/ai-interaction-service/Dockerfile
+    container_name: sms-ai-interaction-service
+    environment:
+      SERVER_PORT: 8090
+      GATEWAY_BASE_URL: http://api-gateway:8080
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      LLM_PROVIDER: ${LLM_PROVIDER:-DISABLED}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+    ports:
+      - "127.0.0.1:8090:8090"
+    depends_on:
+      - redis
+    networks:
+      - sms_net
+
+  mcp-server:
+    build:
+      context: .
+      dockerfile: ./services/mcp-server/Dockerfile
+    container_name: sms-mcp-server
+    environment:
+      PORT: 8084
+      GATEWAY_BASE_URL: http://api-gateway:8080
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      MCP_REQUIRE_AUTH: ${MCP_REQUIRE_AUTH:-true}
+      MCP_ENABLE_DOCKER_INSIGHTS: ${MCP_ENABLE_DOCKER_INSIGHTS:-false}
+    ports:
+      - "127.0.0.1:8084:8084"
+    depends_on:
+      - api-gateway
+    networks:
+      - sms_net
+
+  frontend:
+    build: ./frontend
+    container_name: sms-frontend
+    environment:
+      FRONTEND_PORT: 3000
+      GATEWAY_PUBLIC_BASE_URL: http://api-gateway:8080
+      MCP_PUBLIC_BASE_URL: http://mcp-server:8084
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api-gateway
+    networks:
+      - sms_net
+
+networks:
+  sms_net:
+
+volumes:
+  postgres_data:

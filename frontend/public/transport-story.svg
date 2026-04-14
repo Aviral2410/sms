@@ -1,0 +1,92 @@
+<svg width="1600" height="1100" viewBox="0 0 1600 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="180" y1="90" x2="1420" y2="1030" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09131F"/>
+      <stop offset="0.42" stop-color="#0B1B29"/>
+      <stop offset="1" stop-color="#142637"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="240" y1="180" x2="1310" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F2636"/>
+      <stop offset="1" stop-color="#09131D"/>
+    </linearGradient>
+    <linearGradient id="route" x1="210" y1="760" x2="1405" y2="330" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34D399"/>
+      <stop offset="0.52" stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1100" fill="url(#bg)"/>
+  <circle cx="1260" cy="200" r="240" fill="#A78BFA" fill-opacity="0.1"/>
+  <circle cx="250" cy="880" r="280" fill="#22D3EE" fill-opacity="0.08"/>
+  <rect x="180" y="150" width="1240" height="804" rx="46" fill="url(#panel)" stroke="#27465A" stroke-width="2"/>
+
+  <rect x="232" y="210" width="742" height="560" rx="34" fill="#0C1823" stroke="#2B5067" stroke-width="2"/>
+  <rect x="1012" y="210" width="354" height="260" rx="30" fill="#0B1721" stroke="#294D66" stroke-width="2"/>
+  <rect x="1012" y="504" width="354" height="266" rx="30" fill="#0B1721" stroke="#294D66" stroke-width="2"/>
+
+  <path d="M300 674C448 688 534 614 652 554C760 500 820 506 926 440" stroke="#203A4C" stroke-width="54" stroke-linecap="round"/>
+  <path d="M300 674C448 688 534 614 652 554C760 500 820 506 926 440" stroke="url(#route)" stroke-width="18" stroke-linecap="round" filter="url(#glow)"/>
+
+  <circle cx="300" cy="674" r="18" fill="#34D399"/>
+  <circle cx="652" cy="554" r="18" fill="#22D3EE"/>
+  <circle cx="926" cy="440" r="18" fill="#A78BFA"/>
+  <circle cx="438" cy="646" r="10" fill="#FFB663"/>
+  <circle cx="784" cy="494" r="10" fill="#FFB663"/>
+
+  <rect x="520" y="594" width="250" height="116" rx="34" fill="#F59E0B"/>
+  <rect x="550" y="620" width="102" height="46" rx="14" fill="#FFF2C7"/>
+  <rect x="662" y="620" width="74" height="46" rx="14" fill="#DDF8FF"/>
+  <rect x="540" y="674" width="188" height="10" rx="5" fill="#A85D00"/>
+  <circle cx="570" cy="716" r="24" fill="#06121B"/>
+  <circle cx="720" cy="716" r="24" fill="#06121B"/>
+  <path d="M514 650L496 622H520V650H514Z" fill="#F8B955"/>
+
+  <circle cx="1100" cy="320" r="56" fill="#0D2231" stroke="#315972" stroke-width="2"/>
+  <circle cx="1100" cy="296" r="18" fill="#FFD6B5"/>
+  <path d="M1066 350C1074 324 1090 314 1100 314C1110 314 1126 324 1134 350" fill="#22D3EE" fill-opacity="0.22"/>
+  <path d="M1064 350C1072 326 1090 318 1100 318C1110 318 1128 326 1136 350" fill="#0C1823"/>
+  <text x="1060" y="388" fill="#B7D5E4" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">Driver</text>
+
+  <circle cx="1256" cy="320" r="56" fill="#0D2231" stroke="#315972" stroke-width="2"/>
+  <circle cx="1256" cy="296" r="18" fill="#FFD6B5"/>
+  <path d="M1222 350C1230 324 1246 314 1256 314C1266 314 1282 324 1290 350" fill="#A78BFA" fill-opacity="0.22"/>
+  <path d="M1220 350C1228 326 1246 318 1256 318C1266 318 1284 326 1292 350" fill="#0C1823"/>
+  <text x="1216" y="388" fill="#B7D5E4" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">Conductor</text>
+
+  <rect x="1064" y="398" width="234" height="36" rx="14" fill="#102838"/>
+  <path d="M1096 416H1248" stroke="#22D3EE" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 12"/>
+  <circle cx="1140" cy="416" r="8" fill="#34D399"/>
+  <circle cx="1228" cy="416" r="8" fill="#A78BFA"/>
+
+  <rect x="1050" y="550" width="278" height="126" rx="26" fill="#0E2534" stroke="#335A72" stroke-width="2"/>
+  <rect x="1082" y="578" width="214" height="22" rx="11" fill="#18384C"/>
+  <rect x="1082" y="614" width="164" height="18" rx="9" fill="#24465B"/>
+  <rect x="1082" y="648" width="118" height="18" rx="9" fill="#24465B"/>
+  <circle cx="1272" cy="634" r="24" fill="#22D3EE" fill-opacity="0.16"/>
+  <path d="M1272 622V634L1282 640" stroke="#22D3EE" stroke-width="4" stroke-linecap="round"/>
+
+  <circle cx="286" cy="814" r="44" fill="#FFD6B5"/>
+  <path d="M244 876C254 834 276 820 286 820C296 820 318 834 328 876" fill="#0D1B25"/>
+  <path d="M250 876C260 840 278 828 286 828C294 828 312 840 322 876" fill="#22D3EE" fill-opacity="0.24"/>
+  <rect x="234" y="880" width="104" height="10" rx="5" fill="#29465C"/>
+
+  <circle cx="388" cy="802" r="52" fill="#FFD6B5"/>
+  <path d="M338 880C350 830 374 812 388 812C402 812 426 830 438 880" fill="#0D1B25"/>
+  <path d="M346 880C356 838 378 826 388 826C398 826 420 838 430 880" fill="#A78BFA" fill-opacity="0.22"/>
+  <path d="M428 730L470 698L504 730V888H428V730Z" fill="#102838"/>
+  <rect x="438" y="748" width="18" height="28" rx="8" fill="#203D52"/>
+  <rect x="468" y="748" width="18" height="28" rx="8" fill="#203D52"/>
+
+  <text x="262" y="258" fill="#B4D7E8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Live route view</text>
+  <text x="1050" y="258" fill="#B4D7E8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Driver + conductor sync</text>
+  <text x="1050" y="532" fill="#B4D7E8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Parent notifications and ETA updates</text>
+  <text x="262" y="930" fill="#A8C9D8" font-family="Inter, Arial, sans-serif" font-size="18">A parent and child wait while route events, bus movement, and staff notifications stay connected.</text>
+</svg>

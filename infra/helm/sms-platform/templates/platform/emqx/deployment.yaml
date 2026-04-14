@@ -1,0 +1,55 @@
+{{- if .Values.platform.emqx.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.platform.emqx.serviceName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" .Values.platform.emqx.serviceName) | indent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.platform.emqx.serviceName) | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.platform.emqx.serviceName) | indent 8 }}
+    spec:
+{{ include "sms.podSettings" . | indent 6 }}
+      containers:
+        - name: emqx
+          image: {{ include "sms.image" (dict "root" . "image" .Values.platform.emqx.image) }}
+          imagePullPolicy: {{ .Values.platform.emqx.image.pullPolicy }}
+          ports:
+            - name: mqtt
+              containerPort: {{ .Values.platform.emqx.service.mqttPort }}
+            - name: http-api
+              containerPort: {{ .Values.platform.emqx.service.httpApiPort }}
+            - name: dashboard
+              containerPort: {{ .Values.platform.emqx.service.dashboardPort }}
+          env:
+            - name: EMQX_DASHBOARD__DEFAULT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: EMQX_DASHBOARD_USERNAME
+            - name: EMQX_DASHBOARD__DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: EMQX_DASHBOARD_PASSWORD
+          readinessProbe:
+            tcpSocket:
+              port: mqtt
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: mqtt
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+{{ toYaml .Values.platform.emqx.resources | indent 12 }}
+{{- end }}

@@ -1,0 +1,2 @@
+# Deprecated
+# Use base/platform/postgres/service.yaml and statefulset.yaml instead.

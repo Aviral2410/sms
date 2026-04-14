@@ -1,0 +1,3 @@
+{{- if .Values.services.subscriptionService.enabled }}
+{{ include "sms.serviceService" (dict "root" . "service" .Values.services.subscriptionService "serviceName" "subscription-service") }}
+{{- end }}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>elevateSmart Framework</title>
+    <meta
+      name="description"
+      content="Next-generation School Management SaaS powered by intelligence."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;800&family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      (function() {
+        try {
+          const state = JSON.parse(localStorage.getItem('sms-saas-v2-state'));
+          if (state && state.state) {
+            const { theme, accentColor, glassIntensity, borderRadius } = state.state;
+            const root = document.documentElement;
+            if (accentColor) root.style.setProperty('--brand-accent', accentColor);
+            if (glassIntensity) root.style.setProperty('--glass-intensity', glassIntensity);
+            if (borderRadius) root.style.setProperty('--radius-main', borderRadius);
+            
+            let effectiveTheme = theme;
+            if (theme === 'system' || !theme) {
+              effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+            root.classList.add(effectiveTheme);
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

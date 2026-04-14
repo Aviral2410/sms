@@ -1,0 +1,108 @@
+/* Space Glass Student Dashboard Utility Styles */
+
+:root {
+    --student-bg-deep: #0A0E1A;
+    --student-bg-panel: #0D1226;
+    --student-accent: #3B6FD4;
+    --student-text-primary: #E8E6FF;
+    --student-text-secondary: #7A7FA8;
+    --student-border: rgba(255, 255, 255, 0.08);
+    --student-border-hover: rgba(255, 255, 255, 0.15);
+    --student-radius-card: 12px;
+    --student-radius-pill: 14px;
+}
+
+/* Custom Animations */
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.student-dashboard-container {
+    background: var(--student-bg-deep);
+    min-height: 100vh;
+    color: var(--student-text-primary);
+    position: relative;
+    overflow: hidden;
+}
+
+.student-starfield {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: 
+        radial-gradient(circle at 20% 30%, rgba(59, 111, 212, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(59, 111, 212, 0.05) 0%, transparent 40%),
+        radial-gradient(1px 1px at 10% 10%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 20% 50%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 40% 80%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 60% 15%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 70% 60%, #fff 100%, transparent),
+        radial-gradient(1px 1px at 90% 40%, #fff 100%, transparent);
+}
+
+.student-glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--student-border);
+    border-radius: var(--student-radius-card);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.student-glass-card:hover {
+    border-color: var(--student-border-hover);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.student-pill {
+    padding: 6px 14px;
+    border-radius: var(--student-radius-pill);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--student-border);
+    background: transparent;
+    color: var(--student-text-secondary);
+}
+
+.student-pill.active {
+    background: var(--student-accent);
+    border-color: var(--student-accent);
+    color: #fff;
+    box-shadow: 0 0 15px rgba(59, 111, 212, 0.3);
+}
+
+.student-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+.student-meta-item {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+/* Scrollbar refine */
+.custom-scrollbar-student::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scrollbar-student::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scrollbar-student::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+.custom-scrollbar-student::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

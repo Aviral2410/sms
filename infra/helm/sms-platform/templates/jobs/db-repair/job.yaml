@@ -1,0 +1,63 @@
+{{- if .Values.jobs.dbRepair.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-db-repair
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "db-repair") | indent 4 }}
+  annotations:
+{{- if .Values.jobs.dbRepair.hook }}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+{{- end }}
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels:
+        job: db-repair
+    spec:
+      restartPolicy: OnFailure
+{{ include "sms.podSettings" . | indent 6 }}
+      containers:
+        - name: repair
+          image: {{ include "sms.image" (dict "root" . "image" .Values.jobs.dbRepair.image) }}
+          imagePullPolicy: {{ .Values.jobs.dbRepair.image.pullPolicy }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.platform.postgres.database | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: POSTGRES_PASSWORD
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "waiting for postgres";
+                sleep 3;
+              done
+              psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /repair/01-repair-core.sql
+              psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /repair/02-repair-communication.sql
+          volumeMounts:
+            - name: repair-sql
+              mountPath: /repair
+          resources:
+{{ toYaml .Values.jobs.dbRepair.resources | indent 12 }}
+      volumes:
+        - name: repair-sql
+          configMap:
+            name: {{ .Release.Name }}-postgres-repair-sql
+{{- end }}

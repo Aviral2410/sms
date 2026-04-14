@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: school-operations-service
+spec:
+  type: ClusterIP
+  selector:
+    app: school-operations-service
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http

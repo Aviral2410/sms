@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: finance-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: finance-service
+  template:
+    metadata:
+      labels:
+        app: finance-service
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z postgres 5432; do echo waiting for postgres; sleep 3; done"]
+      containers:
+        - name: finance-service
+          image: sms/finance-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8085
+          env:
+            - name: SERVER_PORT
+              value: "8085"
+            - name: DB_URL
+              value: jdbc:postgresql://postgres:5432/sms_platform
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/sms_platform
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DB_SCHEMA
+              value: finance
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: PLATFORM_CONFIG_SERVICE_URL
+              value: http://school-onboarding-service:8081
+            - name: INTERNAL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: INTERNAL_API_KEY
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi

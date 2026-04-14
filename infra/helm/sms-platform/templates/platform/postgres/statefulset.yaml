@@ -1,0 +1,79 @@
+{{- if .Values.platform.postgres.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.platform.postgres.serviceName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" .Values.platform.postgres.serviceName) | indent 4 }}
+spec:
+  serviceName: {{ .Values.platform.postgres.serviceName }}
+  replicas: 1
+  selector:
+    matchLabels:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.platform.postgres.serviceName) | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.platform.postgres.serviceName) | indent 8 }}
+    spec:
+{{ include "sms.podSettings" . | indent 6 }}
+      containers:
+        - name: postgres
+          image: {{ include "sms.image" (dict "root" . "image" .Values.platform.postgres.image) }}
+          imagePullPolicy: {{ .Values.platform.postgres.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.platform.postgres.service.port }}
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.platform.postgres.database | quote }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "sms.secretName" . }}
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init-sql
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+{{ toYaml .Values.platform.postgres.probes.readiness | indent 12 }}
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+{{ toYaml .Values.platform.postgres.probes.liveness | indent 12 }}
+          resources:
+{{ toYaml .Values.platform.postgres.resources | indent 12 }}
+      volumes:
+        - name: init-sql
+          configMap:
+            name: {{ .Release.Name }}-postgres-init-sql
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+{{- if .Values.platform.postgres.persistence.storageClassName }}
+        storageClassName: {{ .Values.platform.postgres.persistence.storageClassName }}
+{{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.platform.postgres.persistence.size }}
+{{- end }}

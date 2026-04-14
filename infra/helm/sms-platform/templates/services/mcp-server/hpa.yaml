@@ -1,0 +1,3 @@
+{{- if and .Values.services.mcpServer.enabled .Values.services.mcpServer.autoscaling.enabled }}
+{{ include "sms.serviceHpa" (dict "root" . "service" .Values.services.mcpServer "serviceName" "mcp-server") }}
+{{- end }}

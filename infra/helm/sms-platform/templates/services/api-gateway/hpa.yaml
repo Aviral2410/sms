@@ -1,0 +1,3 @@
+{{- if and .Values.services.apiGateway.enabled .Values.services.apiGateway.autoscaling.enabled }}
+{{ include "sms.serviceHpa" (dict "root" . "service" .Values.services.apiGateway "serviceName" "api-gateway") }}
+{{- end }}

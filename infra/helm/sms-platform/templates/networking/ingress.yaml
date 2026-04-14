@@ -1,0 +1,64 @@
+{{- if .Values.networking.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-sms-platform
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "ingress") | indent 4 }}
+{{- if .Values.networking.ingress.annotations }}
+  annotations:
+{{ toYaml .Values.networking.ingress.annotations | indent 4 }}
+{{- end }}
+spec:
+  ingressClassName: {{ .Values.networking.ingress.className }}
+  rules:
+    - host: {{ .Values.networking.ingress.frontendHost }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: {{ .Values.services.frontend.service.port }}
+    - host: {{ .Values.networking.ingress.frontendWildcardHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: {{ .Values.services.frontend.service.port }}
+    - host: {{ .Values.networking.ingress.apiHost }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: {{ .Values.services.apiGateway.service.port }}
+    - host: {{ .Values.networking.ingress.mcpHost }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: mcp-server
+                port:
+                  number: {{ .Values.services.mcpServer.service.port }}
+{{- if .Values.networking.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.networking.ingress.frontendHost }}
+        - {{ .Values.networking.ingress.frontendWildcardHost | quote }}
+        - {{ .Values.networking.ingress.apiHost }}
+        - {{ .Values.networking.ingress.mcpHost }}
+      secretName: {{ .Values.networking.ingress.tls.secretName }}
+{{- end }}
+{{- end }}

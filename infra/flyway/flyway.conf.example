@@ -1,0 +1,7 @@
+flyway.url=jdbc:postgresql://localhost:5432/sms_platform
+flyway.user=sms_admin
+flyway.password=change-me
+flyway.schemas=identity
+flyway.locations=filesystem:/flyway/sql/identity
+flyway.table=flyway_schema_history
+flyway.cleanDisabled=true

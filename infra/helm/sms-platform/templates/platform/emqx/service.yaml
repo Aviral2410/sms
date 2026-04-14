@@ -1,0 +1,22 @@
+{{- if .Values.platform.emqx.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.platform.emqx.serviceName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" .Values.platform.emqx.serviceName) | indent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.platform.emqx.serviceName) | indent 4 }}
+  ports:
+    - name: mqtt
+      port: {{ .Values.platform.emqx.service.mqttPort }}
+      targetPort: mqtt
+    - name: http-api
+      port: {{ .Values.platform.emqx.service.httpApiPort }}
+      targetPort: http-api
+    - name: dashboard
+      port: {{ .Values.platform.emqx.service.dashboardPort }}
+      targetPort: dashboard
+{{- end }}

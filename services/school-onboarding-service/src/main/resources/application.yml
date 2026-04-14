@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: school-onboarding-service
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 8MB
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sms_platform}
+    username: ${DB_USERNAME:sms_admin}
+    password: ${DB_PASSWORD:sms_admin}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: ${DB_SCHEMA:onboarding}
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+server:
+  port: ${SERVER_PORT:8081}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+app:
+  auth-service-url: ${AUTH_SERVICE_URL:http://localhost:8082}
+  communication-service-url: ${COMMUNICATION_SERVICE_URL:http://localhost:8089}
+  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
+  internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key}
+  platform-config-encryption-key: ${PLATFORM_CONFIG_ENCRYPTION_KEY:dev-platform-config-encryption-key}

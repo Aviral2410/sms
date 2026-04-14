@@ -1,0 +1,16 @@
+{{- if .Values.platform.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.platform.postgres.serviceName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" .Values.platform.postgres.serviceName) | indent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.platform.postgres.serviceName) | indent 4 }}
+  ports:
+    - name: postgres
+      port: {{ .Values.platform.postgres.service.port }}
+      targetPort: postgres
+{{- end }}

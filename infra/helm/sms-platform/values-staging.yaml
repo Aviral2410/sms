@@ -1,0 +1,11 @@
+networking:
+  ingress:
+    enabled: true
+    className: nginx
+    frontendHost: staging.sms.example.com
+    frontendWildcardHost: "*.staging.sms.example.com"
+    apiHost: api.staging.sms.example.com
+    mcpHost: mcp.staging.sms.example.com
+    tls:
+      enabled: true
+      secretName: sms-staging-tls

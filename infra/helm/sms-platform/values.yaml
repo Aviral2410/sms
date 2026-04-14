@@ -1,0 +1,876 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  commonLabels: {}
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  topologySpreadConstraints: []
+  priorityClassName: ""
+  secrets:
+    create: false
+    existingSecret: sms-secrets
+    data: {}
+
+platform:
+  postgres:
+    enabled: true
+    serviceName: postgres
+    image:
+      repository: postgres
+      tag: "16-alpine"
+      pullPolicy: IfNotPresent
+    database: sms_platform
+    persistence:
+      enabled: true
+      size: 50Gi
+      storageClassName: ""
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    service:
+      port: 5432
+    probes:
+      readiness:
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 6
+      liveness:
+        initialDelaySeconds: 30
+        periodSeconds: 20
+        timeoutSeconds: 5
+        failureThreshold: 6
+  emqx:
+    enabled: true
+    serviceName: emqx
+    image:
+      repository: emqx/emqx
+      tag: "5.8.0"
+      pullPolicy: IfNotPresent
+    service:
+      mqttPort: 1883
+      httpApiPort: 8083
+      dashboardPort: 18083
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+jobs:
+  dbRepair:
+    enabled: true
+    hook: true
+    image:
+      repository: postgres
+      tag: "16-alpine"
+      pullPolicy: IfNotPresent
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+networking:
+  ingress:
+    enabled: false
+    className: nginx
+    annotations: {}
+    frontendHost: sms.example.com
+    frontendWildcardHost: "*.sms.example.com"
+    apiHost: api.sms.example.com
+    mcpHost: mcp.sms.example.com
+    tls:
+      enabled: true
+      secretName: sms-platform-tls
+
+services:
+  authService:
+    enabled: true
+    workloadName: auth-service
+    image:
+      repository: sms-auth-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8082
+    service:
+      port: 8082
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+      - name: emqx
+        host: emqx
+        port: 1883
+    env:
+      - name: SERVER_PORT
+        value: "8082"
+      - name: DB_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: identity
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: JWT_SECRET_KEY
+      - name: COMMUNICATION_SERVICE_URL
+        value: http://communication-service:8089
+      - name: SCHOOL_OPERATIONS_SERVICE_URL
+        value: http://school-operations-service:8083
+      - name: BOOTSTRAP_SUPERADMIN_ENABLED
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: BOOTSTRAP_SUPERADMIN_ENABLED
+      - name: BOOTSTRAP_SUPERADMIN_EMAIL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: BOOTSTRAP_SUPERADMIN_EMAIL
+      - name: BOOTSTRAP_SUPERADMIN_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: BOOTSTRAP_SUPERADMIN_PASSWORD
+      - name: BOOTSTRAP_SUPERADMIN_FULL_NAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: BOOTSTRAP_SUPERADMIN_FULL_NAME
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 5
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  schoolOnboardingService:
+    enabled: true
+    workloadName: school-onboarding-service
+    image:
+      repository: sms-school-onboarding-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8081
+    service:
+      port: 8081
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+      - name: emqx
+        host: emqx
+        port: 1883
+    env:
+      - name: SERVER_PORT
+        value: "8081"
+      - name: DB_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: onboarding
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: AUTH_SERVICE_URL
+        value: http://auth-service:8082
+      - name: COMMUNICATION_SERVICE_URL
+        value: http://communication-service:8089
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: http://subscription-service:8086
+      - name: INTERNAL_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: INTERNAL_API_KEY
+      - name: PLATFORM_CONFIG_ENCRYPTION_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: PLATFORM_CONFIG_ENCRYPTION_KEY
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
+  schoolOperationsService:
+    enabled: true
+    workloadName: school-operations-service
+    image:
+      repository: sms-school-operations-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8083
+    service:
+      port: 8083
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+      - name: emqx
+        host: emqx
+        port: 1883
+    env:
+      - name: SERVER_PORT
+        value: "8083"
+      - name: DB_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: schoolops
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: APP_MQTT_CLIENT_ID
+        value: school-operations-service
+      - name: AUTH_SERVICE_URL
+        value: http://auth-service:8082
+      - name: COMMUNICATION_SERVICE_URL
+        value: http://communication-service:8089
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: http://subscription-service:8086
+      - name: PLATFORM_CONFIG_SERVICE_URL
+        value: http://school-onboarding-service:8081
+      - name: INTERNAL_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: INTERNAL_API_KEY
+      - name: MCP_SERVER_URL
+        value: http://mcp-server:8084
+      - name: LLM_PROVIDER
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: LLM_PROVIDER
+      - name: GEMINI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: GEMINI_API_KEY
+      - name: OPENAI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OPENAI_API_KEY
+      - name: OPENROUTER_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OPENROUTER_API_KEY
+      - name: ANTHROPIC_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: ANTHROPIC_API_KEY
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 500m
+        memory: 768Mi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  communicationService:
+    enabled: true
+    workloadName: communication-service
+    image:
+      repository: sms-communication-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8089
+    service:
+      port: 8089
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+      - name: emqx
+        host: emqx
+        port: 1883
+    env:
+      - name: SERVER_PORT
+        value: "8089"
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
+      - name: MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: MQTT_CLIENT_ID
+        value: communication-service
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: http://subscription-service:8086
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
+  financeService:
+    enabled: true
+    workloadName: finance-service
+    image:
+      repository: sms-finance-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8085
+    service:
+      port: 8085
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+    env:
+      - name: SERVER_PORT
+        value: "8085"
+      - name: DB_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: finance
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
+      - name: PLATFORM_CONFIG_SERVICE_URL
+        value: http://school-onboarding-service:8081
+      - name: INTERNAL_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: INTERNAL_API_KEY
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
+  subscriptionService:
+    enabled: true
+    workloadName: subscription-service
+    image:
+      repository: sms-subscription-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8086
+    service:
+      port: 8086
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+      - name: emqx
+        host: emqx
+        port: 1883
+    env:
+      - name: SERVER_PORT
+        value: "8086"
+      - name: DB_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: subscription
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
+  apiGateway:
+    enabled: true
+    workloadName: api-gateway
+    image:
+      repository: sms-api-gateway
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8080
+    service:
+      port: 8080
+      type: ClusterIP
+    initDependencies:
+      - name: postgres
+        host: postgres
+        port: 5432
+    env:
+      - name: SERVER_PORT
+        value: "8080"
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: ONBOARDING_SERVICE_URL
+        value: http://school-onboarding-service:8081
+      - name: AUTH_SERVICE_URL
+        value: http://auth-service:8082
+      - name: SCHOOL_OPERATIONS_SERVICE_URL
+        value: http://school-operations-service:8083
+      - name: MCP_SERVER_URL
+        value: http://mcp-server:8084
+      - name: FINANCE_SERVICE_URL
+        value: http://finance-service:8085
+      - name: COMMUNICATION_SERVICE_URL
+        value: http://communication-service:8089
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: http://subscription-service:8086
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: JWT_SECRET_KEY
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+  mcpServer:
+    enabled: true
+    workloadName: mcp-server
+    image:
+      repository: sms-mcp-server
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8084
+    service:
+      port: 8084
+      type: ClusterIP
+    initDependencies:
+      - name: api-gateway
+        host: api-gateway
+        port: 8080
+    env:
+      - name: PORT
+        value: "8084"
+      - name: GATEWAY_BASE_URL
+        value: http://api-gateway:8080
+      - name: MCP_REQUIRE_AUTH
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: MCP_REQUIRE_AUTH
+      - name: MCP_ENABLE_DOCKER_INSIGHTS
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: MCP_ENABLE_DOCKER_INSIGHTS
+      - name: LLM_PROVIDER
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: LLM_PROVIDER
+      - name: GEMINI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: GEMINI_API_KEY
+      - name: OPENAI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OPENAI_API_KEY
+      - name: OPENROUTER_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OPENROUTER_API_KEY
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
+  frontend:
+    enabled: true
+    workloadName: frontend
+    image:
+      repository: sms-frontend
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 3000
+    service:
+      port: 3000
+      type: ClusterIP
+    env:
+      - name: FRONTEND_PORT
+        value: "3000"
+      - name: GATEWAY_PUBLIC_BASE_URL
+        value: http://api-gateway:8080
+      - name: MCP_PUBLIC_BASE_URL
+        value: http://mcp-server:8084
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 5
+        failureThreshold: 24
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      minAvailable: 1
+

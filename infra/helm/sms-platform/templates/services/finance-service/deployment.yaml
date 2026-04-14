@@ -1,0 +1,3 @@
+{{- if .Values.services.financeService.enabled }}
+{{ include "sms.serviceDeployment" (dict "root" . "service" .Values.services.financeService "serviceName" "finance-service") }}
+{{- end }}

@@ -1,0 +1,51 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-repair
+spec:
+  backoffLimit: 4
+  template:
+    metadata:
+      labels:
+        job: db-repair
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: repair
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRES_DB
+              value: sms_platform
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sms-secrets
+                  key: POSTGRES_PASSWORD
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB"; do
+                echo "waiting for postgres";
+                sleep 3;
+              done
+              psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /repair/01-repair-core.sql
+              psql -h postgres -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /repair/02-repair-communication.sql
+          volumeMounts:
+            - name: repair-sql
+              mountPath: /repair
+      volumes:
+        - name: repair-sql
+          configMap:
+            name: postgres-repair-sql

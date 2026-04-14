@@ -1,0 +1,136 @@
+.learning-mode-style-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.learning-mode-style {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(3, 7, 18, 0.3);
+  color: rgba(217, 227, 255, 0.72);
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.learning-mode-style:hover {
+  border-color: rgba(146, 171, 255, 0.22);
+  background: rgba(79, 127, 255, 0.08);
+  color: #f2f6ff;
+}
+
+.learning-mode-style.is-active {
+  border-color: rgba(79, 127, 255, 0.42);
+  background: rgba(79, 127, 255, 0.14);
+  color: #f7faff;
+}
+
+.learning-mode-style.is-disabled {
+  opacity: 0.55;
+  filter: grayscale(1);
+  cursor: not-allowed;
+}
+
+.learning-mode-style-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.learning-mode-style-main span {
+  font-size: 0.92rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.learning-mode-select,
+.learning-mode-textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #f8fbff;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.learning-mode-textarea {
+  padding: 14px 0;
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.learning-mode-textarea::placeholder {
+  color: #61718d;
+}
+
+.learning-mode-field-stack {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.learning-mode-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.learning-mode-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.learning-mode-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: rgba(196, 208, 241, 0.75);
+  font-size: 0.88rem;
+  font-weight: 850;
+  white-space: nowrap;
+  transition: 160ms ease;
+}
+
+.learning-mode-tab:hover {
+  color: #f2f6ff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.learning-mode-tab.is-active {
+  color: #f7faff;
+  border-color: rgba(146, 171, 255, 0.22);
+  background: rgba(79, 127, 255, 0.18);
+}
+
+.learning-mode-output {
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(3, 7, 18, 0.26);
+}
+
+@media (max-width: 640px) {
+  .learning-mode-field-stack {
+    grid-template-columns: 1fr;
+  }
+}
+

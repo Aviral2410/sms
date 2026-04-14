@@ -1,0 +1,3 @@
+{{- if and .Values.services.authService.enabled .Values.services.authService.autoscaling.enabled }}
+{{ include "sms.serviceHpa" (dict "root" . "service" .Values.services.authService "serviceName" "auth-service") }}
+{{- end }}

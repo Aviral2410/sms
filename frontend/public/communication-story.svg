@@ -1,0 +1,83 @@
+<svg width="1600" height="1100" viewBox="0 0 1600 1100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="200" y1="80" x2="1400" y2="1020" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09131F"/>
+      <stop offset="0.48" stop-color="#0D1E2D"/>
+      <stop offset="1" stop-color="#172A3A"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="220" y1="160" x2="1290" y2="960" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#11344A" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#08131C" stop-opacity="0.95"/>
+    </linearGradient>
+    <linearGradient id="pulse" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="18" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="1100" fill="url(#bg)"/>
+  <circle cx="1260" cy="170" r="220" fill="#22D3EE" fill-opacity="0.12"/>
+  <circle cx="300" cy="880" r="260" fill="#FFB663" fill-opacity="0.08"/>
+  <path d="M120 900C340 740 550 690 760 760C980 834 1150 916 1480 742" stroke="#22384C" stroke-width="2" stroke-dasharray="12 18"/>
+  <path d="M150 812C390 620 630 594 844 658C1064 726 1264 782 1474 640" stroke="url(#pulse)" stroke-width="6" stroke-linecap="round" filter="url(#glow)"/>
+
+  <rect x="180" y="146" width="1240" height="808" rx="46" fill="url(#panel)" stroke="#254558" stroke-width="2"/>
+  <rect x="236" y="212" width="424" height="632" rx="34" fill="#0C1822" stroke="#29485C" stroke-width="2"/>
+  <rect x="704" y="212" width="660" height="216" rx="34" fill="#0B1722" stroke="#29485C" stroke-width="2"/>
+  <rect x="704" y="468" width="660" height="320" rx="34" fill="#0B1722" stroke="#29485C" stroke-width="2"/>
+
+  <rect x="274" y="260" width="348" height="54" rx="16" fill="#102636"/>
+  <rect x="274" y="336" width="264" height="20" rx="10" fill="#31516A"/>
+  <rect x="274" y="372" width="184" height="18" rx="9" fill="#24455E"/>
+
+  <rect x="742" y="248" width="210" height="56" rx="18" fill="#132C3D"/>
+  <rect x="972" y="248" width="172" height="56" rx="18" fill="#1B3141"/>
+  <rect x="1164" y="248" width="160" height="56" rx="18" fill="#142A39"/>
+
+  <rect x="742" y="340" width="546" height="18" rx="9" fill="#274357"/>
+  <rect x="742" y="372" width="460" height="18" rx="9" fill="#203A4E"/>
+
+  <circle cx="930" cy="604" r="84" fill="#0F2535" stroke="#33536C" stroke-width="2"/>
+  <circle cx="930" cy="572" r="28" fill="#FFD6B5"/>
+  <path d="M872 676C884 632 910 616 930 616C950 616 977 632 989 676" fill="#0C2030"/>
+  <path d="M890 676C900 640 920 624 930 624C940 624 960 640 970 676" fill="#22D3EE" fill-opacity="0.22"/>
+
+  <circle cx="1134" cy="604" r="84" fill="#0F2535" stroke="#33536C" stroke-width="2"/>
+  <circle cx="1134" cy="572" r="28" fill="#FFD6B5"/>
+  <path d="M1076 676C1088 632 1114 616 1134 616C1154 616 1181 632 1193 676" fill="#0C2030"/>
+  <path d="M1094 676C1104 640 1124 624 1134 624C1144 624 1164 640 1174 676" fill="#A78BFA" fill-opacity="0.22"/>
+
+  <path d="M1016 590C1048 558 1074 544 1106 544" stroke="url(#pulse)" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="1016" cy="590" r="11" fill="#22D3EE"/>
+  <circle cx="1106" cy="544" r="11" fill="#A78BFA"/>
+
+  <rect x="760" y="708" width="254" height="46" rx="16" fill="#0E2533" stroke="#25475C"/>
+  <rect x="1038" y="708" width="252" height="46" rx="16" fill="#0E2533" stroke="#25475C"/>
+  <rect x="760" y="774" width="372" height="18" rx="9" fill="#2D536C"/>
+  <rect x="1038" y="774" width="206" height="18" rx="9" fill="#32566E"/>
+
+  <circle cx="360" cy="560" r="110" fill="#0D2434" stroke="#2A526A" stroke-width="2"/>
+  <path d="M286 610C308 560 348 534 362 534C376 534 416 560 438 610" fill="#0C1822"/>
+  <circle cx="362" cy="498" r="38" fill="#FFD6B5"/>
+  <path d="M326 528C344 502 378 500 396 528V548H326V528Z" fill="#22D3EE"/>
+  <rect x="444" y="454" width="134" height="86" rx="22" fill="#132C3D" stroke="#305671" stroke-width="2"/>
+  <path d="M484 496H540" stroke="#22D3EE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M484 526H566" stroke="#A78BFA" stroke-width="6" stroke-linecap="round"/>
+  <path d="M392 548C428 540 456 532 494 500" stroke="#FFB663" stroke-width="5" stroke-linecap="round" stroke-dasharray="4 12"/>
+
+  <rect x="276" y="706" width="280" height="74" rx="22" fill="#0E2433" stroke="#34576F"/>
+  <circle cx="326" cy="742" r="10" fill="#34D399"/>
+  <rect x="352" y="730" width="174" height="14" rx="7" fill="#2B4B63"/>
+  <rect x="352" y="754" width="120" height="12" rx="6" fill="#203D51"/>
+
+  <text x="272" y="298" fill="#B4D7E8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Communication Timeline</text>
+  <text x="742" y="286" fill="#B4D7E8" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Announcements reaching every role</text>
+  <text x="274" y="756" fill="#A9C8DB" font-family="Inter, Arial, sans-serif" font-size="18">Parent notices, staff reminders, and role-aware delivery in one loop.</text>
+</svg>

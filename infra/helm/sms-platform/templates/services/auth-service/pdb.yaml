@@ -1,0 +1,3 @@
+{{- if and .Values.services.authService.enabled .Values.services.authService.pdb.enabled }}
+{{ include "sms.servicePdb" (dict "root" . "service" .Values.services.authService "serviceName" "auth-service") }}
+{{- end }}
