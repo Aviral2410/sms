@@ -6,7 +6,6 @@ This repo now includes a Helm-oriented CI/CD skeleton under `.github/workflows`.
 
 - `ci.yml`
   - builds every service image
-  - validates `docker-compose.yml`
   - lints and renders the Helm chart
 
 - `publish-images.yml`

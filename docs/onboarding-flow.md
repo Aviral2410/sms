@@ -335,17 +335,11 @@ Validation targets:
 
 - backend services run Gradle tests locally or during image build
 - frontend image runs a production build during image creation
-- full stack can be started with Docker Compose
+- full stack can be started on local `kind` with Helm + Argo CD
 
-## Docker Data Behavior
+## Local kind behavior
 
-The current Docker Compose setup does not persist PostgreSQL data between runs.
-
-That means:
-
-- bringing the stack down removes the database container state
-- the next `docker compose up` starts with a fresh database
-- all init SQL scripts in `infra/postgres/init/` run again on startup
+The local kind stack uses in-cluster PostgreSQL with a PVC. If you delete the `sms` namespace, you reset the environment state.
 
 ## Recommended Next Backend Steps
 

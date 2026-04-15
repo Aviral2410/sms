@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   docker-build:
@@ -50,13 +50,6 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: false
           tags: sms/${{ matrix.name }}:ci
-
-  compose-validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate docker compose
-        run: docker compose config
 
   helm-validate:
     runs-on: ubuntu-latest
