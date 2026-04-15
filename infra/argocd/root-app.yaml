@@ -6,7 +6,7 @@ metadata:
 spec:
   project: sms
   source:
-    repoURL: REPLACE_ME_GIT_REPO_URL
+    repoURL: https://github.com/Aviral2410/sms.git
     targetRevision: develop
     path: infra/argocd/apps
     directory:
