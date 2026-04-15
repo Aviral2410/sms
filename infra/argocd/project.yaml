@@ -8,6 +8,8 @@ spec:
   sourceRepos:
     - '*'
   destinations:
+    - namespace: argocd
+      server: https://kubernetes.default.svc
     - namespace: sms
       server: https://kubernetes.default.svc
     - namespace: monitoring
