@@ -28,9 +28,9 @@ spec:
               value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration"
             - name: GATEWAY_BASE_URL
               value: "http://api-gateway:8080"
-            - name: REDIS_HOST
+            - name: REDIS_SERVICE_HOST
               value: "redis"
-            - name: REDIS_PORT
+            - name: REDIS_SERVICE_PORT
               value: "6379"
           resources:
             requests:

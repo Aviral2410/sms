@@ -3,8 +3,8 @@ spring:
     name: ai-interaction-service
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_SERVICE_HOST:localhost}
+      port: ${REDIS_SERVICE_PORT:6379}
 
 server:
   port: ${SERVER_PORT:8090}

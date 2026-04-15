@@ -3,8 +3,8 @@ spring:
     name: api-gateway
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
+      host: ${REDIS_SERVICE_HOST:localhost}
+      port: ${REDIS_SERVICE_PORT:6379}
   cloud:
     gateway:
       globalcors:

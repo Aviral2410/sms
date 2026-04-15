@@ -6,6 +6,8 @@ global:
   # Keep empty so platform images (postgres/emqx) continue pulling from Docker Hub.
   # App images below are fully-qualified GHCR references.
   imageRegistry: ""
+  imagePullSecrets:
+    - ghcr-pull-secret
 
 networking:
   ingress:

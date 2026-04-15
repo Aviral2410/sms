@@ -52,6 +52,10 @@ spec:
               value: http://communication-service:8089
             - name: SUBSCRIPTION_SERVICE_URL
               value: http://subscription-service:8086
+            - name: REDIS_SERVICE_HOST
+              value: "redis"
+            - name: REDIS_SERVICE_PORT
+              value: "6379"
             - name: APP_JWT_SECRET
               valueFrom:
                 secretKeyRef:

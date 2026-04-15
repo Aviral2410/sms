@@ -1,4 +1,4 @@
-name: Rollout Single Service
+﻿name: Rollout Single Service
 
 on:
   workflow_dispatch:
@@ -45,6 +45,7 @@ jobs:
             communication-service) key="communicationService" ;;
             finance-service) key="financeService" ;;
             subscription-service) key="subscriptionService" ;;
+            ai-interaction-service) key="aiInteractionService" ;;
             api-gateway) key="apiGateway" ;;
             mcp-server) key="mcpServer" ;;
             frontend) key="frontend" ;;

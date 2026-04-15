@@ -1,4 +1,4 @@
-name: Deploy Kubernetes Environment
+﻿name: Deploy Kubernetes Environment
 
 on:
   workflow_dispatch:
@@ -54,5 +54,6 @@ jobs:
             --set-string services.financeService.image.tag="${{ github.event.inputs.image_tag }}" \
             --set-string services.subscriptionService.image.tag="${{ github.event.inputs.image_tag }}" \
             --set-string services.apiGateway.image.tag="${{ github.event.inputs.image_tag }}" \
+            --set-string services.aiInteractionService.image.tag="${{ github.event.inputs.image_tag }}" \
             --set-string services.mcpServer.image.tag="${{ github.event.inputs.image_tag }}" \
             --set-string services.frontend.image.tag="${{ github.event.inputs.image_tag }}"
