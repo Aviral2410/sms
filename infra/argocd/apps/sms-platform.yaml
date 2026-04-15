@@ -7,7 +7,7 @@ spec:
   project: sms
   source:
     repoURL: REPLACE_ME_GIT_REPO_URL
-    targetRevision: main
+    targetRevision: develop
     path: infra/helm/sms-platform
     helm:
       valueFiles:
