@@ -67,6 +67,9 @@ jobs:
       always() && 
       (needs.metadata.outputs.any_service == 'true' || github.event.inputs.force_build_all == 'true')
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       fail-fast: false
       matrix:
@@ -95,8 +98,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ needs.metadata.outputs.owner_lc }}
+          password: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Set context
         id: vars
@@ -130,6 +133,9 @@ jobs:
       (needs.docker-publish.result == 'success' || needs.docker-publish.result == 'skipped') &&
       (needs.metadata.outputs.helm == 'true' || needs.metadata.outputs.any_service == 'true' || github.event.inputs.force_build_all == 'true')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -149,8 +155,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ needs.metadata.outputs.owner_lc }}
+          password: ${{ secrets.GHCR_TOKEN != '' && secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Package & Push Helm OCI
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
