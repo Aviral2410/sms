@@ -77,6 +77,11 @@ if ($DeploySmsViaArgoCd) {
         throw "Could not detect git remote 'origin'. Set it or edit infra/argocd/* repoURL manually."
     }
 
+    # Argo CD repoURL should be HTTPS for public repos (simplest for local kind).
+    if ($origin -match '^git@github\.com:(.+?)\.git$') {
+        $origin = "https://github.com/$($Matches[1]).git"
+    }
+
     $paths = @(
         (Join-Path $RepoRoot "infra\\argocd\\root-app.yaml"),
         (Join-Path $RepoRoot "infra\\argocd\\apps\\sms-platform.yaml")

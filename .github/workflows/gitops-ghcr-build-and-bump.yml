@@ -2,7 +2,7 @@ name: gitops-ghcr-build-and-bump
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "develop" ]
     paths:
       - "services/**"
       - "frontend/**"
