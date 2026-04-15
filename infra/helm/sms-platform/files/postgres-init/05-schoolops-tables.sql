@@ -114,3 +114,30 @@ CREATE TABLE IF NOT EXISTS schoolops.ai_visualization_history (
 
 CREATE INDEX IF NOT EXISTS idx_schoolops_ai_visualization_school_created
     ON schoolops.ai_visualization_history (school_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS schoolops.library_reservation (
+    reservation_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    resource_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    reserved_at TIMESTAMPTZ NOT NULL,
+    valid_until TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_schoolops_library_reservation_school_reserved
+    ON schoolops.library_reservation (school_id, reserved_at DESC);
+
+CREATE TABLE IF NOT EXISTS schoolops.student_homework_status (
+    status_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    homework_id UUID NOT NULL,
+    student_user_id UUID NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    notes VARCHAR(1000),
+    updated_at TIMESTAMPTZ NOT NULL,
+    CONSTRAINT uq_student_homework_status_homework_student UNIQUE (homework_id, student_user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_schoolops_student_homework_school_updated
+    ON schoolops.student_homework_status (school_id, updated_at DESC);
