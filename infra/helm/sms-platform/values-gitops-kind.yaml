@@ -22,7 +22,7 @@ services:
   authService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -33,7 +33,7 @@ services:
   schoolOnboardingService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -44,7 +44,7 @@ services:
   schoolOperationsService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -55,7 +55,7 @@ services:
   communicationService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -66,7 +66,7 @@ services:
   financeService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -77,7 +77,7 @@ services:
   subscriptionService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -88,7 +88,7 @@ services:
   apiGateway:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -106,7 +106,7 @@ services:
   aiInteractionService:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -135,7 +135,7 @@ services:
   mcpServer:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
@@ -150,7 +150,7 @@ services:
   frontend:
     replicaCount: 1
     autoscaling:
-      enabled: true
+      enabled: false
       minReplicas: 1
       maxReplicas: 3
       targetCPUUtilizationPercentage: 70
