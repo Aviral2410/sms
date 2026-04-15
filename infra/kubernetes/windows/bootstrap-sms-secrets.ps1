@@ -2,37 +2,25 @@ param(
     [string]$ToolsRoot = "D:\sms-k8s\tools",
     [string]$KubeRoot = "D:\sms-k8s",
     [string]$Namespace = "sms",
-    # GHCR pull secret — provide a GitHub PAT with read:packages scope
+    # GHCR pull secret — PROVIDE AS PARAMETER: -GhcrToken "ghp_..."
     [string]$GhcrUsername = "Aviral2410",
-    [string]$GhcrToken = "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",
+    [string]$GhcrToken = "",
     # Postgres
     [string]$PostgresUser = "sms_admin",
-    [string]$PostgresPassword = "change-me",
+    [string]$PostgresPassword = "",
     # JWT
-    [string]$JwtSecretKey = "change_me_change_me_change_me_2026",
+    [string]$JwtSecretKey = "",
     # Internal
-    [string]$InternalApiKey = "dev-internal-api-key",
-    [string]$PlatformConfigEncryptionKey = "dev-platform-config-encryption-key",
+    [string]$InternalApiKey = "",
+    [string]$PlatformConfigEncryptionKey = "",
     # MCP
     [string]$McpRequireAuth = "true",
     [string]$McpEnableDockerInsights = "false",
-    # Superadmin bootstrap  (set Enabled to "false" after first deploy to lock it down)
+    # Superadmin bootstrap
     [string]$BootstrapEnabled = "true",
     [string]$BootstrapEmail = "superadmin@sms.local",
-    [string]$BootstrapPassword = "SuperAdmin@2026!",
-    [string]$BootstrapFullName = "Platform Super Admin",
-    # AI providers (leave empty if not used)
-    [string]$LlmProvider = "",
-    [string]$OpenaiApiKey = "",
-    [string]$OpenaiModel = "",
-    [string]$GeminiApiKey = "",
-    [string]$OpenrouterApiKey = "",
-    [string]$AnthropicApiKey = "",
-    # EMQX dashboard (leave empty to skip)
-    [string]$EmqxDashboardUsername = "admin",
-    [string]$EmqxDashboardPassword = "",
-    # AI rate limits JSON (leave empty to disable)
-    [string]$AiToolRateLimitsJson = ""
+    [string]$BootstrapPassword = "",
+    [string]$BootstrapFullName = "Platform Super Admin"
 )
 
 $ErrorActionPreference = "Stop"
