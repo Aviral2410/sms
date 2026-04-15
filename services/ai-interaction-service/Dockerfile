@@ -7,7 +7,7 @@ RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew bootJar -x test --
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=builder /workspace/services/ai-interaction-service/build/libs/*.jar app.jar
+COPY --from=build /workspace/services/ai-interaction-service/build/libs/*.jar app.jar
 
 EXPOSE 8090
 ENTRYPOINT ["java","-jar","/app/app.jar"]
