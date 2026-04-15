@@ -1,4 +1,4 @@
-﻿name: Deploy Kubernetes Environment
+name: Deploy Kubernetes Environment
 
 on:
   workflow_dispatch:
@@ -26,14 +26,14 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    env:
-      KUBECONFIG: ${{ runner.temp }}/kubeconfig
     steps:
       - uses: actions/checkout@v4
       - uses: azure/setup-kubectl@v4
       - uses: azure/setup-helm@v4
       - name: Write kubeconfig
         shell: bash
+        env:
+          KUBECONFIG: ${{ runner.temp }}/kubeconfig
         run: |
           echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 -d > "$KUBECONFIG"
       - name: Deploy chart
