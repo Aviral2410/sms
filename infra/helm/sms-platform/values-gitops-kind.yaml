@@ -28,7 +28,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
   schoolOnboardingService:
     replicaCount: 1
@@ -39,7 +39,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
   schoolOperationsService:
     replicaCount: 1
@@ -50,7 +50,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
   communicationService:
     replicaCount: 1
@@ -61,7 +61,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
   financeService:
     replicaCount: 1
@@ -72,7 +72,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
   subscriptionService:
     replicaCount: 1
@@ -83,7 +83,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
   apiGateway:
     replicaCount: 1
@@ -94,7 +94,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
     service:
       type: NodePort
@@ -112,7 +112,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
     env:
       - name: DB_URL
@@ -141,7 +141,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
     service:
       type: NodePort
@@ -156,7 +156,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-frontend
-      tag: latest
+      tag: 20b7f0899b27e36e51ab20c60edd0d84efba886e
       pullPolicy: Always
     service:
       type: NodePort
