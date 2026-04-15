@@ -3,7 +3,9 @@
 # - Exposes key entrypoints via NodePort for local access.
 
 global:
-  imageRegistry: ghcr.io/Aviral2410
+  # Keep empty so platform images (postgres/emqx) continue pulling from Docker Hub.
+  # App images below are fully-qualified GHCR references.
+  imageRegistry: ""
 
 networking:
   ingress:
@@ -18,44 +20,44 @@ services:
   authService:
     replicaCount: 1
     image:
-      repository: sms-auth-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-auth-service
+      tag: latest
 
   schoolOnboardingService:
     replicaCount: 1
     image:
-      repository: sms-school-onboarding-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-school-onboarding-service
+      tag: latest
 
   schoolOperationsService:
     replicaCount: 1
     image:
-      repository: sms-school-operations-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-school-operations-service
+      tag: latest
 
   communicationService:
     replicaCount: 1
     image:
-      repository: sms-communication-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-communication-service
+      tag: latest
 
   financeService:
     replicaCount: 1
     image:
-      repository: sms-finance-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-finance-service
+      tag: latest
 
   subscriptionService:
     replicaCount: 1
     image:
-      repository: sms-subscription-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-subscription-service
+      tag: latest
 
   apiGateway:
     replicaCount: 1
     image:
-      repository: sms-api-gateway
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-api-gateway
+      tag: latest
     service:
       type: NodePort
       nodePort: 30000
@@ -63,14 +65,14 @@ services:
   aiInteractionService:
     replicaCount: 1
     image:
-      repository: sms-ai-interaction-service
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-ai-interaction-service
+      tag: latest
 
   mcpServer:
     replicaCount: 1
     image:
-      repository: sms-mcp-server
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-mcp-server
+      tag: latest
     service:
       type: NodePort
       nodePort: 30084
@@ -78,8 +80,8 @@ services:
   frontend:
     replicaCount: 1
     image:
-      repository: sms-frontend
-      tag: __GIT_SHA__
+      repository: ghcr.io/Aviral2410/sms-frontend
+      tag: latest
     service:
       type: NodePort
       nodePort: 30080
