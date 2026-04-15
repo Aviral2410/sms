@@ -24,6 +24,12 @@
 - Prometheus: `http://localhost:30091`
 - Alertmanager: `http://localhost:30093`
 
+## GHCR
+
+This repo publishes images to GHCR using a **lowercase owner** (Docker requires lowercase repository names):
+
+- `ghcr.io/aviral2410/sms-<service>:<git-sha>`
+
 ## Keys (Vault → Kubernetes Secret `sms/sms-secrets`)
 
 Canonical inventory: `infra/secrets/day0keyvaultseed.yaml`

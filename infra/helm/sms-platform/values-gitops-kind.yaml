@@ -20,43 +20,43 @@ services:
   authService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-auth-service
+      repository: ghcr.io/aviral2410/sms-auth-service
       tag: latest
 
   schoolOnboardingService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-school-onboarding-service
+      repository: ghcr.io/aviral2410/sms-school-onboarding-service
       tag: latest
 
   schoolOperationsService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-school-operations-service
+      repository: ghcr.io/aviral2410/sms-school-operations-service
       tag: latest
 
   communicationService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-communication-service
+      repository: ghcr.io/aviral2410/sms-communication-service
       tag: latest
 
   financeService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-finance-service
+      repository: ghcr.io/aviral2410/sms-finance-service
       tag: latest
 
   subscriptionService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-subscription-service
+      repository: ghcr.io/aviral2410/sms-subscription-service
       tag: latest
 
   apiGateway:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-api-gateway
+      repository: ghcr.io/aviral2410/sms-api-gateway
       tag: latest
     service:
       type: NodePort
@@ -65,13 +65,13 @@ services:
   aiInteractionService:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-ai-interaction-service
+      repository: ghcr.io/aviral2410/sms-ai-interaction-service
       tag: latest
 
   mcpServer:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-mcp-server
+      repository: ghcr.io/aviral2410/sms-mcp-server
       tag: latest
     service:
       type: NodePort
@@ -80,7 +80,7 @@ services:
   frontend:
     replicaCount: 1
     image:
-      repository: ghcr.io/Aviral2410/sms-frontend
+      repository: ghcr.io/aviral2410/sms-frontend
       tag: latest
     service:
       type: NodePort
