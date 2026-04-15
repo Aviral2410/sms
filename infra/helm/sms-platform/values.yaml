@@ -8,7 +8,10 @@ global:
   affinity: {}
   topologySpreadConstraints: []
   priorityClassName: ""
+  # Secrets configuration
   secrets:
+    # Set to true to create a static K8s secret from the binary/base64 data below.
+    # Set to false to use ExternalSecrets (Automated Vault Sync).
     create: false
     existingSecret: sms-secrets
     data: {}
@@ -28,7 +31,7 @@ platform:
         cpu: 50m
         memory: 128Mi
       limits:
-        cpu: 250m
+        cpu: 100m
         memory: 256Mi
   postgres:
     enabled: true
@@ -44,8 +47,8 @@ platform:
       storageClassName: ""
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -75,11 +78,11 @@ platform:
       dashboardPort: 18083
     resources:
       requests:
-        cpu: 200m
+        cpu: 100m
         memory: 256Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
 
 jobs:
   dbRepair:
@@ -94,8 +97,8 @@ jobs:
         cpu: 100m
         memory: 128Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
 
 networking:
   ingress:
@@ -118,7 +121,7 @@ services:
       repository: sms-auth-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8082
     service:
       port: 8082
@@ -210,8 +213,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -231,7 +234,7 @@ services:
       repository: sms-school-onboarding-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8081
     service:
       port: 8081
@@ -310,8 +313,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -327,7 +330,7 @@ services:
       repository: sms-school-operations-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8083
     service:
       port: 8083
@@ -432,8 +435,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 500m
-        memory: 768Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "2"
         memory: 2Gi
@@ -453,7 +456,7 @@ services:
       repository: sms-communication-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8089
     service:
       port: 8089
@@ -506,8 +509,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -523,7 +526,7 @@ services:
       repository: sms-finance-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8085
     service:
       port: 8085
@@ -588,8 +591,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -605,7 +608,7 @@ services:
       repository: sms-subscription-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8086
     service:
       port: 8086
@@ -668,8 +671,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -685,7 +688,7 @@ services:
       repository: sms-ai-interaction-service
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8090
     service:
       port: 8090
@@ -741,8 +744,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -758,7 +761,7 @@ services:
       repository: sms-api-gateway
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8080
     service:
       port: 8080
@@ -819,8 +822,8 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 250m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
       limits:
         cpu: "1"
         memory: 1Gi
@@ -840,7 +843,7 @@ services:
       repository: sms-mcp-server
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 8084
     service:
       port: 8084
@@ -902,11 +905,11 @@ services:
         failureThreshold: 6
     resources:
       requests:
-        cpu: 200m
+        cpu: 100m
         memory: 256Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
     autoscaling:
       enabled: false
     pdb:
@@ -919,7 +922,7 @@ services:
       repository: sms-frontend
       tag: latest
       pullPolicy: IfNotPresent
-    replicaCount: 2
+    replicaCount: 1
     containerPort: 3000
     service:
       port: 3000
@@ -952,8 +955,8 @@ services:
         cpu: 100m
         memory: 128Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 100m
+        memory: 256Mi
     autoscaling:
       enabled: true
       minReplicas: 2
