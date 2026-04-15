@@ -30,6 +30,13 @@ services:
       repository: ghcr.io/aviral2410/sms-auth-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
   schoolOnboardingService:
     replicaCount: 1
     autoscaling:
@@ -41,6 +48,13 @@ services:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
   schoolOperationsService:
     replicaCount: 1
     autoscaling:
@@ -52,6 +66,13 @@ services:
       repository: ghcr.io/aviral2410/sms-school-operations-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
   communicationService:
     replicaCount: 1
     autoscaling:
@@ -63,6 +84,13 @@ services:
       repository: ghcr.io/aviral2410/sms-communication-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
   financeService:
     replicaCount: 1
     autoscaling:
@@ -74,6 +102,13 @@ services:
       repository: ghcr.io/aviral2410/sms-finance-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
   subscriptionService:
     replicaCount: 1
     autoscaling:
@@ -85,6 +120,13 @@ services:
       repository: ghcr.io/aviral2410/sms-subscription-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
   apiGateway:
     replicaCount: 1
     autoscaling:
@@ -96,6 +138,13 @@ services:
       repository: ghcr.io/aviral2410/sms-api-gateway
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
     service:
       type: NodePort
       nodePort: 30000
@@ -114,6 +163,13 @@ services:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: "1"
+        memory: 512Mi
     env:
       - name: DB_URL
         value: "jdbc:postgresql://postgres:5432/sms_platform"
@@ -143,6 +199,13 @@ services:
       repository: ghcr.io/aviral2410/sms-mcp-server
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
     service:
       type: NodePort
       nodePort: 30084
@@ -158,6 +221,13 @@ services:
       repository: ghcr.io/aviral2410/sms-frontend
       tag: 624b74241b060e008726b6891a0a6445b5bc1f1e
       pullPolicy: Always
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi
     service:
       type: NodePort
       nodePort: 30080
