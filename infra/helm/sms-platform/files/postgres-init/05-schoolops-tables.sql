@@ -102,3 +102,15 @@ CREATE TABLE IF NOT EXISTS schoolops.student_parent_mapping (
     relationship VARCHAR(50) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS schoolops.ai_visualization_history (
+    visualization_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    question TEXT NOT NULL,
+    response_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_schoolops_ai_visualization_school_created
+    ON schoolops.ai_visualization_history (school_id, created_at DESC);
