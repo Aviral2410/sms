@@ -32,7 +32,7 @@ kubectl apply -f .\infra\argocd\root-app.yaml
 ```
 
 Argo CD will deploy:
-- `sms-platform` Helm release using `infra/helm/sms-platform/values-local-kind.yaml`
+- `sms-platform` Helm release using `infra/helm/sms-platform/values-gitops-kind.yaml`
 - `monitoring` (kube-prometheus-stack) with NodePorts on `30090/30091/30093`
 
 ## GitHub Actions auto-sync

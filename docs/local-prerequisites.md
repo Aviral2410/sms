@@ -54,18 +54,9 @@ The app itself should be deployed through:
 - [deploy.ps1](D:\sms-1\infra\helm\scripts\windows\deploy.ps1)
 - [deploy.sh](D:\sms-1\infra\helm\scripts\linux\deploy.sh)
 
-## Single-click local kind + Helm deployment (Windows)
+## Local kind (GHCR-only)
 
-If you want a portable “one command” local setup (create/use `kind`, build images, create secrets, then Helm deploy), run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\infra\helm\scripts\windows\deploy-local-kind.ps1
-```
-
-It deploys the chart using `infra\helm\sms-platform\values-local-kind.yaml` and exposes:
-- Frontend: `http://localhost:30080`
-- API Gateway: `http://localhost:30000`
-- MCP Server health: `http://localhost:30084/health`
+Local kind runs by pulling images from GHCR. No local Docker builds or `kind load` are used.
 
 ## Day-0 bootstrap (Vault + ESO + Argo CD)
 
