@@ -22,7 +22,7 @@ def main() -> int:
 
     # Also support updating previous commits by rewriting tag lines inside this values file.
     # We only touch tags that look like commit SHAs to avoid clobbering non-sha tags.
-    text = re.sub(r"(^\s*tag:\s*)([0-9a-fA-F]{7,40})\s*$", rf"\1{git_sha}", text, flags=re.MULTILINE)
+    text = re.sub(r"(^\s*tag:\s*)([0-9a-fA-F]{7,40})\s*$", rf"\g<1>{git_sha}", text, flags=re.MULTILINE)
 
     # Replace "latest" tags to the current commit SHA (GitOps rollouts).
     text = re.sub(r"(^\s*tag:\s*)latest\s*$", rf"\1{git_sha}", text, flags=re.MULTILINE)

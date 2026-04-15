@@ -21,50 +21,106 @@ jobs:
 services:
   authService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
   schoolOnboardingService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
   schoolOperationsService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
   communicationService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
   financeService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
   subscriptionService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
   apiGateway:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
       tag: d17798af0ae110e8c3dff787bc81115936954952
     service:
       type: NodePort
       nodePort: 30000
+    env:
+      - name: REDIS_PORT # Override K8s auto-injection string
+        value: "6379"
 
   aiInteractionService:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 3
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
       tag: d17798af0ae110e8c3dff787bc81115936954952
+    env:
+      - name: DB_URL
+        value: "jdbc:postgresql://postgres:5432/sms_platform"
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: "public"
+      - name: SPRING_DATASOURCE_URL
+        value: "jdbc:postgresql://postgres:5432/sms_platform"
+
   mcpServer:
     replicaCount: 1
+    autoscaling:
+      enabled: true
+      minReplicas: 1
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
       tag: d17798af0ae110e8c3dff787bc81115936954952
