@@ -1,0 +1,9 @@
+﻿{
+    "spec":  {
+                 "source":  {
+                                "helm":  {
+                                             "values":  "global:\n  imagePullSecrets:\n    - ghcr-pull-secret"
+                                         }
+                            }
+             }
+}
