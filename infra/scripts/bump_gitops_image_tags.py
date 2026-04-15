@@ -25,7 +25,7 @@ def main() -> int:
     text = re.sub(r"(^\s*tag:\s*)([0-9a-fA-F]{7,40})\s*$", rf"\g<1>{git_sha}", text, flags=re.MULTILINE)
 
     # Replace "latest" tags to the current commit SHA (GitOps rollouts).
-    text = re.sub(r"(^\s*tag:\s*)latest\s*$", rf"\1{git_sha}", text, flags=re.MULTILINE)
+    text = re.sub(r"(^\s*tag:\s*)latest\s*$", rf"\g<1>{git_sha}", text, flags=re.MULTILINE)
 
     values_path.write_text(text, encoding="utf-8")
     return 0
