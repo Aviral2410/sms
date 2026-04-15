@@ -171,31 +171,3 @@ jobs:
             git commit -m "chore(gitops): update image tags to ${GITHUB_SHA}"
             git push
           fi
-
-  argocd-sync:
-    name: 🔄 ArgoCD Sync
-    needs: [helm-gitops]
-    # Only sync on develop branch after successful tag bump
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/develop'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install argocd CLI
-        run: |
-          curl -sSL -o /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
-          chmod +x /usr/local/bin/argocd
-
-      - name: Login to Argo CD
-        env:
-          ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
-          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
-        run: |
-          if [ -z "$ARGOCD_SERVER" ] || [ -z "$ARGOCD_AUTH_TOKEN" ]; then
-            echo "⚠️  ARGOCD_SERVER or ARGOCD_AUTH_TOKEN is not set. Skipping sync."
-            exit 0
-          fi
-          argocd login "$ARGOCD_SERVER" --grpc-web --insecure --auth-token "$ARGOCD_AUTH_TOKEN"
-
-      - name: Sync SMS Root App
-        run: |
-          argocd app sync sms-root --grpc-web --prune
-          argocd app wait sms-root --health --timeout 600 --grpc-web
