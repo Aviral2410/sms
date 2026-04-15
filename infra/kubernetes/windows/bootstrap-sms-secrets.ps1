@@ -4,7 +4,7 @@ param(
     [string]$Namespace = "sms",
     # GHCR pull secret — provide a GitHub PAT with read:packages scope
     [string]$GhcrUsername = "Aviral2410",
-    [string]$GhcrToken = "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",
+    [string]$GhcrToken = "",
     # Postgres
     [string]$PostgresUser = "sms_admin",
     [string]$PostgresPassword = "change-me",
