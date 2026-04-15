@@ -1,5 +1,7 @@
 package com.sms.auth.api;
 
+import com.sms.auth.domain.TenantDomainEntity;
+import com.sms.auth.domain.TenantEntity;
 import com.sms.auth.domain.TenantRoutingConfigEntity;
 import com.sms.auth.repository.TenantDomainRepository;
 import com.sms.auth.repository.TenantRoutingConfigRepository;

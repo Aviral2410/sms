@@ -67,7 +67,339 @@ ALTER TABLE onboarding.school_onboarding
     ADD COLUMN IF NOT EXISTS vision VARCHAR(2000),
     ADD COLUMN IF NOT EXISTS mission VARCHAR(2000),
     ADD COLUMN IF NOT EXISTS achievements VARCHAR(3000),
-    ADD COLUMN IF NOT EXISTS houses VARCHAR(3000);
+    ADD COLUMN IF NOT EXISTS houses VARCHAR(3000),
+    ADD COLUMN IF NOT EXISTS banner_media_id UUID;
+
+-- identity.tenant routing/onboarding columns (required by auth-service)
+ALTER TABLE identity.tenant
+    ADD COLUMN IF NOT EXISTS realm_name VARCHAR(100),
+    ADD COLUMN IF NOT EXISTS routing_status VARCHAR(40) NOT NULL DEFAULT 'PENDING',
+    ADD COLUMN IF NOT EXISTS onboarding_status VARCHAR(40) NOT NULL DEFAULT 'COMPLETED';
+
+-- identity routing tables (required by auth-service)
+CREATE TABLE IF NOT EXISTS identity.reserved_realm (
+    realm_name VARCHAR(100) PRIMARY KEY,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS identity.tenant_domain (
+    domain_id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL REFERENCES identity.tenant(tenant_id) ON DELETE CASCADE,
+    domain VARCHAR(255) NOT NULL UNIQUE,
+    host VARCHAR(255) NOT NULL UNIQUE,
+    domain_type VARCHAR(40) NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    is_canonical BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_status VARCHAR(40) NOT NULL DEFAULT 'PENDING',
+    verification_method VARCHAR(40) NOT NULL DEFAULT 'DNS_TXT',
+    verification_token VARCHAR(255),
+    verification_details_json VARCHAR(255),
+    ssl_mode VARCHAR(40) NOT NULL DEFAULT 'PLATFORM_MANAGED',
+    ssl_status VARCHAR(40) DEFAULT 'PENDING',
+    dns_status VARCHAR(40) DEFAULT 'PENDING',
+    last_verified_at TIMESTAMPTZ,
+    last_dns_check_at TIMESTAMPTZ,
+    last_ssl_check_at TIMESTAMPTZ,
+    redirect_target_domain_id UUID REFERENCES identity.tenant_domain(domain_id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- If the column already exists as JSONB from previous init scripts, align it to what the auth-service currently validates.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'identity'
+          AND table_name = 'tenant_domain'
+          AND column_name = 'verification_details_json'
+          AND udt_name = 'jsonb'
+    ) THEN
+        ALTER TABLE identity.tenant_domain
+            ALTER COLUMN verification_details_json TYPE VARCHAR(255)
+            USING LEFT(verification_details_json::text, 255);
+    END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_tenant_domain_tenant_id ON identity.tenant_domain(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_tenant_domain_host ON identity.tenant_domain(host);
+
+CREATE TABLE IF NOT EXISTS identity.tenant_routing_config (
+    config_id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL UNIQUE REFERENCES identity.tenant(tenant_id) ON DELETE CASCADE,
+    preferred_host VARCHAR(255),
+    fallback_host VARCHAR(255),
+    redirect_mode VARCHAR(40) NOT NULL DEFAULT 'NONE',
+    enforce_https BOOLEAN NOT NULL DEFAULT TRUE,
+    allow_multiple_hosts BOOLEAN NOT NULL DEFAULT TRUE,
+    host_match_strategy VARCHAR(40) NOT NULL DEFAULT 'STRICT',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS identity.tenant_domain_verification_log (
+    log_id UUID PRIMARY KEY,
+    domain_id UUID NOT NULL REFERENCES identity.tenant_domain(domain_id) ON DELETE CASCADE,
+    check_type VARCHAR(40) NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    response_summary TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_domain_primary_one
+ON identity.tenant_domain (tenant_id)
+WHERE is_primary = TRUE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_domain_canonical_one
+ON identity.tenant_domain (tenant_id)
+WHERE is_canonical = TRUE;
+
+-- onboarding.school_academic_content (required by school-onboarding-service)
+CREATE TABLE IF NOT EXISTS onboarding.school_academic_content (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    curriculum TEXT,
+    co_curricular TEXT,
+    scholarship_info TEXT,
+    result_highlights TEXT,
+    notices TEXT,
+    calendar_data TEXT,
+    is_published BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_landing_profile (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    school_name VARCHAR(255) NOT NULL,
+    short_name VARCHAR(255),
+    tagline VARCHAR(255),
+    short_description TEXT,
+    about_html TEXT,
+    objective TEXT,
+    mission TEXT,
+    vision TEXT,
+    history TEXT,
+    why_us TEXT,
+    address_line1 VARCHAR(255),
+    address_line2 VARCHAR(255),
+    city VARCHAR(120),
+    state VARCHAR(120),
+    country VARCHAR(120),
+    pincode VARCHAR(30),
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    phone VARCHAR(80),
+    alternate_phone VARCHAR(80),
+    email VARCHAR(255),
+    website VARCHAR(255),
+    office_hours TEXT,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_leader (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    type VARCHAR(80) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    title VARCHAR(255),
+    bio TEXT,
+    message TEXT,
+    image_media_id UUID,
+    display_order INTEGER DEFAULT 0,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_event (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255),
+    description TEXT,
+    start_at TIMESTAMPTZ,
+    end_at TIMESTAMPTZ,
+    location VARCHAR(255),
+    banner_media_id UUID,
+    registration_url TEXT,
+    is_featured BOOLEAN DEFAULT FALSE,
+    is_published BOOLEAN DEFAULT FALSE,
+    status VARCHAR(40),
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_gallery_album (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    cover_media_id UUID,
+    event_id UUID,
+    is_published BOOLEAN DEFAULT FALSE,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_gallery_media (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    album_id UUID NOT NULL,
+    media_id UUID NOT NULL,
+    media_type VARCHAR(40) NOT NULL,
+    caption TEXT,
+    alt_text TEXT,
+    tags VARCHAR(1000),
+    taken_at TIMESTAMPTZ,
+    is_published BOOLEAN DEFAULT FALSE,
+    sort_order INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_testimonial (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    author_name VARCHAR(255) NOT NULL,
+    relationship_type VARCHAR(80),
+    designation VARCHAR(255),
+    content TEXT NOT NULL,
+    image_media_id UUID,
+    rating INTEGER,
+    display_order INTEGER DEFAULT 0,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_achievement (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    achievement_year VARCHAR(40),
+    category VARCHAR(120),
+    image_media_id UUID,
+    is_featured BOOLEAN DEFAULT FALSE,
+    display_order INTEGER DEFAULT 0,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_infrastructure_item (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    type VARCHAR(80),
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    image_media_id UUID,
+    icon VARCHAR(80),
+    display_order INTEGER DEFAULT 0,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_social_link (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    platform VARCHAR(80) NOT NULL,
+    url TEXT NOT NULL,
+    display_order INTEGER DEFAULT 0,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_section_config (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    section_key VARCHAR(80) NOT NULL,
+    is_enabled BOOLEAN DEFAULT TRUE,
+    display_order INTEGER DEFAULT 0,
+    title_override VARCHAR(255),
+    subtitle_override TEXT,
+    config_json TEXT,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_affiliation_info (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    board_name VARCHAR(255) NOT NULL,
+    affiliation_number VARCHAR(255),
+    compliance_text TEXT,
+    recognition_details TEXT,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_branch (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    branch_name VARCHAR(255) NOT NULL,
+    address TEXT,
+    city VARCHAR(120),
+    state VARCHAR(120),
+    pincode VARCHAR(30),
+    latitude DOUBLE PRECISION,
+    longitude DOUBLE PRECISION,
+    phone VARCHAR(80),
+    email VARCHAR(255),
+    is_primary BOOLEAN DEFAULT FALSE,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_enquiry (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    type VARCHAR(40) NOT NULL,
+    student_name VARCHAR(255),
+    parent_name VARCHAR(255),
+    phone VARCHAR(80) NOT NULL,
+    email VARCHAR(255),
+    class_interested VARCHAR(120),
+    message TEXT,
+    status VARCHAR(40) DEFAULT 'NEW',
+    source VARCHAR(120),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_newsletter_subscription (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    status VARCHAR(40) NOT NULL DEFAULT 'ACTIVE',
+    subscribed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_admission_info (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    overview TEXT,
+    process TEXT,
+    eligibility TEXT,
+    brochure_media_id UUID,
+    contact_name VARCHAR(255),
+    contact_phone VARCHAR(80),
+    contact_email VARCHAR(255),
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS onboarding.school_fee_structure (
+    id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL,
+    academic_year VARCHAR(40) NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    structured_data_json TEXT,
+    attachment_media_id UUID,
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
 
 -- ---------------------------------------------------------------------------
 -- finance.fee_structure (required by finance-service)
@@ -99,6 +431,47 @@ CREATE TABLE IF NOT EXISTS schoolops.student_parent_mapping (
     relationship VARCHAR(50) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL
 );
+
+-- schoolops.ai_visualization_history (required by school-operations-service)
+CREATE TABLE IF NOT EXISTS schoolops.ai_visualization_history (
+    visualization_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    question TEXT NOT NULL,
+    response_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL
+);
+
+-- schoolops.library_reservation (required by school-operations-service)
+CREATE TABLE IF NOT EXISTS schoolops.library_reservation (
+    reservation_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    resource_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    reserved_at TIMESTAMPTZ NOT NULL,
+    valid_until TIMESTAMPTZ
+);
+
+-- schoolops.student_homework_status (required by school-operations-service)
+CREATE TABLE IF NOT EXISTS schoolops.student_homework_status (
+    status_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    homework_id UUID NOT NULL,
+    student_user_id UUID NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    notes TEXT,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_student_homework_status_homework_student
+    ON schoolops.student_homework_status(homework_id, student_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_student_homework_status_student
+    ON schoolops.student_homework_status(student_user_id);
+
+CREATE INDEX IF NOT EXISTS idx_student_homework_status_school
+    ON schoolops.student_homework_status(school_id);
 
 ALTER TABLE schoolops.student_parent_mapping
     ADD COLUMN IF NOT EXISTS school_id UUID,

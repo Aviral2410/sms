@@ -503,4 +503,19 @@ public class SchoolOnboardingService {
         }
         return value.trim();
     }
+
+    private String generateSlug(String input) {
+        if (!StringUtils.hasText(input)) {
+            return UUID.randomUUID().toString();
+        }
+
+        String slug = input.trim().toLowerCase();
+        slug = slug.replaceAll("[^a-z0-9]+", "-");
+        slug = slug.replaceAll("^-+|-+$", "");
+
+        if (!StringUtils.hasText(slug)) {
+            return UUID.randomUUID().toString();
+        }
+        return slug;
+    }
 }

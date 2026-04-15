@@ -15,6 +15,7 @@ images=(
   "sms/finance-service:local services/finance-service/Dockerfile ."
   "sms/subscription-service:local services/subscription-service/Dockerfile ."
   "sms/api-gateway:local services/api-gateway/Dockerfile ."
+  "sms/ai-interaction-service:local services/ai-interaction-service/Dockerfile ."
   "sms/mcp-server:local services/mcp-server/Dockerfile ."
   "sms/frontend:local frontend/Dockerfile frontend"
 )
@@ -24,7 +25,7 @@ build_one() {
   local item="$1"
   read -r name dockerfile context <<<"$item"
   echo "Building $name"
-  docker build -t "$name" -f "$dockerfile" "$context"
+  docker build --progress=plain -t "$name" -f "$dockerfile" "$context"
 }
 
 declare -a pids=()

@@ -18,9 +18,13 @@ New-Item -ItemType Directory -Force -Path $kubeConfigDir | Out-Null
 $env:KUBECONFIG = $kubeConfigPath
 
 & (Join-Path $PSScriptRoot "build-images.ps1") -ClusterName $ClusterName -ToolsRoot $ToolsRoot -MaxParallel $MaxParallel
+
+# Ensure namespace exists before creating secrets or applying kustomize resources.
+& $kubectlExe create namespace sms --dry-run=client -o yaml | & $kubectlExe apply -f -
 & (Join-Path $PSScriptRoot "create-secrets-from-env.ps1") -EnvFile $EnvFile -ToolsRoot $ToolsRoot
 
-& $kubectlExe apply -k $overlayPath
+# The local overlay references SQL files outside the base directory; render with kubectl kustomize.
+& $kubectlExe kustomize $overlayPath --load-restrictor LoadRestrictionsNone | & $kubectlExe apply -f -
 
 & $kubectlExe rollout status statefulset/postgres -n sms --timeout=300s
 & $kubectlExe wait --for=condition=complete job/db-repair -n sms --timeout=300s
@@ -33,6 +37,7 @@ $deployments = @(
     "finance-service",
     "subscription-service",
     "api-gateway",
+    "ai-interaction-service",
     "mcp-server",
     "frontend"
 )

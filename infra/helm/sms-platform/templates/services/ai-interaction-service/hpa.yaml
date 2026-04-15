@@ -1,0 +1,3 @@
+{{- if and .Values.services.aiInteractionService.enabled .Values.services.aiInteractionService.autoscaling.enabled }}
+{{ include "sms.serviceHpa" (dict "root" . "service" .Values.services.aiInteractionService "serviceName" "ai-interaction-service") }}
+{{- end }}

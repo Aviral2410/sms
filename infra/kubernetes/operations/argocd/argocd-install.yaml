@@ -1,0 +1,20 @@
+# Minimal Argo CD install manifest (upstream)
+# Apply with: kubectl apply -n argocd -f infra/kubernetes/operations/argocd/argocd-install.yaml
+#
+# Note: This is intentionally minimal. For hardened clusters, use kustomize overlays and pin versions.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: argocd-install-note
+  namespace: argocd
+---
+# Upstream Argo CD install (pinned by URL normally). Kept as placeholder for IaC.
+# In production, replace this file with a pinned upstream manifest (or Helm chart) under GitOps control.
+#
+# This placeholder avoids fetching from the internet in repo automation. Install via Helm or a pinned manifest in your environment.
+

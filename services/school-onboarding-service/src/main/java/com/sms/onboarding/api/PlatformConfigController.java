@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -28,9 +29,18 @@ public class PlatformConfigController {
     private static final Set<String> PLATFORM_ROLES = Set.of("PLATFORM_ADMIN", "SUPER_ADMIN");
 
     private final PlatformConfigService service;
+    private final boolean writesEnabled;
 
     public PlatformConfigController(PlatformConfigService service) {
+        this(service, false);
+    }
+
+    public PlatformConfigController(
+            PlatformConfigService service,
+            @Value("${platform.config.writes.enabled:false}") boolean writesEnabled
+    ) {
         this.service = service;
+        this.writesEnabled = writesEnabled;
     }
 
     @GetMapping
@@ -46,6 +56,9 @@ public class PlatformConfigController {
             @Valid @RequestBody UpsertPlatformConfigRequest request
     ) {
         requirePlatformRole(role);
+        if (!writesEnabled) {
+            throw new ForbiddenException("Platform config writes are disabled. Manage secrets through Vault/External Secrets and redeploy.");
+        }
         return this.service.upsert(new UpsertPlatformConfigRequest(
                 serviceName,
                 request.secretValue(),

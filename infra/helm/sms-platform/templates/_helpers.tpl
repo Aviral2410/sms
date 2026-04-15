@@ -152,6 +152,9 @@ spec:
     - name: http
       port: {{ $service.service.port }}
       targetPort: http
+      {{- if and (eq $service.service.type "NodePort") $service.service.nodePort }}
+      nodePort: {{ $service.service.nodePort }}
+      {{- end }}
 {{- end -}}
 
 {{- define "sms.serviceHpa" -}}

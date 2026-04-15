@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BookPlus, Loader, NotebookText, Send } from 'lucide-react';
+import { BookPlus, BookText, Loader, Send } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { PortalPageHeader, PortalSection } from '../../components/portal/PortalPagePrimitives';
 import { teacherPortalApi, type TeacherHomeworkResponse } from '../../lib/schoolPortalApi';
@@ -94,7 +94,7 @@ export default function TeacherHomeworkPage() {
               </div>
               <div style={{ color: 'var(--text-dim)', lineHeight: 1.65 }}>{item.description}</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8', fontSize: '0.82rem' }}>
-                <NotebookText size={14} />
+                <BookText size={14} />
                 {item.submissionCount} submissions tracked
               </div>
             </div>

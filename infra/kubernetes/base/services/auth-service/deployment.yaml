@@ -29,6 +29,8 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8082"
+            - name: SPRING_JPA_HIBERNATE_DDL_AUTO
+              value: "none"
             - name: DB_URL
               value: jdbc:postgresql://postgres:5432/sms_platform
             - name: DB_USERNAME

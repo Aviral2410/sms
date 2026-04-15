@@ -625,3 +625,24 @@ CREATE INDEX IF NOT EXISTS idx_staff_leave_school_created
     ON schoolops.staff_leave_request (school_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_staff_leave_school_requester
     ON schoolops.staff_leave_request (school_id, requester_user_id, created_at DESC);
+
+-- AI visualization history (required by school-operations-service)
+CREATE TABLE IF NOT EXISTS schoolops.ai_visualization_history (
+    visualization_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    question TEXT NOT NULL,
+    response_json JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL
+);
+
+-- Library reservations (required by school-operations-service)
+CREATE TABLE IF NOT EXISTS schoolops.library_reservation (
+    reservation_id UUID PRIMARY KEY,
+    school_id UUID NOT NULL,
+    resource_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    status VARCHAR(40) NOT NULL,
+    reserved_at TIMESTAMPTZ NOT NULL,
+    valid_until TIMESTAMPTZ
+);

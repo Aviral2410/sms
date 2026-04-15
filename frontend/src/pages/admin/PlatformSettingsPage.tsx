@@ -190,6 +190,9 @@ export default function PlatformSettingsPage() {
     const draft = configDrafts[serviceName];
     if (!draft) return;
 
+    setMessage({ type: 'info', text: 'Runtime config is read-only. Manage secrets via Vault/External Secrets and redeploy.' });
+    return;
+
     let metadata: Record<string, unknown>;
     try {
       metadata = draft.metadataText.trim() ? JSON.parse(draft.metadataText) : {};
@@ -472,7 +475,7 @@ export default function PlatformSettingsPage() {
           <h3 className="text-lg font-bold text-white">Third-Party Runtime Config</h3>
         </div>
         <p className="text-sm text-slate-400">
-          Platform admins can rotate keys, base URLs, and metadata here. Secrets are masked in the UI and consumed by backend services through encrypted runtime config.
+          Runtime config is managed through Vault/External Secrets (GitOps). The UI is read-only for secrets.
         </p>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
@@ -515,13 +518,7 @@ export default function PlatformSettingsPage() {
 
                 <label>
                   <span style={labelTitleStyle}>Secret</span>
-                  <input
-                    type="password"
-                    value={draft.secretValue}
-                    onChange={(e) => updateConfigDraft(entry.serviceName, { secretValue: e.target.value })}
-                    style={{ ...fieldInputStyle, fontFamily: 'monospace' }}
-                    placeholder={draft.maskedSecret || 'Enter a new secret value'}
-                  />
+                  <input type="password" value="" readOnly style={{ ...fieldInputStyle, fontFamily: 'monospace', opacity: 0.55, cursor: 'not-allowed' }} placeholder="Managed by Vault (read-only)" />
                   <div className="text-[11px] text-slate-500 mt-2">
                     {draft.secretConfigured ? `Stored secret: ${draft.maskedSecret}` : 'No secret stored yet.'}
                   </div>
@@ -565,25 +562,25 @@ export default function PlatformSettingsPage() {
 
                 <button
                   onClick={() => saveConfig(entry.serviceName)}
-                  disabled={savingConfig === entry.serviceName}
+                  disabled
                   style={{
                     padding: '12px 16px',
                     borderRadius: 12,
-                    background: `linear-gradient(135deg, ${entry.accent}, rgba(255,255,255,0.72))`,
+                    background: 'rgba(148,163,184,0.15)',
                     border: 'none',
-                    color: '#020617',
+                    color: 'rgba(226,232,240,0.75)',
                     fontWeight: 900,
                     fontSize: '0.78rem',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    cursor: savingConfig === entry.serviceName ? 'not-allowed' : 'pointer',
-                    opacity: savingConfig === entry.serviceName ? 0.7 : 1,
+                    cursor: 'not-allowed',
+                    opacity: 0.75,
                   }}
                 >
-                  {savingConfig === entry.serviceName ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
-                  Save {entry.label}
+                  <Save size={16} />
+                  Managed by Vault
                 </button>
               </div>
             );

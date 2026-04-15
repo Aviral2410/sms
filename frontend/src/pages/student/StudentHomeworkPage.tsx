@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { BookOpen, CheckCircle2, Clock3, Loader, NotebookPen } from 'lucide-react';
+import { BookOpen, BookText, CheckCircle2, Clock3, Loader } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { PortalPageHeader, PortalSection, PortalStatePanel, PortalStatCard } from '../../components/portal/PortalPagePrimitives';
 import { studentPortalApi, type StudentHomeworkResponse } from '../../lib/schoolPortalApi';
@@ -67,7 +67,7 @@ export default function StudentHomeworkPage() {
       <div className="grid gap-4 md:grid-cols-4">
         <PortalStatCard label="Total tasks" value={items.length} icon={BookOpen} accent="#22d3ee" />
         <PortalStatCard label="Pending" value={counts.pending} icon={Clock3} accent="#ffb663" />
-        <PortalStatCard label="In progress" value={counts.progress} icon={NotebookPen} accent="#a78bfa" />
+        <PortalStatCard label="In progress" value={counts.progress} icon={BookText} accent="#a78bfa" />
         <PortalStatCard label="Completed" value={counts.completed} icon={CheckCircle2} accent="#34d399" />
       </div>
 

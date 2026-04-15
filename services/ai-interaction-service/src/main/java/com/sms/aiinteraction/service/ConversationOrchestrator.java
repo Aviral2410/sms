@@ -85,7 +85,7 @@ public class ConversationOrchestrator {
                 userContext,
                 conversationId,
                 summarizeAssistantResponse(rendered),
-                rendered.data().isObject() ? (ObjectNode) rendered.data() : null
+                toStoredPayload(rendered)
         );
         return new AiInteractionDtos.ChatResponse(conversationId, rendered);
     }
@@ -237,6 +237,17 @@ public class ConversationOrchestrator {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("text", text);
         return payload;
+    }
+
+    private ObjectNode toStoredPayload(AiInteractionDtos.RenderedResponse rendered) {
+        if (rendered == null) {
+            return null;
+        }
+        ObjectNode wrapper = objectMapper.createObjectNode();
+        wrapper.put("type", rendered.type());
+        wrapper.set("data", rendered.data() == null ? objectMapper.createObjectNode() : rendered.data());
+        wrapper.set("meta", rendered.meta() == null ? objectMapper.createObjectNode() : rendered.meta());
+        return wrapper;
     }
 
     private String summarizeAssistantResponse(AiInteractionDtos.RenderedResponse rendered) {

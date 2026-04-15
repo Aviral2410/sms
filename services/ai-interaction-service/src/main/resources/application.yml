@@ -27,6 +27,8 @@ app:
     provider: ${LLM_PROVIDER:DISABLED}
     openai-api-key: ${OPENAI_API_KEY:}
     openai-model: ${OPENAI_MODEL:gpt-4o-mini}
+    ollama-base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+    ollama-model: ${OLLAMA_MODEL:llama3.1}
   cache:
     prompt-ttl-seconds: ${AI_PROMPT_CACHE_TTL_SECONDS:90}
     report-ttl-seconds: ${AI_REPORT_CACHE_TTL_SECONDS:300}

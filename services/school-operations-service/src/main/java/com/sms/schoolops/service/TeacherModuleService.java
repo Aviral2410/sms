@@ -139,8 +139,9 @@ public class TeacherModuleService {
                         return m;
                     });
 
-            mark.setMarksObtained(entry.marksObtained());
-            mark.setRemarks(entry.remarks());
+            if (entry.marksObtained() != null) {
+                mark.setMarksObtained(java.math.BigDecimal.valueOf(entry.marksObtained()));
+            }
             mark.setUpdatedAt(Instant.now());
             examMarkRepository.save(mark);
         }

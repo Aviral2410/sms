@@ -827,7 +827,7 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
                       <p className="public-muted" style={{ margin: 0 }}>{item.description || 'Fee schedule available on request.'}</p>
                       {rows.length > 0 ? (
                         <div style={{ display: 'grid', gap: 10, marginTop: 18 }}>
-                          {rows.slice(0, 6).map((row, index) => (
+                          {rows.slice(0, 6).map((row: any, index: number) => (
                             <div key={`${item.id}-${index}`} className="public-soft-card" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                               <span className="public-muted">{row.label || row.name || `Fee item ${index + 1}`}</span>
                               <strong style={{ color: 'var(--public-text-main)' }}>{row.value || row.amount || row.fee || 'TBA'}</strong>

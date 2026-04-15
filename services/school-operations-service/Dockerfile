@@ -4,7 +4,7 @@ COPY . .
 # Build school-operations-service (resolves sms-common via includeBuild in settings.gradle)
 
 WORKDIR /workspace/services/school-operations-service
-RUN gradle bootJar -x test --no-daemon
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

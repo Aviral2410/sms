@@ -2,7 +2,7 @@ FROM gradle:8.8-jdk21 AS builder
 WORKDIR /workspace
 COPY . .
 WORKDIR /workspace/services/communication-service
-RUN gradle bootJar -x test --no-daemon
+RUN sed -i 's/\r$//' gradlew && chmod +x gradlew && ./gradlew bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

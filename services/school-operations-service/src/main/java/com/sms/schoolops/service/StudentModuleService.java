@@ -31,6 +31,8 @@ public class StudentModuleService {
     private final StudentHomeworkStatusRepository homeworkStatusRepository;
     private final ExamMarkRepository examMarkRepository;
     private final ExamRepository examRepository;
+    private final ExamResultRecordRepository examResultRecordRepository;
+    private final StudentAbsenceReasonRepository studentAbsenceReasonRepository;
     private final VoiceNoteRepository voiceNoteRepository;
     private final LibraryReservationRepository libraryReservationRepository;
     private final ForumAnswerRepository forumAnswerRepository;
@@ -49,6 +51,8 @@ public class StudentModuleService {
             StudentHomeworkStatusRepository homeworkStatusRepository,
             ExamMarkRepository examMarkRepository,
             ExamRepository examRepository,
+            ExamResultRecordRepository examResultRecordRepository,
+            StudentAbsenceReasonRepository studentAbsenceReasonRepository,
             VoiceNoteRepository voiceNoteRepository,
             LibraryReservationRepository libraryReservationRepository,
             ForumAnswerRepository forumAnswerRepository
@@ -66,6 +70,8 @@ public class StudentModuleService {
         this.homeworkStatusRepository = homeworkStatusRepository;
         this.examMarkRepository = examMarkRepository;
         this.examRepository = examRepository;
+        this.examResultRecordRepository = examResultRecordRepository;
+        this.studentAbsenceReasonRepository = studentAbsenceReasonRepository;
         this.voiceNoteRepository = voiceNoteRepository;
         this.libraryReservationRepository = libraryReservationRepository;
         this.forumAnswerRepository = forumAnswerRepository;
@@ -197,20 +203,31 @@ public class StudentModuleService {
 
         List<TimetableDaySchedule> dailySchedules = grouped.entrySet().stream()
                 .map(entry -> {
-                    List<TimetablePeriodResponse> periods = entry.getValue().stream()
+                    List<TimetableSlotEntity> daySlots = entry.getValue().stream()
+                            .sorted((a, b) -> {
+                                String as = a.getStartTime();
+                                String bs = b.getStartTime();
+                                if (as == null && bs == null) return 0;
+                                if (as == null) return 1;
+                                if (bs == null) return -1;
+                                return as.compareTo(bs);
+                            })
+                            .toList();
+
+                    java.util.concurrent.atomic.AtomicInteger periodCounter = new java.util.concurrent.atomic.AtomicInteger(1);
+                    List<TimetablePeriodResponse> periods = daySlots.stream()
                             .map(s -> {
                                 String subName = subjectRepository.findById(s.getSubjectId()).map(SubjectEntity::getSubjectName).orElse("Unknown");
                                 String tName = schoolUserRepository.findById(s.getTeacherUserId()).map(SchoolUserEntity::getFullName).orElse("Unknown");
                                 return new TimetablePeriodResponse(
-                                        s.getPeriodNumber(),
+                                        periodCounter.getAndIncrement(),
                                         subName,
                                         tName,
-                                        s.getRoomNumber(),
-                                        s.getStartTime() != null ? s.getStartTime().toString() : "",
-                                        s.getEndTime() != null ? s.getEndTime().toString() : ""
+                                        s.getRoomName(),
+                                        s.getStartTime() != null ? s.getStartTime() : "",
+                                        s.getEndTime() != null ? s.getEndTime() : ""
                                 );
                             })
-                            .sorted((p1, p2) -> p1.periodNumber().compareTo(p2.periodNumber()))
                             .toList();
                     return new TimetableDaySchedule(entry.getKey(), periods);
                 })
@@ -251,12 +268,29 @@ public class StudentModuleService {
         AttendanceRecordEntity record = attendanceRecordRepository.findById(request.attendanceId())
                 .orElseThrow(() -> new com.sms.common.exception.NotFoundException("Attendance record not found"));
 
+        if (!record.getSchoolId().equals(actor.schoolId())) {
+            throw new IllegalArgumentException("Attendance record does not belong to your school.");
+        }
         if (!record.getUserId().equals(actor.userId())) {
             throw new com.sms.common.exception.ForbiddenException("You cannot provide evidence for another student's attendance.");
         }
 
-        record.setSubmitNote(request.reason());
-        attendanceRecordRepository.save(record);
+        StudentAbsenceReasonEntity entity = studentAbsenceReasonRepository.findByAttendanceId(request.attendanceId())
+                .orElseGet(() -> {
+                    StudentAbsenceReasonEntity reason = new StudentAbsenceReasonEntity();
+                    reason.setAbsenceReasonId(UUID.randomUUID());
+                    reason.setSchoolId(actor.schoolId());
+                    reason.setAttendanceId(request.attendanceId());
+                    reason.setStudentUserId(actor.userId());
+                    reason.setCreatedAt(Instant.now());
+                    return reason;
+                });
+        entity.setCategory("OTHER");
+        entity.setDescription(request.reason());
+        entity.setReviewStatus("SUBMITTED");
+        entity.setReviewedBy(null);
+        entity.setReviewedAt(null);
+        studentAbsenceReasonRepository.save(entity);
     }
 
     public List<StudentResultResponse> getResults(PermissionActor actor) {

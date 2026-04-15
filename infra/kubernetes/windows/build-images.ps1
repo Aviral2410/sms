@@ -17,6 +17,7 @@ $images = @(
     @{ Name = "sms/finance-service:local"; Dockerfile = "services/finance-service/Dockerfile"; Context = "." },
     @{ Name = "sms/subscription-service:local"; Dockerfile = "services/subscription-service/Dockerfile"; Context = "." },
     @{ Name = "sms/api-gateway:local"; Dockerfile = "services/api-gateway/Dockerfile"; Context = "." },
+    @{ Name = "sms/ai-interaction-service:local"; Dockerfile = "services/ai-interaction-service/Dockerfile"; Context = "." },
     @{ Name = "sms/mcp-server:local"; Dockerfile = "services/mcp-server/Dockerfile"; Context = "." },
     @{ Name = "sms/frontend:local"; Dockerfile = "frontend/Dockerfile"; Context = "frontend" }
 )

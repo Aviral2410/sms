@@ -54,18 +54,19 @@ export default function SchoolAnalyticsPage() {
   const [fees, setFees] = useState<FeeRecordResponse[]>([]);
 
   useEffect(() => {
-    if (!session.schoolId) return;
+    const schoolId = session.schoolId;
+    if (!schoolId) return;
 
     let cancelled = false;
 
     const load = async () => {
       try {
         const [dashboardRes, attendanceRes, resultRes, admissionRes, feeRes] = await Promise.all([
-          schoolOpsApi.getDashboard(session.schoolId),
+          schoolOpsApi.getDashboard(schoolId),
           schoolOpsApi.getAttendanceOverview(),
-          schoolOpsApi.listResults(session.schoolId),
-          schoolOpsApi.listAdmissions(session.schoolId),
-          schoolOpsApi.listFeeRecords(session.schoolId),
+          schoolOpsApi.listResults(schoolId),
+          schoolOpsApi.listAdmissions(schoolId),
+          schoolOpsApi.listFeeRecords(schoolId),
         ]);
 
         if (cancelled) return;

@@ -25,6 +25,7 @@ import { WebGLHero } from '../components/public/WebGLHero';
 import { FallbackImage } from '../components/ui/FallbackImage';
 import { usePublicSiteContent } from '../hooks/usePublicSiteContent';
 import { publicSiteApi, type PublicRoleBenefit, type PublicSubscriptionOverviewResponse, type PublicSiteFeatureCard } from '../lib/publicSiteApi';
+import { PublicAiAssistantChat } from '../components/public/PublicAiAssistantChat';
 
 const ROLE_ICONS: Record<string, React.ElementType> = {
   SCHOOL_ADMIN: Building2,
@@ -599,6 +600,8 @@ export default function LandingPage() {
           <div className="public-site-empty public-panel">Loading public site content...</div>
         </section>
       )}
+
+      <PublicAiAssistantChat />
     </PublicSiteFrame>
   );
 }

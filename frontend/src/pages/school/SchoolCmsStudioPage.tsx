@@ -7,14 +7,18 @@ import {
   schoolCmsApi,
   type CmsDashboardStats,
   type SchoolAcademicContent,
+  type SchoolAcademicContentRequest,
   type SchoolAchievement,
   type SchoolAdmissionInfo,
+  type SchoolAdmissionInfoRequest,
   type SchoolAffiliationInfo,
+  type SchoolAffiliationInfoRequest,
   type SchoolBranch,
   type SchoolEnquiry,
   type SchoolGalleryAlbum,
   type SchoolInfrastructureItem,
   type SchoolLandingProfile,
+  type SchoolLandingProfileRequest,
   type SchoolSectionConfig,
   type SchoolSocialLink,
   type SchoolTestimonial,
@@ -38,6 +42,62 @@ export default function SchoolCmsStudioPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [stats, setStats] = useState<CmsDashboardStats | null>(null);
+
+  const toAffiliationRequest = (value: SchoolAffiliationInfo): SchoolAffiliationInfoRequest => ({
+    boardName: value.boardName ?? undefined,
+    affiliationNumber: value.affiliationNumber ?? undefined,
+    complianceText: value.complianceText ?? undefined,
+    recognitionDetails: value.recognitionDetails ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
+
+  const toProfileRequest = (value: SchoolLandingProfile): SchoolLandingProfileRequest => ({
+    schoolName: value.schoolName,
+    shortName: value.shortName ?? undefined,
+    tagline: value.tagline ?? undefined,
+    shortDescription: value.shortDescription ?? undefined,
+    aboutHtml: value.aboutHtml ?? undefined,
+    objective: value.objective ?? undefined,
+    mission: value.mission ?? undefined,
+    vision: value.vision ?? undefined,
+    history: value.history ?? undefined,
+    whyUs: value.whyUs ?? undefined,
+    addressLine1: value.addressLine1 ?? undefined,
+    addressLine2: value.addressLine2 ?? undefined,
+    city: value.city ?? undefined,
+    state: value.state ?? undefined,
+    country: value.country ?? undefined,
+    pincode: value.pincode ?? undefined,
+    latitude: value.latitude ?? null,
+    longitude: value.longitude ?? null,
+    phone: value.phone ?? undefined,
+    alternatePhone: value.alternatePhone ?? undefined,
+    email: value.email ?? undefined,
+    website: value.website ?? undefined,
+    officeHours: value.officeHours ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
+
+  const toAdmissionRequest = (value: SchoolAdmissionInfo): SchoolAdmissionInfoRequest => ({
+    overview: value.overview ?? undefined,
+    process: value.process ?? undefined,
+    eligibility: value.eligibility ?? undefined,
+    brochureMediaId: value.brochureMediaId ?? null,
+    contactName: value.contactName ?? undefined,
+    contactPhone: value.contactPhone ?? undefined,
+    contactEmail: value.contactEmail ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
+
+  const toAcademicContentRequest = (value: SchoolAcademicContent): SchoolAcademicContentRequest => ({
+    curriculum: value.curriculum ?? undefined,
+    coCurricular: value.coCurricular ?? undefined,
+    scholarshipInfo: value.scholarshipInfo ?? undefined,
+    resultHighlights: value.resultHighlights ?? undefined,
+    notices: value.notices ?? undefined,
+    calendarData: value.calendarData ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
   const [profile, setProfile] = useState<SchoolLandingProfile>({ id: '', tenantId: '', schoolName: '' });
   const [admissionInfo, setAdmissionInfo] = useState<SchoolAdmissionInfo>({ id: '', overview: '', process: '', eligibility: '' });
   const [academicContent, setAcademicContent] = useState<SchoolAcademicContent>({ id: '', curriculum: '', coCurricular: '', scholarshipInfo: '', resultHighlights: '', notices: '', calendarData: '' });
@@ -103,17 +163,18 @@ export default function SchoolCmsStudioPage() {
     return `${window.location.protocol}//${host}`;
   }, [session.schoolCode]);
 
-  const completionItems = useMemo(() => {
+  const completionItems = useMemo<Array<[string, boolean]>>(() => {
     const c = stats?.completeness;
     if (!c) return [];
-    return [
-      ['Profile', c.hasProfile],
-      ['Gallery', c.hasGallery],
-      ['Testimonials', c.hasTestimonials],
-      ['Achievements', c.hasAchievements],
-      ['Admission info', c.hasAdmissionInfo],
-      ['Fee structure', c.hasFeeStructure],
+    const items: Array<[string, boolean]> = [
+      ['Profile', !!c.hasProfile],
+      ['Gallery', !!c.hasGallery],
+      ['Testimonials', !!c.hasTestimonials],
+      ['Achievements', !!c.hasAchievements],
+      ['Admission info', !!c.hasAdmissionInfo],
+      ['Fee structure', !!c.hasFeeStructure],
     ];
+    return items;
   }, [stats]);
 
   const save = async (key: string, action: () => Promise<void>) => {
@@ -213,7 +274,7 @@ export default function SchoolCmsStudioPage() {
                   {profile.isPublished ? 'Unpublish' : 'Publish'}
                 </Button>
                 <Button onClick={() => save('profile', async () => {
-                  const next = await schoolCmsApi.saveProfile(profile);
+                  const next = await schoolCmsApi.saveProfile(toProfileRequest(profile));
                   setProfile(next);
                   setMessage('Profile updated.');
                 })} isLoading={saving === 'profile'}>
@@ -239,7 +300,7 @@ export default function SchoolCmsStudioPage() {
                   ))}
                 </div>
                 <Button onClick={() => save('admissions', async () => {
-                  const next = await schoolCmsApi.saveAdmissionInfo(admissionInfo);
+                  const next = await schoolCmsApi.saveAdmissionInfo(toAdmissionRequest(admissionInfo));
                   setAdmissionInfo(next);
                   setMessage('Admission content updated.');
                 })} isLoading={saving === 'admissions'}>
@@ -264,7 +325,7 @@ export default function SchoolCmsStudioPage() {
                       </label>
                     ))}
                     <Button onClick={() => save('academics', async () => {
-                      const next = await schoolCmsApi.saveAcademicContent(academicContent);
+                      const next = await schoolCmsApi.saveAcademicContent(toAcademicContentRequest(academicContent));
                       setAcademicContent(next);
                       setMessage('Academic content updated.');
                     })} isLoading={saving === 'academics'}>
@@ -291,7 +352,7 @@ export default function SchoolCmsStudioPage() {
                       </label>
                     ))}
                     <Button onClick={() => save('affiliation', async () => {
-                      const next = await schoolCmsApi.saveAffiliation(affiliation);
+                      const next = await schoolCmsApi.saveAffiliation(toAffiliationRequest(affiliation));
                       setAffiliation(next);
                       setMessage('Affiliation content updated.');
                     })} isLoading={saving === 'affiliation'}>

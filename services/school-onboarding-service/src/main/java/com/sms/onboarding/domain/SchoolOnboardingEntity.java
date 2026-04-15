@@ -104,10 +104,6 @@ public class SchoolOnboardingEntity {
     @Column(name = "vision", length = 2000)
     private String vision;
 
-
-    @Column(name = "vision", length = 2000)
-    private String vision;
-
     @Column(name = "mission", length = 2000)
     private String mission;
 
@@ -475,5 +471,21 @@ public class SchoolOnboardingEntity {
 
     public void setIsLandingPagePublic(Boolean isLandingPagePublic) {
         this.isLandingPagePublic = isLandingPagePublic;
+    }
+
+    public String getCustomDomain() {
+        return customDomain;
+    }
+
+    public void setCustomDomain(String customDomain) {
+        this.customDomain = customDomain;
+    }
+
+    public String getRoutingStatus() {
+        return routingStatus;
+    }
+
+    public void setRoutingStatus(String routingStatus) {
+        this.routingStatus = routingStatus;
     }
 }

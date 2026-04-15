@@ -1,7 +1,5 @@
 package com.sms.onboarding.api;
 
-package com.sms.onboarding.api;
-
 import com.sms.onboarding.domain.OnboardingStatus;
 
 import java.time.Instant;

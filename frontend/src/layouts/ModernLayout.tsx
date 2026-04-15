@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Building2, ShieldCheck, BarChart2, Settings,
   Users, BookOpen, Calendar, CreditCard, FileText, Bell, LogOut, Home,
   Sparkles, Menu, X, GraduationCap, Clock, Bus, Library,
-  MessageSquare, User, Search, Activity, ArrowLeft, Layers,
+  MessageSquare, User, Activity, ArrowLeft, Layers,
   TrendingUp, Brain, Globe2, Flag
 } from 'lucide-react';
 import { MotionBackdrop } from '../components/MotionBackdrop';
@@ -110,7 +110,7 @@ function getNavItems(role: string): NavItem[] {
 
 export function ModernLayout() {
   const { 
-    session, searchOpen, setSearchOpen, setPaletteAiMode, logout, updateSession,
+    session, logout, updateSession,
     accentColor, glassIntensity, borderRadius, theme
   } = useStore();
   const navigate = useNavigate();
@@ -401,31 +401,7 @@ export function ModernLayout() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Search trigger */}
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setSearchOpen(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRadius: 12, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', color: 'var(--text-dim)', fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
-              <Search size={15} />
-              <span style={{ display: 'flex', gap: 4, alignItems: 'center', fontWeight: 600 }}>Search / Ask AI</span>
-              <div style={{ display: 'flex', gap: 3, marginLeft: 8 }}>
-                <kbd style={{ padding: '2px 6px', borderRadius: 5, background: 'var(--surface-elevated-hover)', border: '1px solid var(--glass-border)', fontSize: '0.65rem', color: 'var(--text-dim)', fontFamily: 'monospace' }}>⌘</kbd>
-                <kbd style={{ padding: '2px 6px', borderRadius: 5, background: 'var(--surface-elevated-hover)', border: '1px solid var(--glass-border)', fontSize: '0.65rem', color: 'var(--text-dim)', fontFamily: 'monospace' }}>K</kbd>
-              </div>
-            </motion.button>
-
-            {/* AI action */}
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => {
-                setPaletteAiMode(true);
-                setSearchOpen(true);
-              }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 12, background: 'var(--surface-accent-soft)', border: '1px solid var(--surface-accent-border)', color: 'var(--text-strong)', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s' }}>
-              <Sparkles size={14} />
-              Ask Insights
-            </motion.button>
-
-            {/* Notifications */}
+            \n\n            {/* Notifications */}
             <div style={{ position: 'relative' }}>
               <motion.button whileHover={{ scale: 1.1 }} onClick={() => setNotifOpen(!notifOpen)}
                 style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-dim)', position: 'relative' }}>

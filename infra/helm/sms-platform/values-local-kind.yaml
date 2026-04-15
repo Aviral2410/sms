@@ -1,0 +1,107 @@
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  secrets:
+    existingSecret: sms-secrets
+
+networking:
+  ingress:
+    enabled: false
+
+platform:
+  postgres:
+    persistence:
+      enabled: true
+      size: 10Gi
+  emqx:
+    enabled: true
+
+jobs:
+  dbRepair:
+    enabled: true
+    hook: true
+
+services:
+  authService:
+    replicaCount: 1
+    image:
+      repository: sms/auth-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  schoolOnboardingService:
+    replicaCount: 1
+    image:
+      repository: sms/school-onboarding-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  schoolOperationsService:
+    replicaCount: 1
+    image:
+      repository: sms/school-operations-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  communicationService:
+    replicaCount: 1
+    image:
+      repository: sms/communication-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  financeService:
+    replicaCount: 1
+    image:
+      repository: sms/finance-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  subscriptionService:
+    replicaCount: 1
+    image:
+      repository: sms/subscription-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  apiGateway:
+    replicaCount: 1
+    image:
+      repository: sms/api-gateway
+      tag: local
+    service:
+      type: NodePort
+      nodePort: 30000
+
+  aiInteractionService:
+    replicaCount: 1
+    image:
+      repository: sms/ai-interaction-service
+      tag: local
+    service:
+      type: ClusterIP
+
+  mcpServer:
+    replicaCount: 1
+    image:
+      repository: sms/mcp-server
+      tag: local
+    service:
+      type: NodePort
+      nodePort: 30084
+
+  frontend:
+    replicaCount: 1
+    image:
+      repository: sms/frontend
+      tag: local
+    service:
+      type: NodePort
+      nodePort: 30080
+

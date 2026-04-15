@@ -45,7 +45,7 @@ public class TenantDomainEntity {
     @Column(name = "verification_token")
     private String verificationToken;
 
-    @Column(name = "verification_details_json")
+    @Column(name = "verification_details_json", columnDefinition = "JSONB")
     private String verificationDetailsJson;
 
     @Column(name = "ssl_mode", nullable = false)

@@ -23,4 +23,6 @@ public interface SchoolOnboardingJpaRepository extends JpaRepository<SchoolOnboa
     Optional<SchoolOnboardingEntity> findBySchoolCodeIgnoreCase(String schoolCode);
 
     Optional<SchoolOnboardingEntity> findBySchoolId(UUID schoolId);
+
+    Optional<SchoolOnboardingEntity> findByTenantId(UUID tenantId);
 }

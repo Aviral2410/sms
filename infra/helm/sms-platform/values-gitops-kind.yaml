@@ -1,0 +1,86 @@
+# GitOps values for local kind pulling images from GHCR.
+# - Uses immutable image tags (commit SHA) so Argo CD rollouts are deterministic.
+# - Exposes key entrypoints via NodePort for local access.
+
+global:
+  imageRegistry: ghcr.io/Aviral2410
+
+networking:
+  ingress:
+    enabled: false
+
+jobs:
+  dbRepair:
+    enabled: true
+    hook: true
+
+services:
+  authService:
+    replicaCount: 1
+    image:
+      repository: sms-auth-service
+      tag: __GIT_SHA__
+
+  schoolOnboardingService:
+    replicaCount: 1
+    image:
+      repository: sms-school-onboarding-service
+      tag: __GIT_SHA__
+
+  schoolOperationsService:
+    replicaCount: 1
+    image:
+      repository: sms-school-operations-service
+      tag: __GIT_SHA__
+
+  communicationService:
+    replicaCount: 1
+    image:
+      repository: sms-communication-service
+      tag: __GIT_SHA__
+
+  financeService:
+    replicaCount: 1
+    image:
+      repository: sms-finance-service
+      tag: __GIT_SHA__
+
+  subscriptionService:
+    replicaCount: 1
+    image:
+      repository: sms-subscription-service
+      tag: __GIT_SHA__
+
+  apiGateway:
+    replicaCount: 1
+    image:
+      repository: sms-api-gateway
+      tag: __GIT_SHA__
+    service:
+      type: NodePort
+      nodePort: 30000
+
+  aiInteractionService:
+    replicaCount: 1
+    image:
+      repository: sms-ai-interaction-service
+      tag: __GIT_SHA__
+
+  mcpServer:
+    replicaCount: 1
+    image:
+      repository: sms-mcp-server
+      tag: __GIT_SHA__
+    service:
+      type: NodePort
+      nodePort: 30084
+
+  frontend:
+    replicaCount: 1
+    image:
+      repository: sms-frontend
+      tag: __GIT_SHA__
+    service:
+      type: NodePort
+      nodePort: 30080
+

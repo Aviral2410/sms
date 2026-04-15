@@ -6,12 +6,15 @@ import {
   schoolCmsApi,
   type CmsDashboardStats,
   type SchoolAcademicContent,
+  type SchoolAcademicContentRequest,
   type SchoolAdmissionInfo,
+  type SchoolAdmissionInfoRequest,
   type SchoolBranch,
   type SchoolEnquiry,
   type SchoolEvent,
   type SchoolFeeStructure,
   type SchoolLandingProfile,
+  type SchoolLandingProfileRequest,
   type SchoolLeader,
 } from '../../lib/schoolPortalApi';
 
@@ -83,28 +86,77 @@ export default function SchoolCmsPage() {
     };
   }, []);
 
-  const completionItems = useMemo(() => {
+  const completionItems = useMemo<Array<[string, boolean]>>(() => {
     const completion = stats?.completeness;
     if (!completion) return [];
-    return [
-      ['Profile', completion.hasProfile],
-      ['Leaders', completion.hasLeaders],
-      ['Branches', completion.hasBranches],
-      ['Events', completion.hasEvents],
-      ['Gallery', completion.hasGallery],
-      ['Testimonials', completion.hasTestimonials],
-      ['Achievements', completion.hasAchievements],
-      ['Admission info', completion.hasAdmissionInfo],
-      ['Fee structure', completion.hasFeeStructure],
+    const items: Array<[string, boolean]> = [
+      ['Profile', !!completion.hasProfile],
+      ['Leaders', !!completion.hasLeaders],
+      ['Branches', !!completion.hasBranches],
+      ['Events', !!completion.hasEvents],
+      ['Gallery', !!completion.hasGallery],
+      ['Testimonials', !!completion.hasTestimonials],
+      ['Achievements', !!completion.hasAchievements],
+      ['Admission info', !!completion.hasAdmissionInfo],
+      ['Fee structure', !!completion.hasFeeStructure],
     ];
+    return items;
   }, [stats?.completeness]);
+
+  const toProfileRequest = (value: SchoolLandingProfile): SchoolLandingProfileRequest => ({
+    schoolName: value.schoolName,
+    shortName: value.shortName ?? undefined,
+    tagline: value.tagline ?? undefined,
+    shortDescription: value.shortDescription ?? undefined,
+    aboutHtml: value.aboutHtml ?? undefined,
+    objective: value.objective ?? undefined,
+    mission: value.mission ?? undefined,
+    vision: value.vision ?? undefined,
+    history: value.history ?? undefined,
+    whyUs: value.whyUs ?? undefined,
+    addressLine1: value.addressLine1 ?? undefined,
+    addressLine2: value.addressLine2 ?? undefined,
+    city: value.city ?? undefined,
+    state: value.state ?? undefined,
+    country: value.country ?? undefined,
+    pincode: value.pincode ?? undefined,
+    latitude: value.latitude ?? null,
+    longitude: value.longitude ?? null,
+    phone: value.phone ?? undefined,
+    alternatePhone: value.alternatePhone ?? undefined,
+    email: value.email ?? undefined,
+    website: value.website ?? undefined,
+    officeHours: value.officeHours ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
+
+  const toAdmissionRequest = (value: SchoolAdmissionInfo): SchoolAdmissionInfoRequest => ({
+    overview: value.overview ?? undefined,
+    process: value.process ?? undefined,
+    eligibility: value.eligibility ?? undefined,
+    brochureMediaId: value.brochureMediaId ?? null,
+    contactName: value.contactName ?? undefined,
+    contactPhone: value.contactPhone ?? undefined,
+    contactEmail: value.contactEmail ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
+
+  const toAcademicContentRequest = (value: SchoolAcademicContent): SchoolAcademicContentRequest => ({
+    curriculum: value.curriculum ?? undefined,
+    coCurricular: value.coCurricular ?? undefined,
+    scholarshipInfo: value.scholarshipInfo ?? undefined,
+    resultHighlights: value.resultHighlights ?? undefined,
+    notices: value.notices ?? undefined,
+    calendarData: value.calendarData ?? undefined,
+    isPublished: value.isPublished ?? undefined,
+  });
 
   const saveProfile = async () => {
     if (!profile) return;
     setSaving('profile');
     setMessage('');
     try {
-      const response = await schoolCmsApi.saveProfile(profile);
+      const response = await schoolCmsApi.saveProfile(toProfileRequest(profile));
       setProfile(response);
       setMessage('Profile updated.');
     } catch (error: any) {
@@ -133,7 +185,7 @@ export default function SchoolCmsPage() {
     setSaving('admission');
     setMessage('');
     try {
-      const response = await schoolCmsApi.saveAdmissionInfo(admissionInfo);
+      const response = await schoolCmsApi.saveAdmissionInfo(toAdmissionRequest(admissionInfo));
       setAdmissionInfo(response);
       setMessage('Admission content updated.');
     } catch (error: any) {
@@ -148,7 +200,7 @@ export default function SchoolCmsPage() {
     setSaving('academics');
     setMessage('');
     try {
-      const response = await schoolCmsApi.saveAcademicContent(academicContent);
+      const response = await schoolCmsApi.saveAcademicContent(toAcademicContentRequest(academicContent));
       setAcademicContent(response);
       setMessage('Academic content updated.');
     } catch (error: any) {

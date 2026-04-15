@@ -1915,7 +1915,7 @@ public class SchoolOperationsService {
         long reports = this.teacherMonthlyReportRepository.findBySchoolIdOrderByCreatedAtDesc(schoolId).stream()
                 .filter(r -> r.getTeacherUserId().equals(teacherUserId)).count();
         
-        var teacherAttendanceRecords = this.attendanceRecordRepository.findBySchoolIdOrderByAttendanceDateDesc(schoolId).stream()
+        var teacherAttendanceRecords = this.attendanceRecordRepository.findBySchoolIdOrderByAttendanceDateDescCreatedAtDesc(schoolId).stream()
                 .filter(record -> teacherUserId.equals(record.getTeacherUserId()))
                 .toList();
         long totalAttendanceRows = teacherAttendanceRecords.size();

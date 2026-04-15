@@ -11,7 +11,9 @@ public record AiInteractionProperties(
     public record LlmProperties(
             String provider,
             String openaiApiKey,
-            String openaiModel
+            String openaiModel,
+            String ollamaBaseUrl,
+            String ollamaModel
     ) {}
 
     public record CacheProperties(

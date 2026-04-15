@@ -45,6 +45,7 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
             requestBody.put("model", properties.llm().openaiModel());
             requestBody.put("temperature", 0);
             requestBody.put("tool_choice", "auto");
+            requestBody.put("max_tokens", 256);
 
             ArrayNode messages = requestBody.putArray("messages");
             messages.addObject()

@@ -16,7 +16,7 @@ MAX_PARALLEL="$MAX_PARALLEL" "$SCRIPT_DIR/build-images.sh" "$CLUSTER_NAME"
 "$TOOLS_ROOT/bin/kubectl" rollout status statefulset/postgres -n sms --timeout=300s
 "$TOOLS_ROOT/bin/kubectl" wait --for=condition=complete job/db-repair -n sms --timeout=300s
 
-for deployment in auth-service school-onboarding-service school-operations-service communication-service finance-service subscription-service api-gateway mcp-server frontend; do
+for deployment in auth-service school-onboarding-service school-operations-service communication-service finance-service subscription-service api-gateway ai-interaction-service mcp-server frontend; do
   "$TOOLS_ROOT/bin/kubectl" rollout status deployment/$deployment -n sms --timeout=300s
 done
 

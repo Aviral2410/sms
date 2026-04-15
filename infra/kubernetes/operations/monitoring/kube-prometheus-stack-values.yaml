@@ -21,9 +21,22 @@ alertmanager:
               storage: 10Gi
 grafana:
   adminPassword: change-me-now
+  service:
+    type: NodePort
+    nodePort: 30090
   persistence:
     enabled: true
     size: 10Gi
+
+prometheus:
+  service:
+    type: NodePort
+    nodePort: 30091
+
+alertmanager:
+  service:
+    type: NodePort
+    nodePort: 30093
 kubeStateMetrics:
   enabled: true
 nodeExporter:

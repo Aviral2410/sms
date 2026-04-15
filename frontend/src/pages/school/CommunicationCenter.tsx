@@ -60,17 +60,18 @@ export default function CommunicationCenter() {
   );
 
   useEffect(() => {
-    if (!session.schoolId) return;
+    const schoolId = session.schoolId;
+    if (!schoolId) return;
 
     let cancelled = false;
 
     const loadAll = async () => {
       try {
         const [announcementRows, threadRows, classRows, userRows] = await Promise.all([
-          communicationApi.listAnnouncements({ schoolId: session.schoolId }),
+          communicationApi.listAnnouncements({ schoolId }),
           communicationApi.listThreads(),
-          schoolOpsApi.listClasses(session.schoolId),
-          schoolOpsApi.listUsers(session.schoolId),
+          schoolOpsApi.listClasses(schoolId),
+          schoolOpsApi.listUsers(schoolId),
         ]);
 
         if (cancelled) return;

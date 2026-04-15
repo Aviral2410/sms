@@ -662,6 +662,74 @@ services:
     pdb:
       enabled: false
 
+  aiInteractionService:
+    enabled: true
+    workloadName: ai-interaction-service
+    image:
+      repository: sms-ai-interaction-service
+      tag: latest
+      pullPolicy: IfNotPresent
+    replicaCount: 2
+    containerPort: 8090
+    service:
+      port: 8090
+      type: ClusterIP
+    initDependencies:
+      - name: redis
+        host: redis
+        port: 6379
+    env:
+      - name: SERVER_PORT
+        value: "8090"
+      - name: GATEWAY_BASE_URL
+        value: http://api-gateway:8080
+      - name: REDIS_HOST
+        value: redis
+      - name: REDIS_PORT
+        value: "6379"
+      - name: LLM_PROVIDER
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: LLM_PROVIDER
+      - name: OPENAI_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OPENAI_API_KEY
+      - name: OPENAI_MODEL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OPENAI_MODEL
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
   apiGateway:
     enabled: true
     workloadName: api-gateway

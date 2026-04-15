@@ -2,6 +2,7 @@ package com.sms.aiinteraction.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.Map;
 import java.util.UUID;
 
@@ -9,7 +10,7 @@ public class AiInteractionDtos {
     public record ChatRequest(
             UUID workspaceId,
             UUID conversationId,
-            @NotBlank String message,
+            @NotBlank @Size(max = 2000) String message,
             Map<String, Object> context
     ) {}
 

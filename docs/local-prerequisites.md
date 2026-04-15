@@ -54,6 +54,37 @@ The app itself should be deployed through:
 - [deploy.ps1](D:\sms-1\infra\helm\scripts\windows\deploy.ps1)
 - [deploy.sh](D:\sms-1\infra\helm\scripts\linux\deploy.sh)
 
+## Single-click local kind + Helm deployment (Windows)
+
+If you want a portable “one command” local setup (create/use `kind`, build images, create secrets, then Helm deploy), run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\infra\helm\scripts\windows\deploy-local-kind.ps1 -EnvFile .env
+```
+
+It deploys the chart using `infra\helm\sms-platform\values-local-kind.yaml` and exposes:
+- Frontend: `http://localhost:30080`
+- API Gateway: `http://localhost:30000`
+- MCP Server health: `http://localhost:30084/health`
+
+## Day-0 bootstrap (Vault + ESO + Argo CD)
+
+No paid subscriptions are required. These components are installed from public Helm chart repositories (internet access required).
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\day0-bootstrap.ps1 `
+  -InstallTools `
+  -InstallVaultAndEso `
+  -InstallArgoCd `
+  -InstallMonitoring
+```
+
+For GitOps deployment via Argo CD (auto-fills Argo repo URL from `git remote origin`):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\day0-bootstrap.ps1 -DeploySmsViaArgoCd
+```
+
 ## D drive note
 
 Everything this repo creates directly on Windows is designed to default to `D:`.

@@ -1,0 +1,3 @@
+{{- if .Values.services.aiInteractionService.enabled }}
+{{ include "sms.serviceService" (dict "root" . "service" .Values.services.aiInteractionService "serviceName" "ai-interaction-service") }}
+{{- end }}
