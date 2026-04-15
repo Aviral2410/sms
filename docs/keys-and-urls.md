@@ -28,33 +28,31 @@
 
 Canonical inventory: `infra/secrets/day0keyvaultseed.yaml`
 
-### Required (must be set by you in Vault)
+Values shown below are the **current local/dev defaults used in this repo**. Replace them in Vault for any real environment.
 
-- `POSTGRES_USER`
-- `POSTGRES_PASSWORD`
-- `JWT_SECRET_KEY`
-- `INTERNAL_API_KEY`
-- `PLATFORM_CONFIG_ENCRYPTION_KEY`
+| Key | Value (dev) |
+|---|---|
+| `POSTGRES_USER` | `sms_admin` |
+| `POSTGRES_PASSWORD` | `change-me` |
+| `JWT_SECRET_KEY` | `change_me_change_me_change_me_2026` |
+| `INTERNAL_API_KEY` | `dev-internal-api-key` |
+| `PLATFORM_CONFIG_ENCRYPTION_KEY` | `dev-platform-config-encryption-key` |
+| `MCP_REQUIRE_AUTH` | `true` |
+| `MCP_ENABLE_DOCKER_INSIGHTS` | `false` |
+| `LLM_PROVIDER` |  |
+| `OPENAI_API_KEY` |  |
+| `OPENAI_MODEL` |  |
+| `GEMINI_API_KEY` |  |
+| `OPENROUTER_API_KEY` |  |
+| `ANTHROPIC_API_KEY` |  |
+| `EMQX_DASHBOARD_USERNAME` | `admin` |
+| `EMQX_DASHBOARD_PASSWORD` |  |
+| `AI_TOOL_RATE_LIMITS_JSON` |  |
+| `BOOTSTRAP_SUPERADMIN_ENABLED` |  |
+| `BOOTSTRAP_SUPERADMIN_EMAIL` | `superadmin@sms.local` |
+| `BOOTSTRAP_SUPERADMIN_PASSWORD` |  |
+| `BOOTSTRAP_SUPERADMIN_FULL_NAME` | `Platform Super Admin` |
 
-### Optional (set if you use them)
+## `.env`
 
-- `OPENAI_API_KEY`, `OPENAI_MODEL`
-- `GEMINI_API_KEY`
-- `OPENROUTER_API_KEY`
-- `ANTHROPIC_API_KEY`
-- `LLM_PROVIDER`
-- `EMQX_DASHBOARD_USERNAME`, `EMQX_DASHBOARD_PASSWORD`
-- `MCP_REQUIRE_AUTH`, `MCP_ENABLE_DOCKER_INSIGHTS`
-
-### Dev-only bootstrap (don’t enable in prod)
-
-- `BOOTSTRAP_SUPERADMIN_ENABLED`
-- `BOOTSTRAP_SUPERADMIN_EMAIL`
-- `BOOTSTRAP_SUPERADMIN_PASSWORD`
-- `BOOTSTRAP_SUPERADMIN_FULL_NAME`
-
-## Do we still need `.env`?
-
-- For GitOps/Vault environments: **no** (Vault/ESO becomes the source of truth).
-- For local quick dev without Vault: `.env` / `.env.example` is still a convenient fallback to create `sms-secrets`.
-
+This repo no longer uses `.env` as a deployment input. Secrets are managed through Vault → External Secrets Operator → `sms/sms-secrets`.

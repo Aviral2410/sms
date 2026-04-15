@@ -2,7 +2,6 @@
 set -euo pipefail
 
 CLUSTER_NAME="${1:-sms-local}"
-ENV_FILE="${2:-.env}"
 TOOLS_ROOT="${TOOLS_ROOT:-/opt/sms-k8s/tools}"
 KUBE_ROOT="${KUBE_ROOT:-/opt/sms-k8s}"
 MAX_PARALLEL="${MAX_PARALLEL:-4}"
@@ -11,7 +10,11 @@ REPO_ROOT="$(cd -- "$SCRIPT_DIR/../../.." && pwd)"
 export KUBECONFIG="$KUBE_ROOT/.kube/config"
 
 MAX_PARALLEL="$MAX_PARALLEL" "$SCRIPT_DIR/build-images.sh" "$CLUSTER_NAME"
-"$SCRIPT_DIR/create-secrets-from-env.sh" "$ENV_FILE"
+"$TOOLS_ROOT/bin/kubectl" create namespace sms --dry-run=client -o yaml | "$TOOLS_ROOT/bin/kubectl" apply -f -
+if ! "$TOOLS_ROOT/bin/kubectl" -n sms get secret sms-secrets >/dev/null 2>&1; then
+  echo "Missing secret 'sms/sms-secrets'. Create it via Vault+ESO (recommended) before deploying."
+  exit 1
+fi
 "$TOOLS_ROOT/bin/kubectl" apply -k "$REPO_ROOT/infra/kubernetes/overlays/local"
 "$TOOLS_ROOT/bin/kubectl" rollout status statefulset/postgres -n sms --timeout=300s
 "$TOOLS_ROOT/bin/kubectl" wait --for=condition=complete job/db-repair -n sms --timeout=300s

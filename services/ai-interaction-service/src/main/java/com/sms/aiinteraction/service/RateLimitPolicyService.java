@@ -8,6 +8,8 @@ import com.sms.aiinteraction.security.UserContext;
 import com.sms.aiinteraction.security.UserRole;
 import com.sms.common.exception.ForbiddenException;
 import java.time.Duration;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 public class RateLimitPolicyService {
     private static final String POLICY_CACHE_KEY = "ai:config:tool-rate-limits:v1";
     private static final Set<String> PLAN_CODES = Set.of("FREE", "BASIC", "PREMIUM");
+    private static final String DEFAULT_POLICY_FILE = "/var/run/sms-secrets/AI_TOOL_RATE_LIMITS_JSON";
 
     private final CacheService cacheService;
     private final GatewayApiClient gatewayApiClient;
@@ -64,6 +67,11 @@ public class RateLimitPolicyService {
     }
 
     private Map<String, Map<String, Integer>> currentPolicies() {
+        Optional<Map<String, Map<String, Integer>>> fromFile = readPolicyFromFile();
+        if (fromFile.isPresent()) {
+            return fromFile.get();
+        }
+
         Optional<JsonNode> cached = cacheService.get(POLICY_CACHE_KEY);
         if (cached.isPresent() && cached.get().path("limits").isObject()) {
             try {
@@ -78,6 +86,31 @@ public class RateLimitPolicyService {
             }
         }
         return defaults();
+    }
+
+    private Optional<Map<String, Map<String, Integer>>> readPolicyFromFile() {
+        String configured = System.getenv("AI_TOOL_RATE_LIMITS_FILE");
+        String filePath = configured == null || configured.isBlank() ? DEFAULT_POLICY_FILE : configured.trim();
+        try {
+            Path path = Path.of(filePath);
+            if (!Files.exists(path)) {
+                return Optional.empty();
+            }
+            String raw = Files.readString(path);
+            if (raw == null || raw.isBlank()) {
+                return Optional.empty();
+            }
+            JsonNode node = objectMapper.readTree(raw);
+            JsonNode limitsNode = node.has("limits") ? node.get("limits") : node;
+            if (!limitsNode.isObject()) {
+                return Optional.empty();
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Map<String, Integer>> map = objectMapper.convertValue(limitsNode, Map.class);
+            return Optional.of(normalizePolicy(map));
+        } catch (Exception ignored) {
+            return Optional.empty();
+        }
     }
 
     private String resolvePlanCode(UserContext user) {

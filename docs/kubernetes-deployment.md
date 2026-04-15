@@ -141,7 +141,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\deploy-local
 Ubuntu or WSL:
 
 ```bash
-MAX_PARALLEL=4 bash ./infra/kubernetes/linux/deploy-local.sh sms-local .env
+MAX_PARALLEL=4 bash ./infra/kubernetes/linux/deploy-local.sh sms-local
 ```
 
 Behavior:

@@ -106,6 +106,12 @@ spec:
     spec:
 {{ include "sms.podSettings" $root | indent 6 }}
 {{ include "sms.initContainers" (dict "service" $service) | indent 6 }}
+      {{- if and $service.secretMount $service.secretMount.enabled }}
+      volumes:
+        - name: sms-secrets
+          secret:
+            secretName: {{ include "sms.secretName" $root }}
+      {{- end }}
       containers:
         - name: {{ $service.workloadName }}
           image: {{ include "sms.image" (dict "root" $root "image" $service.image) }}
@@ -113,6 +119,12 @@ spec:
           ports:
             - name: http
               containerPort: {{ $service.containerPort }}
+          {{- if and $service.secretMount $service.secretMount.enabled }}
+          volumeMounts:
+            - name: sms-secrets
+              mountPath: {{ $service.secretMount.mountPath | default "/var/run/sms-secrets" | quote }}
+              readOnly: true
+          {{- end }}
 {{- if $service.env }}
           env:
 {{ tpl (toYaml $service.env) $root | indent 12 }}

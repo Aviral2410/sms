@@ -1,0 +1,18 @@
+{{- if .Values.platform.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.platform.redis.serviceName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "redis") | indent 4 }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/name: redis
+  ports:
+    - name: redis
+      port: {{ .Values.platform.redis.service.port }}
+      targetPort: redis
+{{- end }}
+

@@ -59,7 +59,7 @@ The app itself should be deployed through:
 If you want a portable “one command” local setup (create/use `kind`, build images, create secrets, then Helm deploy), run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\infra\helm\scripts\windows\deploy-local-kind.ps1 -EnvFile .env
+powershell -ExecutionPolicy Bypass -File .\infra\helm\scripts\windows\deploy-local-kind.ps1
 ```
 
 It deploys the chart using `infra\helm\sms-platform\values-local-kind.yaml` and exposes:
@@ -72,11 +72,7 @@ It deploys the chart using `infra\helm\sms-platform\values-local-kind.yaml` and 
 No paid subscriptions are required. These components are installed from public Helm chart repositories (internet access required).
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\day0-bootstrap.ps1 `
-  -InstallTools `
-  -InstallVaultAndEso `
-  -InstallArgoCd `
-  -InstallMonitoring
+powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\day0-bootstrap.ps1 -InstallTools -InstallVaultAndEso -InstallArgoCd -InstallMonitoring
 ```
 
 For GitOps deployment via Argo CD (auto-fills Argo repo URL from `git remote origin`):

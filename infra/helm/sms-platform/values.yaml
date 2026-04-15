@@ -14,6 +14,22 @@ global:
     data: {}
 
 platform:
+  redis:
+    enabled: true
+    serviceName: redis
+    image:
+      repository: redis
+      tag: "7-alpine"
+      pullPolicy: IfNotPresent
+    service:
+      port: 6379
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 250m
+        memory: 256Mi
   postgres:
     enabled: true
     serviceName: postgres
@@ -678,6 +694,9 @@ services:
       - name: redis
         host: redis
         port: 6379
+    secretMount:
+      enabled: true
+      mountPath: /var/run/sms-secrets
     env:
       - name: SERVER_PORT
         value: "8090"
@@ -702,6 +721,8 @@ services:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENAI_MODEL
+      - name: AI_TOOL_RATE_LIMITS_FILE
+        value: /var/run/sms-secrets/AI_TOOL_RATE_LIMITS_JSON
     probes:
       startup:
         tcpSocket:

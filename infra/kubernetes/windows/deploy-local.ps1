@@ -2,7 +2,6 @@ param(
     [string]$ClusterName = "sms-local",
     [string]$ToolsRoot = "D:\sms-k8s\tools",
     [string]$KubeRoot = "D:\sms-k8s",
-    [string]$EnvFile = ".env",
     [int]$MaxParallel = 4
 )
 
@@ -21,7 +20,10 @@ $env:KUBECONFIG = $kubeConfigPath
 
 # Ensure namespace exists before creating secrets or applying kustomize resources.
 & $kubectlExe create namespace sms --dry-run=client -o yaml | & $kubectlExe apply -f -
-& (Join-Path $PSScriptRoot "create-secrets-from-env.ps1") -EnvFile $EnvFile -ToolsRoot $ToolsRoot
+
+if (-not (& $kubectlExe -n sms get secret sms-secrets 2>$null)) {
+    throw "Missing secret 'sms/sms-secrets'. Create it via Vault+ESO (recommended) before deploying."
+}
 
 # The local overlay references SQL files outside the base directory; render with kubectl kustomize.
 & $kubectlExe kustomize $overlayPath --load-restrictor LoadRestrictionsNone | & $kubectlExe apply -f -

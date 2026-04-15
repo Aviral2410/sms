@@ -4,7 +4,6 @@ param(
     [string]$KubeRoot = "D:\sms-k8s",
     [string]$ReleaseName = "sms-platform",
     [string]$Namespace = "sms",
-    [string]$EnvFile = ".env",
     [string]$ValuesFile = "infra\\helm\\sms-platform\\values-local-kind.yaml",
     [int]$MaxParallel = 4,
     [string]$Timeout = "20m"
@@ -48,7 +47,10 @@ else {
 & (Join-Path $repoRoot "infra\\kubernetes\\windows\\build-images.ps1") -ClusterName $ClusterName -ToolsRoot $ToolsRoot -MaxParallel $MaxParallel
 
 & $kubectlExe create namespace $Namespace --dry-run=client -o yaml | & $kubectlExe apply -f -
-& (Join-Path $repoRoot "infra\\kubernetes\\windows\\create-secrets-from-env.ps1") -EnvFile $EnvFile -ToolsRoot $ToolsRoot
+
+if (-not (& $kubectlExe -n $Namespace get secret sms-secrets 2>$null)) {
+    throw "Missing secret '$Namespace/sms-secrets'. Create it via Vault+ESO (recommended) before deploying."
+}
 
 $chartPath = Join-Path $repoRoot "infra\\helm\\sms-platform"
 $resolvedValues = if ([System.IO.Path]::IsPathRooted($ValuesFile)) { $ValuesFile } else { Join-Path $repoRoot $ValuesFile }

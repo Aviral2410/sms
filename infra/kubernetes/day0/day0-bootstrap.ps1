@@ -1,5 +1,4 @@
 param(
-    [string]$EnvFile = ".env",
     [string]$ClusterName = "sms-local",
     [switch]$SkipDockerInstall,
     [switch]$SkipMonitoring,
@@ -83,7 +82,7 @@ if ($IsWindows -or $env:OS -eq 'Windows_NT') {
     Ensure-Windows-Tools
     Ensure-Windows-Docker
     & (Join-Path $repoRoot 'infra\kubernetes\windows\create-kind-cluster.ps1') -ClusterName $ClusterName
-    & (Join-Path $repoRoot 'infra\kubernetes\windows\deploy-local.ps1') -ClusterName $ClusterName -EnvFile $EnvFile
+    & (Join-Path $repoRoot 'infra\kubernetes\windows\deploy-local.ps1') -ClusterName $ClusterName
     if (-not $SkipMonitoring) {
         & (Join-Path $repoRoot 'infra\kubernetes\windows\install-monitoring.ps1')
     }
@@ -102,7 +101,7 @@ if ($IsWindows -or $env:OS -eq 'Windows_NT') {
 if ($IsLinux) {
     Ensure-Linux-Tools
     bash (Join-Path $repoRoot 'infra/kubernetes/linux/create-kind-cluster.sh') $ClusterName
-    bash (Join-Path $repoRoot 'infra/kubernetes/linux/deploy-local.sh') $ClusterName $EnvFile
+    bash (Join-Path $repoRoot 'infra/kubernetes/linux/deploy-local.sh') $ClusterName
     if (-not $SkipMonitoring) {
         bash (Join-Path $repoRoot 'infra/kubernetes/linux/install-monitoring.sh')
     }
