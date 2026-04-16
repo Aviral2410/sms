@@ -1,0 +1,34 @@
+{{- if and .Values.services.ollama.enabled .Values.services.ollama.persistence.enabled (not .Values.services.ollama.persistence.existingClaim) }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ollama-data
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "ollama") | indent 4 }}
+spec:
+  capacity:
+    storage: {{ .Values.services.ollama.persistence.size | default "50Gi" }}
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.services.ollama.persistence.storageClassName | default "ollama-local" }}
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: {{ .Values.services.ollama.persistence.hostPath | default "/data/ollama" | quote }}
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" "ollama") | indent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.services.ollama.persistence.storageClassName | default "ollama-local" }}
+  resources:
+    requests:
+      storage: {{ .Values.services.ollama.persistence.size | default "50Gi" }}
+  volumeName: ollama-data
+{{- end }}
+

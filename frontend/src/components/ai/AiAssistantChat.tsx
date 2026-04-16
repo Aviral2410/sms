@@ -70,6 +70,16 @@ function toCsv(rows: Record<string, unknown>[]) {
   ].join('\n');
 }
 
+async function safeReadJson<T = unknown>(res: Response): Promise<T | null> {
+  const text = await res.text().catch(() => '');
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 export const AiAssistantChat: React.FC = () => {
   const { session } = useStore();
   const [open, setOpen] = useState(false);
@@ -82,6 +92,16 @@ export const AiAssistantChat: React.FC = () => {
       text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
     },
   ]);
+
+  const resetThread = () => {
+    setMessages([
+      {
+        id: 'a-welcome',
+        role: 'assistant',
+        text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
+      },
+    ]);
+  };
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
@@ -196,11 +216,14 @@ export const AiAssistantChat: React.FC = () => {
     if (!activeWorkspaceId) {
       const wsListRes = await fetch('/api/v1/ai-interaction/workspaces', { headers: authHeaders });
       if (wsListRes.ok) {
-        const existing = (await wsListRes.json()) as Array<{ workspaceId: string; name: string }>;
+        const existing = (await safeReadJson<Array<{ workspaceId: string; name: string }>>(wsListRes)) ?? [];
         setWorkspaces(existing.map((w) => ({ workspaceId: w.workspaceId, name: w.name })));
         if (existing.length > 0) {
           activeWorkspaceId = existing[0].workspaceId;
         }
+      } else if (wsListRes.status === 401 || wsListRes.status === 403) {
+        appendMessage({ id: `a-${Date.now()}`, role: 'assistant', text: 'Please sign in again to use AI chat.' });
+        return null;
       }
 
       if (!activeWorkspaceId) {
@@ -210,7 +233,8 @@ export const AiAssistantChat: React.FC = () => {
           body: JSON.stringify({ name: 'Default Workspace' }),
         });
         if (wsCreateRes.ok) {
-          const created = (await wsCreateRes.json()) as { workspaceId: string; name?: string };
+          const created = (await safeReadJson<{ workspaceId: string; name?: string }>(wsCreateRes)) ?? null;
+          if (!created?.workspaceId) return null;
           activeWorkspaceId = created.workspaceId;
           setWorkspaces([{ workspaceId: created.workspaceId, name: created.name || 'Default Workspace' }]);
         }
@@ -226,7 +250,7 @@ export const AiAssistantChat: React.FC = () => {
     if (!authHeaders) return;
     const res = await fetch(`/api/v1/ai-interaction/workspaces/${encodeURIComponent(activeWorkspaceId)}/chats`, { headers: authHeaders });
     if (!res.ok) return;
-    const data = (await res.json()) as Array<{ conversationId: string; title: string | null; updatedAt?: string; createdAt?: string }>;
+    const data = (await safeReadJson<Array<{ conversationId: string; title: string | null; updatedAt?: string; createdAt?: string }>>(res)) ?? [];
     setChats(data.map((c) => ({ conversationId: c.conversationId, title: c.title ?? null, updatedAt: c.updatedAt, createdAt: c.createdAt })));
   };
 
@@ -234,7 +258,7 @@ export const AiAssistantChat: React.FC = () => {
     if (!authHeaders) return;
     const res = await fetch(`/api/v1/ai-interaction/chats/${encodeURIComponent(activeConversationId)}/messages?limit=100`, { headers: authHeaders });
     if (!res.ok) return;
-    const data = (await res.json()) as Array<{ role: string; content: string; payload?: any; messageId: string }>;
+    const data = (await safeReadJson<Array<{ role: string; content: string; payload?: any; messageId: string }>>(res)) ?? [];
     setMessages(
       data
         .filter((m) => m.role === 'user' || m.role === 'assistant')
@@ -262,8 +286,8 @@ export const AiAssistantChat: React.FC = () => {
       body: JSON.stringify({ title: null }),
     });
     if (!res.ok) return null;
-    const created = (await res.json()) as { conversationId: string };
-    return created.conversationId;
+    const created = (await safeReadJson<{ conversationId: string }>(res)) ?? null;
+    return created?.conversationId ?? null;
   };
 
   const startNewChat = async () => {
@@ -275,7 +299,7 @@ export const AiAssistantChat: React.FC = () => {
       const newId = await createChat(ws);
       if (!newId) return;
       setConversationId(newId);
-      setMessages([]);
+      resetThread();
       await loadChats(ws);
     } finally {
       setHistoryLoading(false);
@@ -283,7 +307,7 @@ export const AiAssistantChat: React.FC = () => {
   };
 
   const clearContext = () => {
-    setMessages([]);
+    resetThread();
     setConversationId(null);
     setToolsOpen(false);
   };

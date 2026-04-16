@@ -136,6 +136,13 @@ services:
         value: 0.0.0.0
       - name: OLLAMA_KEEP_ALIVE
         value: "30m"
+    persistence:
+      enabled: true
+      # For kind on Windows, map this inside the node to a host directory on D: via infra/kubernetes/kind/kind-config.yaml.
+      hostPath: /data/ollama
+      storageClassName: ollama-local
+      size: 50Gi
+      existingClaim: ""
     probes:
       startup:
         tcpSocket:

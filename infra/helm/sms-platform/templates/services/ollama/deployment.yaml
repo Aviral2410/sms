@@ -1,4 +1,47 @@
 {{- if .Values.services.ollama.enabled }}
-{{ include "sms.serviceDeployment" (dict "root" . "service" .Values.services.ollama "serviceName" "ollama") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.services.ollama.workloadName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" . "serviceName" .Values.services.ollama.workloadName) | indent 4 }}
+spec:
+  replicas: {{ .Values.services.ollama.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.services.ollama.workloadName) | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "sms.selectorLabels" (dict "root" . "serviceName" .Values.services.ollama.workloadName) | indent 8 }}
+    spec:
+{{ include "sms.podSettings" . | indent 6 }}
+      containers:
+        - name: {{ .Values.services.ollama.workloadName }}
+          image: {{ include "sms.image" (dict "root" . "image" .Values.services.ollama.image) }}
+          imagePullPolicy: {{ .Values.services.ollama.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.services.ollama.containerPort }}
+          env:
+{{ toYaml .Values.services.ollama.env | indent 12 }}
+          {{- if .Values.services.ollama.persistence.enabled }}
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /root/.ollama
+          {{- end }}
+          readinessProbe:
+{{ toYaml .Values.services.ollama.probes.readiness | indent 12 }}
+          livenessProbe:
+{{ toYaml .Values.services.ollama.probes.liveness | indent 12 }}
+          startupProbe:
+{{ toYaml .Values.services.ollama.probes.startup | indent 12 }}
+          resources:
+{{ toYaml .Values.services.ollama.resources | indent 12 }}
+      {{- if .Values.services.ollama.persistence.enabled }}
+      volumes:
+        - name: ollama-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.services.ollama.persistence.existingClaim | default "ollama-data" }}
+      {{- end }}
 {{- end }}
-

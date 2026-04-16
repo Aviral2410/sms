@@ -24,10 +24,9 @@ export const RealtimeHub: React.FC<{ children: ReactNode; tenantId?: string }> =
     const isSuperAdmin = session.role === 'SUPER_ADMIN' || session.role === 'PLATFORM_ADMIN';
     if (!tenantId && !isSuperAdmin) return;
 
-    // In a real SaaS, this would be a secure WebSocket endpoint for EMQX
-    const mqttHost = window.location.hostname;
-    const mqttPort = 8087; // Mapped host port for EMQX WebSocket
-    const mqttUrl = `ws://${mqttHost}:${mqttPort}/mqtt`;
+    // Use same-origin websocket endpoint (nginx proxies /mqtt -> EMQX ws listener in-cluster).
+    const wsProto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const mqttUrl = `${wsProto}://${window.location.host}/mqtt`;
 
     const mqttClient = mqtt.connect(mqttUrl, {
       clientId: `frontend_${Math.random().toString(16).slice(2, 10)}`,
