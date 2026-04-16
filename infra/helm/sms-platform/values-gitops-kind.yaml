@@ -37,6 +37,8 @@ services:
       limits:
         cpu: "1"
         memory: 512Mi
+    pdb:
+      enabled: false
   schoolOnboardingService:
     replicaCount: 1
     autoscaling:
@@ -73,6 +75,8 @@ services:
       limits:
         cpu: "1"
         memory: 512Mi
+    pdb:
+      enabled: false
   communicationService:
     replicaCount: 1
     autoscaling:
@@ -145,6 +149,8 @@ services:
       limits:
         cpu: "1"
         memory: 512Mi
+    pdb:
+      enabled: false
     service:
       type: NodePort
       nodePort: 30000
@@ -261,6 +267,8 @@ services:
       limits:
         cpu: 500m
         memory: 256Mi
+    pdb:
+      enabled: false
     service:
       type: NodePort
       nodePort: 30080
