@@ -149,6 +149,39 @@ services:
       type: NodePort
       nodePort: 30000
     env:
+      - name: SERVER_PORT
+        value: "8080"
+      - name: SPRING_DATASOURCE_URL
+        value: "jdbc:postgresql://postgres:5432/sms_platform"
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: ONBOARDING_SERVICE_URL
+        value: "http://school-onboarding-service:8081"
+      - name: AUTH_SERVICE_URL
+        value: "http://auth-service:8082"
+      - name: SCHOOL_OPERATIONS_SERVICE_URL
+        value: "http://school-operations-service:8083"
+      - name: MCP_SERVER_URL
+        value: "http://mcp-server:8084"
+      - name: FINANCE_SERVICE_URL
+        value: "http://finance-service:8085"
+      - name: COMMUNICATION_SERVICE_URL
+        value: "http://communication-service:8089"
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: "http://subscription-service:8086"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
       - name: REDIS_PORT # Override K8s auto-injection string
         value: "6379"
 
