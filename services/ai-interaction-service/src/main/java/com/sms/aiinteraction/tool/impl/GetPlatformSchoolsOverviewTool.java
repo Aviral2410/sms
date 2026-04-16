@@ -70,10 +70,17 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
                 String createdAtStr = school.path("createdAt").asText(null);
                 if (createdAtStr != null) {
                     try {
-                        ZonedDateTime dt = ZonedDateTime.parse(createdAtStr);
-                        String month = dt.format(monthFormatter);
+                        String month;
+                        if (createdAtStr.contains("Z") || createdAtStr.contains("+")) {
+                            month = ZonedDateTime.parse(createdAtStr).format(monthFormatter);
+                        } else {
+                            // Fallback for LocalDateTime format
+                            month = java.time.LocalDateTime.parse(createdAtStr).format(monthFormatter);
+                        }
                         growthByMonth.put(month, growthByMonth.getOrDefault(month, 0) + 1);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ex) {
+                        // Silent fallback - still count the school but don't group by month
+                    }
                 }
             }
         }

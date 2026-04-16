@@ -81,3 +81,10 @@ management:
     web:
       exposure:
         include: ${MANAGEMENT_ENDPOINTS:health,info,gateway}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.http.server.reactive: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG

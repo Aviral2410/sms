@@ -1,4 +1,4 @@
-package com.sms.aiinteraction.service;
+﻿package com.sms.aiinteraction.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -261,3 +261,4 @@ public class ConversationOrchestrator {
         return "Structured response: type=" + rendered.type() + ", intent=" + intent;
     }
 }
+

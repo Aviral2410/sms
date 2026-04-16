@@ -449,6 +449,8 @@ services:
             key: INTERNAL_API_KEY
       - name: MCP_SERVER_URL
         value: http://mcp-server:8084
+      - name: AI_INTERACTION_SERVICE_URL
+        value: http://ai-interaction-service:8090
       - name: LLM_PROVIDER
         valueFrom:
           secretKeyRef:

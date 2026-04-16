@@ -578,10 +578,20 @@ public class SchoolOperationsController {
 
     @PostMapping("/ai/visualize")
     public VisualizeResponse visualize(
-            @RequestHeader("X-User-ID") UUID userId,
-            @RequestHeader("X-School-ID") UUID schoolId,
+            @RequestHeader(value = "X-User-ID", required = false) UUID userId,
+            @RequestHeader(value = "X-School-ID", required = false) UUID schoolId,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
             @RequestBody VisualizeRequest request) {
-        return aiService.visualize(userId, schoolId, request);
+        UUID effectiveSchoolId = schoolId;
+        if (effectiveSchoolId == null) {
+            String role = roleHeader != null ? roleHeader.trim().toUpperCase() : "";
+            if (role.equals("SUPER_ADMIN") || role.equals("PLATFORM_ADMIN")) {
+                effectiveSchoolId = new UUID(0L, 0L);
+            } else {
+                throw new IllegalArgumentException("Missing required header: X-School-ID");
+            }
+        }
+        return aiService.visualize(userId, effectiveSchoolId, request);
     }
 
     @PostMapping("/ai/example")
