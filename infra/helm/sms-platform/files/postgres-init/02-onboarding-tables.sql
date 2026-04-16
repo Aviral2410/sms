@@ -39,6 +39,39 @@ CREATE TABLE IF NOT EXISTS onboarding.school_onboarding (
     version BIGINT DEFAULT 0
 );
 
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS realm_name VARCHAR(255);
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS use_platform_subdomain BOOLEAN DEFAULT TRUE;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255);
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS tagline VARCHAR(255);
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS logo_media_id UUID;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS banner_media_id UUID;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS has_branches BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS is_landing_page_public BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE onboarding.school_onboarding
+    ADD COLUMN IF NOT EXISTS routing_status VARCHAR(80);
+
 CREATE TABLE IF NOT EXISTS onboarding.school_onboarding_document (
     document_id BIGSERIAL PRIMARY KEY,
     onboarding_id UUID NOT NULL REFERENCES onboarding.school_onboarding(onboarding_id) ON DELETE CASCADE,
