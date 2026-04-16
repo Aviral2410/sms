@@ -1946,6 +1946,21 @@ label span {
   gap: 14px;
 }
 
+.public-site-plan-card ul {
+  flex: 1 1 auto;
+}
+
+.public-site-plan-card__cta {
+  margin-top: auto;
+}
+
+.public-site-plan-card--featured {
+  border-color: rgba(34, 211, 238, 0.35);
+  box-shadow:
+    0 26px 60px rgba(2, 6, 23, 0.44),
+    0 0 0 1px rgba(34, 211, 238, 0.12) inset;
+}
+
 .public-site-plan-card__price {
   font-size: 2.2rem;
   font-weight: 900;
@@ -2306,6 +2321,23 @@ label span {
   max-width: 20ch;
 }
 
+.public-page-intro--focus {
+  max-width: 1180px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.public-page-intro--focus .public-pretext-heading__title {
+  max-width: 22ch;
+  font-size: clamp(2.4rem, 4.6vw, 4.2rem);
+}
+
+.public-page-intro--focus .public-pretext-heading__description {
+  font-size: 1.06rem;
+  line-height: 1.85;
+  margin-inline: auto;
+}
+
 .public-site-hero {
   grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.9fr);
   gap: 28px;
@@ -2321,7 +2353,7 @@ label span {
 }
 
 .public-site-hero__pretext .public-pretext-heading__title {
-  font-size: clamp(2.7rem, 5vw, 4.7rem);
+  font-size: clamp(2.45rem, 4.7vw, 4.25rem);
 }
 
 .public-site-hero__subtitle,
@@ -3006,7 +3038,7 @@ label span {
 
 .public-feature-lattice__plan-strip {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--plan-count, 3), minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -3210,6 +3242,429 @@ label span {
   .school-mark--lg {
     --school-mark-size: 122px;
   }
+}
+
+.public-demo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.public-demo-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.public-demo-card__button {
+  margin-top: auto;
+  justify-self: start;
+}
+
+.public-modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 160;
+}
+
+.public-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.public-modal__panel {
+  position: relative;
+  width: min(680px, calc(100vw - 24px));
+  max-height: min(86vh, 760px);
+  overflow: auto;
+  padding: 18px;
+  border-radius: 28px;
+}
+
+.public-modal__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 6px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+  margin-bottom: 14px;
+}
+
+.public-modal__eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: #86ecff;
+}
+
+.public-modal__title {
+  margin: 6px 0 0;
+}
+
+.public-modal__close {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.55);
+  color: rgba(226, 232, 240, 0.98);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.public-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 170;
+}
+
+.public-tour__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.62);
+}
+
+.public-tour__highlight {
+  position: absolute;
+  border-radius: 16px;
+  border: 1px solid rgba(134, 236, 255, 0.55);
+  box-shadow: 0 0 0 9999px rgba(2, 6, 23, 0.62), 0 22px 44px rgba(2, 6, 23, 0.55);
+  pointer-events: none;
+}
+
+.public-tour__tooltip {
+  position: absolute;
+  padding: 14px 14px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(2, 6, 23, 0.92);
+  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.65);
+  backdrop-filter: blur(16px);
+  color: rgba(226, 232, 240, 0.98);
+}
+
+.public-tour__step {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.public-tour__title {
+  margin-top: 10px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.public-tour__body {
+  margin-top: 8px;
+  color: rgba(148, 163, 184, 0.95);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.public-tour__actions {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.public-tour__button {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(15, 23, 42, 0.5);
+  color: rgba(226, 232, 240, 0.98);
+  padding: 8px 10px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.public-tour__button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.public-tour__button--ghost {
+  background: transparent;
+}
+
+.public-tour__button--secondary {
+  border-color: rgba(167, 139, 250, 0.35);
+}
+
+.public-tour__button--primary {
+  border-color: rgba(34, 211, 238, 0.4);
+  background: rgba(34, 211, 238, 0.14);
+}
+
+.public-chat-launcher {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(2, 6, 23, 0.68);
+  color: rgba(226, 232, 240, 0.98);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+  cursor: pointer;
+  box-shadow: 0 16px 34px rgba(2, 6, 23, 0.55);
+  backdrop-filter: blur(14px);
+}
+
+.public-chat {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: min(440px, calc(100vw - 24px));
+  height: min(640px, calc(100vh - 36px));
+  background: rgba(2, 6, 23, 0.92);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  z-index: 150;
+  box-shadow: 0 26px 54px rgba(2, 6, 23, 0.72);
+  display: grid;
+  grid-template-rows: 58px 1fr 76px;
+  overflow: hidden;
+  backdrop-filter: blur(18px);
+}
+
+.public-chat__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.public-chat__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: rgba(226, 232, 240, 0.98);
+  font-size: 0.94rem;
+}
+
+.public-chat__mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 211, 238, 0.12);
+  border: 1px solid rgba(34, 211, 238, 0.24);
+  color: #86ecff;
+}
+
+.public-chat__scope {
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.public-chat__close {
+  background: transparent;
+  border: none;
+  color: rgba(148, 163, 184, 0.95);
+  cursor: pointer;
+}
+
+.public-chat__thread {
+  overflow: auto;
+  padding: 12px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.public-chat__examples {
+  border: 1px dashed rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.public-chat__examples-title {
+  font-size: 0.74rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 900;
+  color: rgba(148, 163, 184, 0.95);
+  margin-bottom: 8px;
+}
+
+.public-chat__examples-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.public-chat__example {
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(2, 6, 23, 0.44);
+  color: rgba(226, 232, 240, 0.94);
+  padding: 10px 10px;
+  font-size: 0.84rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.public-chat__bubble {
+  justify-self: start;
+  max-width: 92%;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.65);
+  color: rgba(226, 232, 240, 0.98);
+}
+
+.public-chat__bubble.is-user {
+  justify-self: end;
+  background: rgba(99, 102, 241, 0.18);
+  border-color: rgba(99, 102, 241, 0.24);
+}
+
+.public-chat__text {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.public-chat__rich {
+  margin-top: 10px;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+  color: rgba(226, 232, 240, 0.95);
+  font-size: 0.86rem;
+  line-height: 1.55;
+}
+
+.public-chat__meta {
+  color: rgba(148, 163, 184, 0.95);
+  font-weight: 800;
+  font-size: 0.78rem;
+}
+
+.public-chat__pre {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 0.76rem;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.35);
+  padding: 10px;
+}
+
+.public-chat__chart {
+  width: 100%;
+  height: 220px;
+}
+
+.public-chat__thinking {
+  font-size: 0.82rem;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.public-chat__composer {
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.public-chat__input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(15, 23, 42, 0.6);
+  color: rgba(226, 232, 240, 0.98);
+  padding: 11px 12px;
+  font-size: 0.88rem;
+}
+
+.public-chat__send {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  background: rgba(34, 211, 238, 0.14);
+  color: rgba(226, 232, 240, 0.98);
+  cursor: pointer;
+}
+
+.public-chat__send:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 920px) {
+  .public-demo-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-assistant__thread {
+  position: relative;
+}
+
+.ai-assistant__greeting {
+  padding: 6px 6px 2px;
+  display: grid;
+  gap: 6px;
+}
+
+.ai-assistant__hello {
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  background: linear-gradient(90deg, rgba(56,189,248,1), rgba(168,85,247,1));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.ai-assistant__sub {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+}
+
+.ai-assistant__daypill {
+  justify-self: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.16);
+  background: rgba(2,6,23,0.25);
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 8px 0 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

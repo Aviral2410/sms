@@ -13,12 +13,13 @@ export default function FoundersMessagePage() {
 
   return (
     <PublicSiteFrame content={content} activePath="/vision" mode="ambient" density={1.05}>
-      <section className="public-page-intro">
+      <section className="public-page-intro public-page-intro--focus">
         <PublicPretextHeading
           eyebrow="Vision"
           pretext="North Star"
           title={content?.founderMessageTitle || 'A letter from the product team'}
           description={content?.founderRole || 'Platform builders for institutions that want continuity, operational depth, and fewer disconnected systems.'}
+          align="center"
         />
       </section>
 

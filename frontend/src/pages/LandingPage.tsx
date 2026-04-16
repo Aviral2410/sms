@@ -22,10 +22,11 @@ import { PublicSiteFrame } from '../components/public/PublicSiteFrame';
 import { SchoolShowcase } from '../components/public/SchoolShowcase';
 import { ScrollReveal } from '../components/public/ScrollReveal';
 import { WebGLHero } from '../components/public/WebGLHero';
+import { PublicField } from '../components/public/PublicField';
 import { FallbackImage } from '../components/ui/FallbackImage';
 import { usePublicSiteContent } from '../hooks/usePublicSiteContent';
 import { publicSiteApi, type PublicRoleBenefit, type PublicSubscriptionOverviewResponse, type PublicSiteFeatureCard } from '../lib/publicSiteApi';
-import { PublicAiAssistantChat } from '../components/public/PublicAiAssistantChat';
+import { startPublicGuidedTour } from '../components/public/PublicGuidedTour';
 
 const ROLE_ICONS: Record<string, React.ElementType> = {
   SCHOOL_ADMIN: Building2,
@@ -122,6 +123,17 @@ export default function LandingPage() {
   const [overview, setOverview] = useState<PublicSubscriptionOverviewResponse | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
   const [storyImageIndex, setStoryImageIndex] = useState(0);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [demoStatus, setDemoStatus] = useState<string | null>(null);
+  const [demoSubmitting, setDemoSubmitting] = useState(false);
+  const [demoForm, setDemoForm] = useState({
+    fullName: '',
+    email: '',
+    organization: '',
+    phone: '',
+    preferredSlot: '',
+    notes: '',
+  });
 
   useEffect(() => {
     let active = true;
@@ -184,6 +196,29 @@ export default function LandingPage() {
 
     return () => window.clearInterval(intervalId);
   }, [rotatingStoryImages]);
+
+  const submitDemoRequest = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setDemoSubmitting(true);
+    setDemoStatus(null);
+    try {
+      await publicSiteApi.submitContactRequest({
+        fullName: demoForm.fullName,
+        email: demoForm.email,
+        organization: demoForm.organization,
+        schoolName: '',
+        phone: demoForm.phone,
+        subject: 'Schedule a demo',
+        message: `Preferred slot: ${demoForm.preferredSlot || 'Not specified'}\n\n${demoForm.notes || ''}`.trim(),
+      });
+      setDemoStatus('Demo request received. The platform team will follow up to confirm the slot.');
+      setDemoForm({ fullName: '', email: '', organization: '', phone: '', preferredSlot: '', notes: '' });
+    } catch (error: any) {
+      setDemoStatus(error?.message || 'We could not submit your demo request right now.');
+    } finally {
+      setDemoSubmitting(false);
+    }
+  };
 
   return (
     <PublicSiteFrame content={content} activePath="/" mode="hero" density={1.26} contentWidth={1460}>
@@ -595,13 +630,64 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <section className="public-site-section">
+        <div className="public-demo-grid">
+          <HoverTiltCard className="public-demo-card public-panel--strong" accentColor="#22d3ee" as="article" maxTilt={12}>
+            <div className="public-status-chip">Interactive demo</div>
+            <h3>Start a guided tour of the system</h3>
+            <p className="public-muted">Click once and we will walk you through navigation, pricing, onboarding, and where support lives.</p>
+            <button type="button" className="public-primary-button public-demo-card__button" onClick={() => startPublicGuidedTour()}>
+              Start guided tour
+              <ArrowRight size={16} />
+            </button>
+          </HoverTiltCard>
+
+          <HoverTiltCard className="public-demo-card public-panel" accentColor="#a78bfa" as="article" maxTilt={12}>
+            <div className="public-status-chip">Live walkthrough</div>
+            <h3>Schedule a detailed demo</h3>
+            <p className="public-muted">Tell us the institution context and we will schedule a slot with a platform specialist.</p>
+            <button type="button" className="public-secondary-button public-demo-card__button" onClick={() => setDemoOpen(true)}>
+              Request a demo slot
+            </button>
+          </HoverTiltCard>
+        </div>
+      </section>
+
       {loading && (
         <section className="public-site-section">
           <div className="public-site-empty public-panel">Loading public site content...</div>
         </section>
       )}
 
-      <PublicAiAssistantChat />
+      {demoOpen && (
+        <div className="public-modal" role="dialog" aria-label="Schedule a demo">
+          <div className="public-modal__backdrop" onClick={() => setDemoOpen(false)} />
+          <div className="public-modal__panel public-panel--strong">
+            <header className="public-modal__header">
+              <div>
+                <div className="public-modal__eyebrow">Detailed demo</div>
+                <h3 className="public-modal__title">Schedule a walkthrough</h3>
+              </div>
+              <button type="button" className="public-modal__close" onClick={() => setDemoOpen(false)} aria-label="Close demo request">×</button>
+            </header>
+            <form className="public-contact-form" onSubmit={submitDemoRequest}>
+              <div className="public-grid-2">
+                <PublicField label="Full name" value={demoForm.fullName} onChange={(e) => setDemoForm((p) => ({ ...p, fullName: e.target.value }))} placeholder="Asha Thomas" accent="#22d3ee" required />
+                <PublicField label="Email" value={demoForm.email} onChange={(e) => setDemoForm((p) => ({ ...p, email: e.target.value }))} placeholder="asha@example.com" accent="#22d3ee" type="email" required />
+                <PublicField label="Organization" value={demoForm.organization} onChange={(e) => setDemoForm((p) => ({ ...p, organization: e.target.value }))} placeholder="North Ridge Academy" accent="#a78bfa" />
+                <PublicField label="Phone" value={demoForm.phone} onChange={(e) => setDemoForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+91 9876543210" accent="#a78bfa" />
+              </div>
+              <PublicField label="Preferred slot" value={demoForm.preferredSlot} onChange={(e) => setDemoForm((p) => ({ ...p, preferredSlot: e.target.value }))} placeholder="e.g. Tue 11:00 AM IST" accent="#ffb663" />
+              <PublicField label="Notes" multiline value={demoForm.notes} onChange={(e) => setDemoForm((p) => ({ ...p, notes: e.target.value }))} placeholder="What do you want to see? Modules, roles, integrations, rollout timeline..." accent="#ffb663" rows={5} />
+              {demoStatus ? <div className="public-site-empty public-contact-form__status">{demoStatus}</div> : null}
+              <button type="submit" className="public-primary-button" disabled={demoSubmitting}>
+                {demoSubmitting ? 'Sending...' : 'Request demo'}
+                <ArrowRight size={16} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </PublicSiteFrame>
   );
 }

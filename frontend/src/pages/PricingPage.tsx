@@ -35,7 +35,31 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<SubscriptionPlanResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const featureMatrix = useMemo(() => Array.from(new Set(plans.flatMap((plan) => plan.featureCodes || []))), [plans]);
+  const orderedPlans = useMemo(() => {
+    const safe = [...plans];
+    const isCommercial = (plan: SubscriptionPlanResponse) => {
+      const code = (plan.planCode || '').toUpperCase();
+      const name = (plan.planName || '').toUpperCase();
+      return code.includes('COMMERCIAL') || name.includes('COMMERCIAL');
+    };
+
+    safe.sort((a, b) => {
+      const aCommercial = isCommercial(a);
+      const bCommercial = isCommercial(b);
+      if (aCommercial === bCommercial) return 0;
+      return aCommercial ? -1 : 1;
+    });
+
+    const commercialIndex = safe.findIndex(isCommercial);
+    if (commercialIndex > 0 && safe.length >= 3) {
+      const [commercial] = safe.splice(commercialIndex, 1);
+      safe.splice(1, 0, commercial);
+    }
+
+    return safe;
+  }, [plans]);
+
+  const featureMatrix = useMemo(() => Array.from(new Set(orderedPlans.flatMap((plan) => plan.featureCodes || []))), [orderedPlans]);
 
   useEffect(() => {
     publicSiteApi.getPlans()
@@ -65,9 +89,16 @@ export default function PricingPage() {
         <>
           <section className="public-site-section">
             <div className="public-grid-3">
-              {plans.map((plan, index) => (
+              {orderedPlans.map((plan, index) => {
+                const featured = (plan.planCode || '').toUpperCase().includes('COMMERCIAL') || (plan.planName || '').toUpperCase().includes('COMMERCIAL') || index === 1;
+                return (
                 <ScrollReveal key={plan.planId} delay={index * 0.06}>
-                  <HoverTiltCard className="public-site-plan-card public-site-plan-card--spotlit public-panel--strong" accentColor={accentForPlan(index)} as="article" maxTilt={12}>
+                  <HoverTiltCard
+                    className={`public-site-plan-card public-site-plan-card--spotlit public-panel--strong${featured ? ' public-site-plan-card--featured' : ''}`}
+                    accentColor={accentForPlan(index)}
+                    as="article"
+                    maxTilt={12}
+                  >
                     <div className="public-site-plan-card__code">{plan.planCode}</div>
                     <h2>{plan.planName}</h2>
                     <div className="public-site-plan-card__price">{formatCurrency(Number(plan.monthlyPrice))}<span>/month</span></div>
@@ -78,18 +109,19 @@ export default function PricingPage() {
                         <li key={feature}><BadgeCheck size={14} color={accentForPlan(index)} /> {humanizeFeature(feature)}</li>
                       ))}
                     </ul>
-                    <Link to="/onboarding" className="public-primary-button">
+                    <Link to="/onboarding" className="public-primary-button public-site-plan-card__cta">
                       Choose this plan
                       <ArrowRight size={16} />
                     </Link>
                   </HoverTiltCard>
                 </ScrollReveal>
-              ))}
+                );
+              })}
             </div>
           </section>
 
           <section className="public-site-section">
-            <div className="public-feature-lattice public-panel">
+            <div className="public-feature-lattice public-panel" style={{ ['--plan-count' as any]: orderedPlans.length } as React.CSSProperties}>
               <div className="public-feature-lattice__header">
                 <div>
                   <div className="public-feature-lattice__eyebrow">Feature matrix</div>
@@ -97,7 +129,7 @@ export default function PricingPage() {
                   <p>Every lane below comes directly from the subscription service, so commercial packaging and feature visibility stay aligned.</p>
                 </div>
                 <div className="public-feature-lattice__legend">
-                  {plans.map((plan, index) => (
+                  {orderedPlans.map((plan, index) => (
                     <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index) } as React.CSSProperties}>
                       <span>{plan.planCode}</span>
                       <strong>{formatCurrency(Number(plan.monthlyPrice))}</strong>
@@ -114,7 +146,7 @@ export default function PricingPage() {
                       <span>Included where this operational capability is part of the package.</span>
                     </div>
                     <div className="public-feature-lattice__plan-strip">
-                      {plans.map((plan, index) => {
+                      {orderedPlans.map((plan, index) => {
                         const enabled = plan.featureCodes.includes(feature);
                         return (
                           <div

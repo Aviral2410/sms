@@ -41,12 +41,13 @@ export default function SupportPage() {
 
   return (
     <PublicSiteFrame content={content} activePath="/support" mode="ambient" density={1.08}>
-      <section className="public-page-intro">
+      <section className="public-page-intro public-page-intro--focus">
         <PublicPretextHeading
           eyebrow="Raise Support"
           pretext="Support"
           title={content?.supportHeadline || 'Support with real institutional context.'}
           description={content?.supportBody || 'Bring rollout blockers, production issues, access failures, or operational questions here so the platform team can triage with full context.'}
+          align="center"
         />
       </section>
 

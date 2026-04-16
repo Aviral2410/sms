@@ -21,7 +21,7 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
   const primaryCtaUrl = content?.primaryCtaUrl || '/onboarding';
 
   return (
-    <nav className={`public-site-nav${open ? ' is-open' : ''}`}>
+    <nav className={`public-site-nav${open ? ' is-open' : ''}`} data-tour="nav">
       <Link to="/" className="public-site-nav__brand" onClick={() => setOpen(false)}>
         <span className="public-site-nav__brand-mark">
           <Sparkles size={18} />
@@ -35,6 +35,7 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
             key={link.to}
             to={link.to}
             className={`public-site-nav__link${activePath === link.to ? ' is-active' : ''}`}
+            data-tour={link.to === '/pricing' ? 'nav-pricing' : undefined}
           >
             {link.label}
           </Link>
@@ -43,7 +44,7 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
 
       <div className="public-site-nav__actions">
         <Link to="/login" className="public-ghost-button public-site-nav__ghost">Sign In</Link>
-        <Link to={primaryCtaUrl} className="public-primary-button public-site-nav__cta">
+        <Link to={primaryCtaUrl} className="public-primary-button public-site-nav__cta" data-tour="primary-cta">
           {content?.primaryCtaLabel || 'Start onboarding'}
           <ArrowUpRight size={16} />
         </Link>

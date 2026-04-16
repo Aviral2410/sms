@@ -41,12 +41,13 @@ export default function ContactPage() {
 
   return (
     <PublicSiteFrame content={content} activePath="/contact" mode="ambient" density={1.08}>
-      <section className="public-page-intro">
+      <section className="public-page-intro public-page-intro--focus">
         <PublicPretextHeading
           eyebrow="Contact Us"
           pretext="Connect"
           title={content?.contactHeadline || 'Talk to the team behind ElevateSmart.'}
           description={content?.contactBody || 'Use this route when you want a real conversation about rollout planning, partnerships, operational fit, or implementation timing.'}
+          align="center"
         />
       </section>
 

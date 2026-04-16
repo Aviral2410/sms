@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, MessageCircle, Plus, Send, Trash2, X } from 'lucide-react';
+import { Bot, Globe, MessageCircle, Plus, Send, Trash2, X } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { readSseStream, tryParseJson } from '../../lib/sse';
 
 type RenderedResponse = {
   type: 'chart' | 'table' | 'text' | 'action';
@@ -35,13 +36,26 @@ type StoredRect = { x: number; y: number; w: number; h: number };
 
 const RECT_STORAGE_KEY = 'aiAssistant:rect:v1';
 const MAX_INPUT_CHARS = 2000;
+const EXAMPLE_PROMPTS = [
+  'Summarize the most important metrics for this workspace.',
+  'Show a chart of admissions by month for the last 6 months.',
+  'Draft a support update message for parents about transport delays.',
+  'List the next 5 onboarding steps to activate a new school.',
+  'Where can I update pricing and public content?',
+];
 
 export const AiAssistantChat: React.FC = () => {
   const { session } = useStore();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'a-welcome',
+      role: 'assistant',
+      text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
+    },
+  ]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
@@ -76,6 +90,15 @@ export const AiAssistantChat: React.FC = () => {
 
   const appendMessage = (msg: ChatMessage) => {
     setMessages((prev) => [...prev, msg]);
+    setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
+    }, 0);
+  };
+
+  const patchMessage = (id: string, patch: Partial<ChatMessage>) => {
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
     setTimeout(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -254,13 +277,16 @@ export const AiAssistantChat: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, authHeaders]);
 
-  const send = async () => {
-    if (!canSend || !session.token) return;
+  const sendMessage = async (override?: string) => {
+    if (!session.token) return;
+    const message = (override ?? input).trim();
+    if (!message || loading) return;
 
-    const message = input.trim();
     setInput('');
     appendMessage({ id: `u-${Date.now()}`, role: 'user', text: message });
     setLoading(true);
+    const assistantId = `a-${Date.now()}`;
+    appendMessage({ id: assistantId, role: 'assistant', text: '' });
 
     try {
       const activeWorkspaceId = await ensureWorkspace();
@@ -295,63 +321,50 @@ export const AiAssistantChat: React.FC = () => {
         throw new Error('Unable to stream AI response.');
       }
 
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let currentEvent = '';
       let finalPayload: StreamFinalPayload | null = null;
+      let streamingText = '';
+      let gotAny = false;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+      await readSseStream(response.body, {
+        onEvent: ({ event, data }) => {
+          gotAny = true;
+          if (data === '[DONE]') return;
 
-        let idx = buffer.indexOf('\n');
-        while (idx >= 0) {
-          const line = buffer.slice(0, idx).trimEnd();
-          buffer = buffer.slice(idx + 1);
-
-          if (line.startsWith('event:')) {
-            currentEvent = line.slice(6).trim();
-          } else if (line.startsWith('data:')) {
-            const payloadRaw = line.slice(5).trim();
-            if (payloadRaw) {
-              const payload = JSON.parse(payloadRaw) as Record<string, unknown>;
-              if (currentEvent === 'final') {
-                finalPayload = payload as unknown as StreamFinalPayload;
-              }
-            }
-          } else if (!line) {
-            currentEvent = '';
+          if (event === 'final') {
+            const parsed = tryParseJson<StreamFinalPayload>(data);
+            if (parsed.ok) finalPayload = parsed.value;
+            return;
           }
 
-          idx = buffer.indexOf('\n');
-        }
-      }
+          const parsed = tryParseJson<any>(data);
+          const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text as string : data;
+          if (event === 'token' || event === 'delta' || event === 'chunk' || event === 'message') {
+            if (chunk) {
+              streamingText += chunk;
+              patchMessage(assistantId, { text: streamingText });
+            }
+          }
+        },
+      });
 
       if (finalPayload?.response) {
         setConversationId(finalPayload.conversationId);
-        appendMessage({
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          response: finalPayload.response,
-        });
+        patchMessage(assistantId, { response: finalPayload.response, text: streamingText || undefined });
+      } else if (!gotAny) {
+        patchMessage(assistantId, { text: 'No response.' });
       } else {
-        appendMessage({
-          id: `a-${Date.now()}`,
-          role: 'assistant',
-          text: 'No structured response was returned.',
-        });
+        patchMessage(assistantId, { text: streamingText || 'No structured response was returned.' });
       }
     } catch (error) {
-      appendMessage({
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        text: error instanceof Error ? error.message : 'Failed to fetch AI response.',
-      });
+      patchMessage(assistantId, { text: error instanceof Error ? error.message : 'Failed to fetch AI response.' });
     } finally {
       setLoading(false);
     }
+  };
+
+  const send = async () => {
+    if (!canSend) return;
+    await sendMessage();
   };
 
   const loadTools = async () => {
@@ -542,6 +555,7 @@ export const AiAssistantChat: React.FC = () => {
 
       {open && (
         <section
+          className="ai-assistant"
           style={{
             position: 'fixed',
             left: rect.x,
@@ -806,6 +820,7 @@ export const AiAssistantChat: React.FC = () => {
 
           <div
             ref={scrollRef}
+            className="ai-assistant__thread"
             style={{
               gridColumn: 2,
               gridRow: toolsOpen ? 4 : 3,
@@ -816,9 +831,51 @@ export const AiAssistantChat: React.FC = () => {
               background: 'linear-gradient(180deg, rgba(2,6,23,0.15), rgba(2,6,23,0.05))',
             }}
           >
-            {messages.length === 0 && (
-              <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-                Ask for attendance, announcements, homework, exam results, transport overview, fee defaulters, student performance, leave workflows, message threads, or notification actions.
+            <div className="ai-assistant__greeting">
+              <div className="ai-assistant__hello">Hello {session.fullName?.split(' ')[0] || 'Admin'}</div>
+              <div className="ai-assistant__sub">How can I help you today?</div>
+            </div>
+            <div className="ai-assistant__daypill">Today</div>
+            {messages.length <= 1 && (
+              <div
+                style={{
+                  border: '1px dashed rgba(148,163,184,0.18)',
+                  borderRadius: 16,
+                  padding: 12,
+                  background: 'rgba(15,23,42,0.28)',
+                  display: 'grid',
+                  gap: 10,
+                }}
+              >
+                <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 900, color: 'var(--text-dim)' }}>
+                  Try one
+                </div>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {EXAMPLE_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        void sendMessage(prompt);
+                      }}
+                      style={{
+                        textAlign: 'left',
+                        borderRadius: 14,
+                        border: '1px solid rgba(148,163,184,0.16)',
+                        background: 'rgba(2,6,23,0.45)',
+                        color: 'var(--text-main)',
+                        padding: '10px 10px',
+                        fontSize: 12,
+                        lineHeight: 1.4,
+                        cursor: loading ? 'not-allowed' : 'pointer',
+                        opacity: loading ? 0.7 : 1,
+                      }}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -846,17 +903,37 @@ export const AiAssistantChat: React.FC = () => {
           </div>
 
           <footer
+            className="ai-assistant__composer"
             style={{
               gridColumn: 2,
               gridRow: toolsOpen ? 5 : 4,
               borderTop: '1px solid rgba(148,163,184,0.16)',
               padding: 10,
               display: 'grid',
-              gridTemplateColumns: '1fr auto',
+              gridTemplateColumns: 'auto 1fr auto',
               gap: 8,
               background: 'rgba(2,6,23,0.15)',
             }}
           >
+            <button
+              type="button"
+              onClick={() => setToolsOpen((v) => !v)}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 16,
+                border: '1px solid rgba(148,163,184,0.16)',
+                background: 'rgba(15,23,42,0.30)',
+                color: 'var(--text-soft)',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              title="Tools"
+            >
+              <Globe size={18} />
+            </button>
             <div style={{ display: 'grid', gap: 6 }}>
               <input
                 value={input}
@@ -872,14 +949,14 @@ export const AiAssistantChat: React.FC = () => {
                     void startNewChat();
                   }
                 }}
-                placeholder="Message…"
+                placeholder="Ask anything about your schools..."
                 style={{
                   width: '100%',
-                  borderRadius: 14,
+                  borderRadius: 18,
                   border: '1px solid rgba(148,163,184,0.18)',
                   background: 'rgba(15,23,42,0.35)',
                   color: 'var(--text-main)',
-                  padding: '11px 12px',
+                  padding: '12px 14px',
                   fontSize: 13,
                   outline: 'none',
                 }}
@@ -896,13 +973,16 @@ export const AiAssistantChat: React.FC = () => {
               disabled={!canSend}
               onClick={() => void send()}
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 14,
-                border: '1px solid rgba(148,163,184,0.18)',
-                background: canSend ? 'rgba(56,189,248,0.18)' : 'rgba(15,23,42,0.25)',
-                color: canSend ? 'var(--text-strong)' : 'var(--text-dim)',
+                width: 48,
+                height: 48,
+                borderRadius: 999,
+                border: '1px solid rgba(99,102,241,0.40)',
+                background: canSend ? 'linear-gradient(135deg, rgba(99,102,241,0.95), rgba(168,85,247,0.85))' : 'rgba(15,23,42,0.25)',
+                color: 'white',
                 cursor: canSend ? 'pointer' : 'not-allowed',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
               title="Send"
             >
