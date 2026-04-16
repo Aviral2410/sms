@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck, Building2, Sparkles, Activity, Users, Plus, X,
   BarChart3, Zap, Globe, Brain, TrendingUp, AlertTriangle, CheckCircle2,
-  RefreshCw, Clock, Mail, LifeBuoy
+  RefreshCw, Clock, Mail, LifeBuoy, Search
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { mcpApi } from '../../lib/mcp';
@@ -51,7 +51,7 @@ function AiInsightBanner({ insight, onClose }: { insight: string; onClose: () =>
 }
 
 export default function PlatformDashboard() {
-  const { session, dashboardWidgets, setDashboardWidgets } = useStore();
+  const { session, dashboardWidgets, setDashboardWidgets, setSearchOpen, setPaletteAiMode } = useStore();
   const { messages } = useRealtime();
   const navigate = useNavigate();
   const [platformStats, setPlatformStats] = useState<any>(null);
@@ -222,14 +222,25 @@ export default function PlatformDashboard() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} 
+            onClick={() => {
+              setPaletteAiMode(false);
+              setSearchOpen(true);
+            }}
+            style={{ padding: '10px 18px', borderRadius: 12, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', color: 'var(--text-strong)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={14} /> Search
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} 
+            onClick={() => {
+              setPaletteAiMode(true);
+              setSearchOpen(true);
+            }}
+            style={{ padding: '10px 18px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(99,102,241,0.1))', border: '1px solid rgba(167,139,250,0.3)', color: '#a78bfa', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sparkles size={14} /> Ask Insights
+          </motion.button>
           <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={fetchStats}
             style={{ padding: '10px 18px', borderRadius: 12, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', color: 'var(--text-dim)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
             <RefreshCw size={14} /> Refresh
-          </motion.button>
-          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={handleAiInsight}
-            style={{ padding: '10px 18px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(167,139,250,0.1))', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Brain size={14} />
-            AI Briefing
           </motion.button>
           <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} onClick={() => setIsAdding(true)}
             style={{ padding: '10px 18px', borderRadius: 12, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', color: 'var(--text-strong)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>

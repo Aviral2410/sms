@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, Globe, Users, Zap, TrendingUp, BarChart3, Activity, HardDrive, Bell, Settings } from 'lucide-react';
+import { Shield, Globe, Users, Zap, TrendingUp, BarChart3, Activity, HardDrive, Bell, Settings, Search, Sparkles } from 'lucide-react';
 import { useRealtime } from '../components/RealtimeHub';
+import { useStore } from '../store/useStore';
 import PlatformSettingsPage from './admin/PlatformSettingsPage';
 import { request, subscriptionApi, type SubscriptionPlanResponse, type TenantSubscriptionResponse } from '../lib/api';
 
@@ -22,6 +23,7 @@ interface SchoolProject {
 }
 
 export const PlatformManagerPage: React.FC = () => {
+  const { session, setSearchOpen, setPaletteAiMode } = useStore();
   const { messages } = useRealtime();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [schools, setSchools] = useState<SchoolProject[]>([]);
@@ -101,7 +103,27 @@ export const PlatformManagerPage: React.FC = () => {
           <h1>Platform Command</h1>
           <p>Orchestrate global multi-tenant operations and monitor institutional health.</p>
         </div>
-        <div className="header-actions">
+        <div className="header-actions flex items-center gap-4">
+           <div className="flex items-center gap-2">
+             <button 
+               className="secondary-button compact py-2 px-3 flex items-center gap-2"
+               onClick={() => {
+                 setPaletteAiMode(false);
+                 setSearchOpen(true);
+               }}
+             >
+               <Search size={14} /> Search
+             </button>
+             <button 
+               className="secondary-button compact py-2 px-3 flex items-center gap-2 text-violet-400 border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10"
+               onClick={() => {
+                 setPaletteAiMode(true);
+                 setSearchOpen(true);
+               }}
+             >
+               <Sparkles size={14} /> Ask Insights
+             </button>
+           </div>
            <div className="tab-switch glass-card p-1 flex gap-1">
              <button className={`tab-btn ${activeTab === 'overview' ? 'active neon-glow' : ''}`} onClick={() => setActiveTab('overview')}>Intelligence</button>
              <button className={`tab-btn ${activeTab === 'commercials' ? 'active neon-glow' : ''}`} onClick={() => setActiveTab('commercials')}>Commercials</button>
