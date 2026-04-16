@@ -3,7 +3,7 @@ import { useStore } from '../../store/useStore';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { schoolOpsApi, type SchoolDashboard } from '../../lib/api';
-import { Users, BookOpen, Calendar, CreditCard, Home, FileText, Clock, ClipboardList, Loader, AlertTriangle, GraduationCap, Bus, Library, MessageSquare, BarChart2, Sparkles, Layers } from 'lucide-react';
+import { Users, BookOpen, Calendar, CreditCard, Home, FileText, Clock, ClipboardList, Loader, AlertTriangle, GraduationCap, Bus, Library, MessageSquare, BarChart2, Sparkles, Layers, Search } from 'lucide-react';
 import { AiInsightEngine } from '../../components/AiInsightEngine';
 
 const DIM = 'var(--text-dim)'; const BORDER = 'var(--glass-border)';
@@ -37,7 +37,7 @@ function AnimatedNum({ value }: { value: number }) {
 }
 
 export default function SchoolAdminDashboard() {
-  const { session, accentColor } = useStore();
+  const { session, accentColor, setSearchOpen, setPaletteAiMode } = useStore();
   const navigate = useNavigate();
   const [data, setData] = useState<SchoolDashboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,13 +88,33 @@ export default function SchoolAdminDashboard() {
   return (
     <motion.div variants={containerV} initial="hidden" animate="show" style={{ display: 'flex', flexDirection: 'column', gap: 28, paddingBottom: 48 }}>
       {/* Header */}
-      <motion.div variants={itemV}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 999, background: 'rgba(255,182,99,0.1)', border: '1px solid rgba(255,182,99,0.25)', color: AMBER, fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: AMBER, display: 'inline-block' }} />
-          School Administration
+      <motion.div variants={itemV} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 999, background: 'rgba(255,182,99,0.1)', border: '1px solid rgba(255,182,99,0.25)', color: AMBER, fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: AMBER, display: 'inline-block' }} />
+            School Administration
+          </div>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text-strong)', margin: '0 0 6px' }}>Operations Overview</h1>
+          <p style={{ color: DIM, margin: 0, fontSize: '0.95rem' }}>Live metrics for your institution · Powered by <span style={{ color: '#22d3ee' }}>AI Intelligence</span></p>
         </div>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-0.04em', color: 'var(--text-strong)', margin: '0 0 6px' }}>Operations Overview</h1>
-        <p style={{ color: DIM, margin: 0, fontSize: '0.95rem' }}>Live metrics for your institution · Powered by <span style={{ color: '#22d3ee' }}>AI Intelligence</span></p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} 
+            onClick={() => {
+              setPaletteAiMode(false);
+              setSearchOpen(true);
+            }}
+            style={{ padding: '10px 18px', borderRadius: 12, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', color: 'var(--text-strong)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Search size={14} /> Search
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} 
+            onClick={() => {
+              setPaletteAiMode(true);
+              setSearchOpen(true);
+            }}
+            style={{ padding: '10px 18px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(34,211,238,0.2), rgba(99,102,241,0.1))', border: '1px solid rgba(34,211,238,0.3)', color: '#22d3ee', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sparkles size={14} /> Ask Insights
+          </motion.button>
+        </div>
       </motion.div>
 
       {/* Metrics grid 4-col with animated counters */}

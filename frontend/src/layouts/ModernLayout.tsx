@@ -401,7 +401,7 @@ export function ModernLayout() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            \n\n            {/* Notifications */}
+            {/* Notifications */}
             <div style={{ position: 'relative' }}>
               <motion.button whileHover={{ scale: 1.1 }} onClick={() => setNotifOpen(!notifOpen)}
                 style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-dim)', position: 'relative' }}>

@@ -454,6 +454,7 @@ services:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: LLM_PROVIDER
+            optional: true
       - name: GEMINI_API_KEY
         valueFrom:
           secretKeyRef:
@@ -464,11 +465,13 @@ services:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENAI_API_KEY
+            optional: true
       - name: OPENROUTER_API_KEY
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENROUTER_API_KEY
+            optional: true
       - name: ANTHROPIC_API_KEY
         valueFrom:
           secretKeyRef:
@@ -961,31 +964,37 @@ services:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: LLM_PROVIDER
+            optional: true
       - name: OLLAMA_BASE_URL
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OLLAMA_BASE_URL
+            optional: true
       - name: OLLAMA_MODEL
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OLLAMA_MODEL
+            optional: true
       - name: GEMINI_API_KEY
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: GEMINI_API_KEY
+            optional: true
       - name: OPENAI_API_KEY
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENAI_API_KEY
+            optional: true
       - name: OPENROUTER_API_KEY
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENROUTER_API_KEY
+            optional: true
     probes:
       startup:
         tcpSocket:

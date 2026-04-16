@@ -57,6 +57,8 @@ $platformData = @{
         OPENAI_API_KEY = ""
         OPENAI_MODEL = "gpt-4o-mini"
         GEMINI_API_KEY = ""
+        OPENROUTER_API_KEY = ""
+        ANTHROPIC_API_KEY = ""
     }
 } | ConvertTo-Json
 
