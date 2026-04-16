@@ -23,7 +23,7 @@ interface SchoolProject {
 }
 
 export const PlatformManagerPage: React.FC = () => {
-  const { session, setSearchOpen, setPaletteAiMode } = useStore();
+  const { session, searchOpen, setSearchOpen, paletteAiMode, setPaletteAiMode } = useStore();
   const { messages } = useRealtime();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [schools, setSchools] = useState<SchoolProject[]>([]);

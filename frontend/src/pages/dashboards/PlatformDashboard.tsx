@@ -51,7 +51,7 @@ function AiInsightBanner({ insight, onClose }: { insight: string; onClose: () =>
 }
 
 export default function PlatformDashboard() {
-  const { session, dashboardWidgets, setDashboardWidgets, setSearchOpen, setPaletteAiMode } = useStore();
+  const { session, dashboardWidgets, setDashboardWidgets, searchOpen, setSearchOpen, paletteAiMode, setPaletteAiMode } = useStore();
   const { messages } = useRealtime();
   const navigate = useNavigate();
   const [platformStats, setPlatformStats] = useState<any>(null);

@@ -37,7 +37,7 @@ function AnimatedNum({ value }: { value: number }) {
 }
 
 export default function SchoolAdminDashboard() {
-  const { session, accentColor, setSearchOpen, setPaletteAiMode } = useStore();
+  const { session, accentColor, searchOpen, setSearchOpen, paletteAiMode, setPaletteAiMode } = useStore();
   const navigate = useNavigate();
   const [data, setData] = useState<SchoolDashboard | null>(null);
   const [loading, setLoading] = useState(true);
