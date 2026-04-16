@@ -3,7 +3,6 @@ import type {
   ExampleResponse,
   VisualizationChart,
   VisualizationStep,
-  VisualizationToolLink,
   VisualizeResponse,
 } from './api';
 
@@ -11,7 +10,7 @@ type BuildVisualizationInput = {
   question: string;
   subject?: string;
   level: 'BEGINNER' | 'STANDARD' | 'ADVANCED';
-  visualizationStyle: 'STEP_LIST' | 'SUMMARY' | 'SCIENTIFIC_PLOT' | 'MIND_MAP' | 'FLOWCHART' | 'COMPARISON';
+  visualizationStyle: 'AUTO' | 'STEP_LIST' | 'SUMMARY' | 'SCIENTIFIC_PLOT' | 'MIND_MAP' | 'FLOWCHART' | 'COMPARISON';
 };
 
 type BuildExamplesInput = {
@@ -24,21 +23,23 @@ export function buildBasicVisualization(input: BuildVisualizationInput): Visuali
   const resolvedSubject = resolveSubject(input.question, input.subject);
   const concept = extractConcept(input.question);
   const chart = resolvedSubject === 'Mathematics' ? buildMathChart(input.question) : undefined;
-  const steps = buildSteps(concept, resolvedSubject, input.level, input.visualizationStyle, Boolean(chart));
-  const diagramDefinition = buildDiagram(concept, resolvedSubject, input.visualizationStyle);
+  const visualizationStyle = input.visualizationStyle === 'AUTO'
+    ? detectVisualizationStyle(input.question, resolvedSubject)
+    : input.visualizationStyle;
+  const steps = buildSteps(concept, resolvedSubject, input.level, visualizationStyle, Boolean(chart));
+  const diagramDefinition = buildDiagram(concept, resolvedSubject, visualizationStyle);
 
   return {
     title: `Understanding: ${truncate(concept, 64)}`,
-    summary: buildSummary(concept, resolvedSubject, input.visualizationStyle, Boolean(chart)),
+    summary: buildSummary(concept, resolvedSubject, visualizationStyle, Boolean(chart)),
     subject: resolvedSubject,
     level: input.level,
     steps,
     approaches: buildApproaches(resolvedSubject, Boolean(chart)),
-    tags: [resolvedSubject, input.level, input.visualizationStyle.replace(/_/g, ' ')],
+    tags: [resolvedSubject, input.level, visualizationStyle.replace(/_/g, ' ')],
     llmEnhanced: false,
     diagramType: diagramDefinition ? 'FLOWCHART' : chart ? 'XY_CHART' : 'NONE',
     diagramDefinition,
-    toolLinks: buildToolLinks(input.question, resolvedSubject),
     chart,
     generationMode: 'LOCAL',
   };
@@ -104,10 +105,10 @@ function buildSteps(
         stepNumber: 3,
         heading: 'Link rule to shape',
         explanation: hasChart
-          ? 'Use the graph preview and the external math tools to confirm the shape and behavior.'
-          : 'Use a graphing tool to confirm the pattern visually and check your intuition.',
+          ? 'Use the graph preview to confirm the shape and behavior.'
+          : 'Use a quick sketch or a small value table to confirm the pattern visually.',
         icon: '3',
-        visual: hasChart ? 'Curve preview available below.' : 'Open Wolfram|Alpha or GeoGebra for a live graph.',
+        visual: hasChart ? 'Curve preview available below.' : 'Try a few x values and plot the points on paper.',
       },
     ];
   }
@@ -187,10 +188,10 @@ function buildSummary(concept: string, subject: string, visualizationStyle: stri
   }
 
   if (subject === 'Mathematics' && hasChart) {
-    return `${concept} now has a quick graph preview plus free graphing shortcuts so a basic plan still gets a real visual explanation.`;
+    return `${concept} includes a quick graph preview so you can connect the rule to the visual pattern immediately.`;
   }
 
-  return `This basic-plan walkthrough turns ${concept} into a clear ${subject.toLowerCase()} explanation with structured steps and free visualization tools.`;
+  return `This guided mode turns ${concept} into a clear ${subject.toLowerCase()} explanation with structured steps and in-app visuals.`;
 }
 
 function buildApproaches(subject: string, hasChart: boolean) {
@@ -217,84 +218,16 @@ function buildDiagram(concept: string, subject: string, visualizationStyle: stri
     D --> E["Apply it to an example"]`;
 }
 
-function buildToolLinks(question: string, subject: string): VisualizationToolLink[] {
-  const encodedQuestion = encodeURIComponent(question.trim());
-  const lower = question.toLowerCase();
+function detectVisualizationStyle(question: string, subject: string): BuildVisualizationInput['visualizationStyle'] {
+  const q = question.toLowerCase();
+  const s = subject.toLowerCase();
 
-  const links: VisualizationToolLink[] = [
-    {
-      id: 'wolfram-alpha',
-      provider: 'Wolfram|Alpha',
-      label: 'Open in Wolfram|Alpha',
-      description: 'Run the same question in a free symbolic and computational workspace.',
-      href: `https://www.wolframalpha.com/input?i=${encodedQuestion}`,
-    },
-  ];
-
-  if (subject === 'Mathematics') {
-    links.push(
-      {
-        id: 'geogebra-graphing',
-        provider: 'GeoGebra',
-        label: 'Open GeoGebra Graphing',
-        description: 'Plot functions and inspect slopes, intercepts, and intersections.',
-        href: 'https://www.geogebra.org/graphing',
-      },
-      {
-        id: 'geogebra-cas',
-        provider: 'GeoGebra',
-        label: 'Open GeoGebra CAS',
-        description: 'Solve algebraic expressions and symbolic manipulation problems.',
-        href: 'https://www.geogebra.org/cas',
-      },
-    );
-  }
-
-  if (subject === 'Physics') {
-    const physicsHref =
-      lower.includes('force') || lower.includes('motion') || lower.includes('friction') || lower.includes('velocity')
-        ? 'https://phet.colorado.edu/en/simulations/forces-and-motion-basics'
-        : 'https://phet.colorado.edu/en/simulations/filter?subjects=physics&type=html';
-
-    links.push({
-      id: 'phet-physics',
-      provider: 'PhET',
-      label: 'Open a PhET Physics Sim',
-      description: 'Use a free interactive simulation for motion, forces, or related physics ideas.',
-      href: physicsHref,
-    });
-  }
-
-  if (subject === 'Chemistry') {
-    const chemistryHref =
-      lower.includes('balance') || lower.includes('equation') || lower.includes('reaction')
-        ? 'https://phet.colorado.edu/en/simulations/balancing-chemical-equations'
-        : 'https://pubchem.ncbi.nlm.nih.gov/docs/pug-rest';
-
-    links.push({
-      id: 'chemistry-tool',
-      provider: lower.includes('balance') || lower.includes('equation') || lower.includes('reaction') ? 'PhET' : 'PubChem',
-      label: lower.includes('balance') || lower.includes('equation') || lower.includes('reaction')
-        ? 'Open a Chemistry Simulation'
-        : 'Open PubChem Data Tools',
-      description: lower.includes('balance') || lower.includes('equation') || lower.includes('reaction')
-        ? 'Visualize how reactants and products balance in an interactive simulation.'
-        : 'Use the free PubChem API and compound data tools for chemistry lookups.',
-      href: chemistryHref,
-    });
-  }
-
-  if (subject === 'Mathematics' && (lower.includes('fraction') || lower.includes('fractions'))) {
-    links.push({
-      id: 'phet-fractions',
-      provider: 'PhET',
-      label: 'Open a Fractions Simulation',
-      description: 'Use an interactive visual for numerator/denominator reasoning and fraction equivalence.',
-      href: 'https://phet.colorado.edu/en/simulations/fractions-intro',
-    });
-  }
-
-  return links;
+  if (q.includes('binary search') || q.includes('algorithm') || q.includes('dfs') || q.includes('bfs')) return 'FLOWCHART';
+  if (q.includes('quadratic') || q.includes('graph') || q.includes('plot') || q.includes('y=')) return 'SCIENTIFIC_PLOT';
+  if (q.includes('photosynthesis') || q.includes('cycle') || q.includes('process') || s.includes('biology')) return 'MIND_MAP';
+  if (q.includes('compare') || q.includes('difference') || q.includes('vs ') || q.includes('versus')) return 'COMPARISON';
+  if (q.startsWith('summarize') || q.startsWith('summarise') || q.includes('summary')) return 'SUMMARY';
+  return 'STEP_LIST';
 }
 
 function buildExamples(concept: string, subject: string, count: number): AiExample[] {

@@ -44,6 +44,32 @@ const EXAMPLE_PROMPTS = [
   'Where can I update pricing and public content?',
 ];
 
+function downloadText(filename: string, text: string, mime = 'text/plain;charset=utf-8') {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function toCsv(rows: Record<string, unknown>[]) {
+  const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r ?? {}))));
+  const escape = (value: unknown) => {
+    const s = value == null ? '' : String(value);
+    const needs = /[\",\n]/.test(s);
+    const escaped = s.replace(/\"/g, '""');
+    return needs ? `"${escaped}"` : escaped;
+  };
+  return [
+    headers.map(escape).join(','),
+    ...rows.map((r) => headers.map((h) => escape((r as any)?.[h])).join(',')),
+  ].join('\n');
+}
+
 export const AiAssistantChat: React.FC = () => {
   const { session } = useStore();
   const [open, setOpen] = useState(false);
@@ -347,9 +373,12 @@ export const AiAssistantChat: React.FC = () => {
         },
       });
 
-      if (finalPayload?.response) {
-        setConversationId(finalPayload.conversationId);
-        patchMessage(assistantId, { response: finalPayload.response, text: streamingText || undefined });
+      // TypeScript can sometimes infer `finalPayload` as `never` across the async stream callback boundary.
+      // Re-bind with an explicit type to keep build-time typing stable.
+      const payload = finalPayload as StreamFinalPayload | null;
+      if (payload?.response) {
+        setConversationId(payload.conversationId);
+        patchMessage(assistantId, { response: payload.response, text: streamingText || undefined });
       } else if (!gotAny) {
         patchMessage(assistantId, { text: 'No response.' });
       } else {
@@ -472,6 +501,27 @@ export const AiAssistantChat: React.FC = () => {
       return (
         <div style={{ display: 'grid', gap: 8 }}>
           <div style={{ fontSize: 12, fontWeight: 700 }}>Rows: {rows.length}</div>
+          {rows.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv;charset=utf-8')}
+                style={{
+                  justifySelf: 'start',
+                  border: '1px solid rgba(148,163,184,0.18)',
+                  background: 'rgba(15,23,42,0.25)',
+                  color: 'var(--text-soft)',
+                  padding: '6px 10px',
+                  borderRadius: 10,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                }}
+              >
+                Export CSV
+              </button>
+            </div>
+          )}
           <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
             {JSON.stringify(rows.slice(0, 10), null, 2)}
           </pre>
@@ -480,7 +530,32 @@ export const AiAssistantChat: React.FC = () => {
     }
 
     if (response.type === 'chart') {
-      return renderChart(response);
+      const chart = response.data?.chart as { xKey?: string; yKey?: string; points?: Record<string, unknown>[] } | undefined;
+      const points = Array.isArray(chart?.points) ? chart.points : [];
+      return (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {points.length > 0 && (
+            <button
+              type="button"
+              onClick={() => downloadText(`ai-chart-${Date.now()}.csv`, toCsv(points), 'text/csv;charset=utf-8')}
+              style={{
+                justifySelf: 'start',
+                border: '1px solid rgba(148,163,184,0.18)',
+                background: 'rgba(15,23,42,0.25)',
+                color: 'var(--text-soft)',
+                padding: '6px 10px',
+                borderRadius: 10,
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              Export CSV
+            </button>
+          )}
+          {renderChart(response)}
+        </div>
+      );
     }
 
     if (response.type === 'action') {
@@ -521,6 +596,43 @@ export const AiAssistantChat: React.FC = () => {
       <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
         {JSON.stringify(response.data, null, 2)}
       </pre>
+    );
+  };
+
+  const renderActionChips = (response?: RenderedResponse) => {
+    const actions = (response?.meta as any)?.orchestration?.actions as Array<{ id: string; label: string }> | undefined;
+    if (!actions || actions.length === 0) return null;
+
+    const rows = response?.type === 'table' && Array.isArray((response.data as any)?.rows) ? ((response.data as any).rows as Record<string, unknown>[]) : null;
+
+    return (
+      <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {actions.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              if (a.id === 'simplify') void sendMessage('Simplify the last answer and keep it short.');
+              else if (a.id === 'deep_dive') void sendMessage('Deep dive on the last answer with steps and examples.');
+              else if (a.id === 'export_csv' && rows && rows.length > 0) downloadText(`ai-export-${Date.now()}.csv`, toCsv(rows), 'text/csv;charset=utf-8');
+            }}
+            style={{
+              borderRadius: 999,
+              border: '1px solid rgba(148,163,184,0.18)',
+              background: 'rgba(2,6,23,0.35)',
+              color: 'var(--text-soft)',
+              padding: '6px 10px',
+              fontSize: 11,
+              fontWeight: 900,
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
     );
   };
 
@@ -895,7 +1007,10 @@ export const AiAssistantChat: React.FC = () => {
                 {msg.role === 'user' ? (
                   <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45 }}>{msg.text}</p>
                 ) : (
-                  renderAssistantResponse(msg.response, msg.text)
+                  <div>
+                    {renderAssistantResponse(msg.response, msg.text)}
+                    {renderActionChips(msg.response)}
+                  </div>
                 )}
               </article>
             ))}

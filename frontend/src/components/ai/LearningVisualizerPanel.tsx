@@ -5,7 +5,6 @@ import {
   AlertCircle, 
   Code, 
   Info,
-  ExternalLink,
   Sparkles
 } from 'lucide-react';
 import { VisualizeResponse } from '../../lib/api';
@@ -144,33 +143,6 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
                 </RechartsLineChart>
               </ResponsiveContainer>
             </div>
-          </div>
-        </section>
-      )}
-
-      {data.toolLinks && data.toolLinks.length > 0 && (
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 text-emerald-300">
-            <Sparkles className="w-4 h-4" />
-            <h3 className="font-black uppercase tracking-widest text-[10px]">Free Tools</h3>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {data.toolLinks.map((tool) => (
-              <a
-                key={tool.id}
-                href={tool.href}
-                target="_blank"
-                rel="noreferrer"
-                className="group flex items-start justify-between gap-4 rounded-3xl border border-white/[0.05] bg-white/[0.02] p-5 transition-colors hover:border-cyan-400/30 hover:bg-white/[0.04]"
-              >
-                <div>
-                  <div className="text-[10px] font-black uppercase tracking-widest text-cyan-300/80">{tool.provider}</div>
-                  <h4 className="mt-2 text-sm font-black text-white">{tool.label}</h4>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-400">{tool.description}</p>
-                </div>
-                <ExternalLink className="mt-1 h-4 w-4 shrink-0 text-slate-500 transition-colors group-hover:text-cyan-300" />
-              </a>
-            ))}
           </div>
         </section>
       )}

@@ -152,7 +152,10 @@ public class AIService {
         String question = request.question().trim();
         String subject = !isEmpty(request.subject()) ? request.subject() : detectSubject(question);
         String level   = !isEmpty(request.level())   ? request.level()   : "STANDARD";
-        String style   = !isEmpty(request.visualizationStyle()) ? request.visualizationStyle() : "STEP_LIST";
+        String requestedStyle = !isEmpty(request.visualizationStyle()) ? request.visualizationStyle() : "AUTO";
+        String style = "AUTO".equalsIgnoreCase(requestedStyle)
+                ? detectVisualizationStyle(question, subject)
+                : requestedStyle;
 
         VisualizeResponse base = buildBaseVisualization(question, subject, level, style);
 
@@ -165,6 +168,33 @@ public class AIService {
 
         persistVisualization(userId, schoolId, question, base);
         return base;
+    }
+
+    private String detectVisualizationStyle(String question, String subject) {
+        String q = question == null ? "" : question.toLowerCase();
+        String s = subject == null ? "" : subject.toLowerCase();
+
+        if (q.contains("binary search") || q.contains("dfs") || q.contains("bfs") || q.contains("algorithm") || q.contains("flow")) {
+            return "FLOWCHART";
+        }
+
+        if (q.contains("quadratic") || q.contains("graph") || q.contains("plot") || q.matches(".*\\b[yf]\\s*\\(\\s*x\\s*\\)\\s*=.*")) {
+            return "SCIENTIFIC_PLOT";
+        }
+
+        if (q.contains("photosynthesis") || q.contains("ecosystem") || q.contains("process") || q.contains("cycle") || s.contains("biology")) {
+            return "MIND_MAP";
+        }
+
+        if (q.contains("compare") || q.contains("difference") || q.contains("vs ") || q.contains("versus")) {
+            return "COMPARISON";
+        }
+
+        if (q.contains("summary") || q.startsWith("summarize") || q.startsWith("summarise")) {
+            return "SUMMARY";
+        }
+
+        return "STEP_LIST";
     }
 
     private void persistVisualization(UUID userId, UUID schoolId, String question, VisualizeResponse response) {

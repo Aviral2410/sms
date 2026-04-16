@@ -3,17 +3,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
   BrainCircuit,
-  GitBranch,
   HelpCircle,
-  LayoutTemplate,
   Loader,
-  Lock,
-  Network,
-  Search,
   Send,
-  Split,
   X,
   Zap,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExamplesPanel } from '../components/ai/ExamplesPanel';
@@ -30,15 +25,6 @@ const TABS = [
   { id: 'examples', label: 'Interactive Examples', icon: BookOpen },
 ] as const;
 
-const VISUALIZATION_STYLES = [
-  { id: 'STEP_LIST', label: 'Step-by-Step List', icon: LayoutTemplate, tier: 'BASE' },
-  { id: 'SUMMARY', label: 'Concise Summary', icon: BrainCircuit, tier: 'BASE' },
-  { id: 'SCIENTIFIC_PLOT', label: 'Scientific Plot', icon: Search, tier: 'BASE' },
-  { id: 'MIND_MAP', label: 'Interactive Mind Map', icon: Network, tier: 'PREMIUM' },
-  { id: 'FLOWCHART', label: 'Logical Flowchart', icon: GitBranch, tier: 'PREMIUM' },
-  { id: 'COMPARISON', label: 'Side-by-Side Analysis', icon: Split, tier: 'PREMIUM' },
-] as const;
-
 export default function LearningModePage() {
   const { session } = useStore();
   const premiumEntitled = hasFeature(session.featureCodes, 'AI_VISUALIZATION_PREMIUM');
@@ -47,7 +33,8 @@ export default function LearningModePage() {
   const [question, setQuestion] = useState('');
   const [subject, setSubject] = useState('');
   const [level, setLevel] = useState<'BEGINNER' | 'STANDARD' | 'ADVANCED'>('STANDARD');
-  const [vizStyle, setVizStyle] = useState<(typeof VISUALIZATION_STYLES)[number]['id']>('STEP_LIST');
+  // Keep the field for backwards compatibility, but default to AUTO to avoid asking the learner to pick a visualization style.
+  const [vizStyle] = useState<'AUTO'>('AUTO');
 
   const [visualizeData, setVisualizeData] = useState<VisualizeResponse | null>(null);
   const [examplesData, setExamplesData] = useState<ExampleResponse | null>(null);
@@ -61,7 +48,7 @@ export default function LearningModePage() {
       question: question.trim(),
       subject: subject || undefined,
       level,
-      visualizationStyle: vizStyle,
+      visualizationStyle: vizStyle as any,
     });
 
   const createLocalExamples = () =>
@@ -91,13 +78,12 @@ export default function LearningModePage() {
     try {
       if (activeTab === 'visualize') {
         setExamplesData(null);
-        const wantsPremium = VISUALIZATION_STYLES.find((style) => style.id === vizStyle)?.tier === 'PREMIUM';
         const res = await schoolOpsApi.visualize({
           question: question.trim(),
           subject: subject || undefined,
           level,
           visualizationStyle: vizStyle,
-          premiumRequest: wantsPremium,
+          premiumRequest: premiumEntitled,
         });
         setVisualizeData({ ...res, generationMode: 'AI' });
       } else {
@@ -239,29 +225,13 @@ export default function LearningModePage() {
                 <div className="admin-management-field">
                   <span>Visualization Style</span>
                   <div className="learning-mode-style-grid">
-                    {VISUALIZATION_STYLES.map((style) => {
-                      const locked = style.tier === 'PREMIUM' && !premiumEntitled;
-                      const active = vizStyle === style.id;
-                      return (
-                        <button
-                          key={style.id}
-                          type="button"
-                          onClick={() => {
-                            if (locked) {
-                              toast.error('Upgrade required for this visualization style.');
-                            }
-                            setVizStyle(style.id);
-                          }}
-                          className={`learning-mode-style ${active ? 'is-active' : ''} ${locked ? 'is-disabled' : ''}`}
-                        >
-                          <div className="learning-mode-style-main">
-                            <style.icon size={16} />
-                            <span>{style.label}</span>
-                          </div>
-                          {locked ? <Lock size={14} /> : null}
-                        </button>
-                      );
-                    })}
+                    <div className="learning-mode-style is-active" style={{ cursor: 'default' }}>
+                      <div className="learning-mode-style-main">
+                        <Sparkles size={16} />
+                        <span>Auto-selected by AI</span>
+                      </div>
+                      {premiumEntitled ? <Zap size={14} /> : null}
+                    </div>
                   </div>
                 </div>
 
