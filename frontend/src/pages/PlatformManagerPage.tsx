@@ -108,8 +108,12 @@ export const PlatformManagerPage: React.FC = () => {
              <button 
                className="secondary-button compact py-2 px-3 flex items-center gap-2"
                onClick={() => {
-                 setPaletteAiMode(false);
-                 setSearchOpen(true);
+                 if (searchOpen && !paletteAiMode) {
+                   setSearchOpen(false);
+                 } else {
+                   setPaletteAiMode(false);
+                   setSearchOpen(true);
+                 }
                }}
              >
                <Search size={14} /> Search
@@ -117,8 +121,12 @@ export const PlatformManagerPage: React.FC = () => {
              <button 
                className="secondary-button compact py-2 px-3 flex items-center gap-2 text-violet-400 border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10"
                onClick={() => {
-                 setPaletteAiMode(true);
-                 setSearchOpen(true);
+                 if (searchOpen && paletteAiMode) {
+                   setSearchOpen(false);
+                 } else {
+                   setPaletteAiMode(true);
+                   setSearchOpen(true);
+                 }
                }}
              >
                <Sparkles size={14} /> Ask Insights

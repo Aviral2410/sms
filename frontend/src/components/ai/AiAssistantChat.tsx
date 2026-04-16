@@ -19,7 +19,7 @@ type ChatMessage = {
 };
 
 type StreamFinalPayload = {
-  workspaceId?: string | null;
+  workspaceId: string | null;
   conversationId: string;
   response: RenderedResponse;
 };
@@ -115,6 +115,31 @@ export const AiAssistantChat: React.FC = () => {
   const [toolsLoaded, setToolsLoaded] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [toolsError, setToolsError] = useState<string | null>(null);
+  
+  const authHeaders = useMemo(() => {
+    if (!session.token) return null;
+    return { Authorization: `Bearer ${session.token}` };
+  }, [session.token]);
+
+  const deleteChat = async (id: string) => {
+    if (!authHeaders) return;
+    try {
+      const res = await fetch(`/api/v1/ai-interaction/chats/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        setChats((prev) => prev.filter((c) => c.conversationId !== id));
+        if (conversationId === id) {
+          setConversationId(null);
+          resetThread();
+        }
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ active: boolean; dx: number; dy: number }>({ active: false, dx: 0, dy: 0 });
   const resizeRef = useRef<{ active: boolean; startX: number; startY: number; startW: number; startH: number }>({ active: false, startX: 0, startY: 0, startW: 0, startH: 0 });
@@ -160,11 +185,6 @@ export const AiAssistantChat: React.FC = () => {
     if (!ts) return '';
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-
-  const authHeaders = useMemo(() => {
-    if (!session.token) return null;
-    return { Authorization: `Bearer ${session.token}` };
-  }, [session.token]);
 
   const clampRect = (next: StoredRect) => {
     const minW = 360;
@@ -287,18 +307,6 @@ export const AiAssistantChat: React.FC = () => {
     }, 0);
   };
 
-  const createChat = async (activeWorkspaceId: string) => {
-    if (!authHeaders) return null;
-    const res = await fetch(`/api/v1/ai-interaction/workspaces/${encodeURIComponent(activeWorkspaceId)}/chats`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ title: null }),
-    });
-    if (!res.ok) return null;
-    const created = (await safeReadJson<{ conversationId: string }>(res)) ?? null;
-    return created?.conversationId ?? null;
-  };
-
   const createChatInDefaultWorkspace = async () => {
     if (!authHeaders) return null;
     const res = await fetch('/api/v1/ai-interaction/chats', {
@@ -318,12 +326,16 @@ export const AiAssistantChat: React.FC = () => {
     if (!authHeaders) return;
     setHistoryLoading(true);
     try {
+      const ws = workspaceId ?? (await ensureWorkspace());
+      if (!ws) return;
       const newId = await createChatInDefaultWorkspace();
       if (!newId) return;
       setConversationId(newId);
       resetThread();
-      const ws = workspaceId ?? (await ensureWorkspace());
-      if (ws) await loadChats(ws);
+      await loadChats(ws);
+      setToolsOpen(false);
+    } catch (err) {
+      console.error('Failed to start new chat:', err);
     } finally {
       setHistoryLoading(false);
     }
@@ -397,6 +409,13 @@ export const AiAssistantChat: React.FC = () => {
             return;
           }
 
+          if (event === 'status') {
+            const parsed = tryParseJson<any>(data);
+            const statusText = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text : data;
+            patchMessage(assistantId, { text: statusText });
+            return;
+          }
+
           const parsed = tryParseJson<any>(data);
           const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text as string : data;
           if (event === 'token' || event === 'delta' || event === 'chunk' || event === 'message') {
@@ -408,20 +427,24 @@ export const AiAssistantChat: React.FC = () => {
         },
       });
 
-      // TypeScript can sometimes infer `finalPayload` as `never` across the async stream callback boundary.
-      // Re-bind with an explicit type to keep build-time typing stable.
       const payload = finalPayload as StreamFinalPayload | null;
       if (payload?.response) {
         setConversationId(payload.conversationId);
         if (payload.workspaceId) setWorkspaceId(payload.workspaceId);
-        patchMessage(assistantId, { response: payload.response, text: streamingText || undefined });
+        
+        const responseText = payload.response.type === 'text' ? (payload.response.data?.text as string) : undefined;
+        
+        patchMessage(assistantId, { 
+          response: payload.response, 
+          text: streamingText || responseText 
+        });
       } else if (!gotAny) {
-        patchMessage(assistantId, { text: 'No response.' });
+        patchMessage(assistantId, { text: 'No response from AI service. Check if backend is running.' });
       } else {
-        patchMessage(assistantId, { text: streamingText || 'No structured response was returned.' });
+        patchMessage(assistantId, { text: streamingText || 'Received an empty or invalid response structure.' });
       }
     } catch (error) {
-      patchMessage(assistantId, { text: error instanceof Error ? error.message : 'Failed to fetch AI response.' });
+      patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.' });
     } finally {
       setLoading(false);
     }
@@ -429,6 +452,9 @@ export const AiAssistantChat: React.FC = () => {
 
   const send = async () => {
     if (!canSend) return;
+    if (!conversationId && !loading) {
+       await startNewChat();
+    }
     await sendMessage();
   };
 
@@ -573,8 +599,11 @@ export const AiAssistantChat: React.FC = () => {
     if (response.type === 'chart') {
       const chart = response.data?.chart as { xKey?: string; yKey?: string; points?: Record<string, unknown>[] } | undefined;
       const points = Array.isArray(chart?.points) ? chart.points : [];
+      const text = typeof response.data?.text === 'string' ? response.data.text : '';
+      
       return (
         <div style={{ display: 'grid', gap: 10 }}>
+          {text && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{text}</p>}
           {points.length > 0 && (
             <button
               type="button"
@@ -640,43 +669,6 @@ export const AiAssistantChat: React.FC = () => {
     );
   };
 
-  const renderActionChips = (response?: RenderedResponse) => {
-    const actions = (response?.meta as any)?.orchestration?.actions as Array<{ id: string; label: string }> | undefined;
-    if (!actions || actions.length === 0) return null;
-
-    const rows = response?.type === 'table' && Array.isArray((response.data as any)?.rows) ? ((response.data as any).rows as Record<string, unknown>[]) : null;
-
-    return (
-      <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {actions.map((a) => (
-          <button
-            key={a.id}
-            type="button"
-            disabled={loading}
-            onClick={() => {
-              if (a.id === 'simplify') void sendMessage('Simplify the last answer and keep it short.');
-              else if (a.id === 'deep_dive') void sendMessage('Deep dive on the last answer with steps and examples.');
-              else if (a.id === 'export_csv' && rows && rows.length > 0) downloadText(`ai-export-${Date.now()}.csv`, toCsv(rows), 'text/csv;charset=utf-8');
-            }}
-            style={{
-              borderRadius: 999,
-              border: '1px solid rgba(148,163,184,0.18)',
-              background: 'rgba(2,6,23,0.35)',
-              color: 'var(--text-soft)',
-              padding: '6px 10px',
-              fontSize: 11,
-              fontWeight: 900,
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-            }}
-          >
-            {a.label}
-          </button>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <>
       {!open && (
@@ -722,8 +714,8 @@ export const AiAssistantChat: React.FC = () => {
             zIndex: 130,
             boxShadow: '0 24px 48px rgba(2,6,23,0.4)',
             display: 'grid',
-            gridTemplateColumns: '260px 1fr',
-            gridTemplateRows: '54px auto auto 1fr 86px',
+            gridTemplateColumns: 'minmax(180px, 240px) 1fr',
+            gridTemplateRows: '54px 1fr auto',
             overflow: 'hidden',
           }}
         >
@@ -746,14 +738,15 @@ export const AiAssistantChat: React.FC = () => {
               borderBottom: '1px solid rgba(148,163,184,0.16)',
               cursor: 'grab',
               userSelect: 'none',
+              background: 'rgba(15,23,42,0.15)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 900, color: 'var(--text-strong)' }}>
               <div
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 12,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
                   border: '1px solid rgba(148,163,184,0.18)',
                   background: 'rgba(15,23,42,0.35)',
                   display: 'flex',
@@ -765,7 +758,7 @@ export const AiAssistantChat: React.FC = () => {
               </div>
               <div style={{ display: 'grid', lineHeight: 1.1 }}>
                 <span style={{ fontSize: 13, letterSpacing: '0.01em' }}>AI Assistant</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-dim)' }}>{historyLoading ? 'Syncing…' : 'Ready'}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)' }}>{historyLoading ? 'Syncing…' : 'Ready'}</span>
               </div>
             </div>
 
@@ -774,9 +767,9 @@ export const AiAssistantChat: React.FC = () => {
                 type="button"
                 onClick={() => void startNewChat()}
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 12,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
                   border: '1px solid rgba(148,163,184,0.18)',
                   background: 'rgba(15,23,42,0.25)',
                   color: 'var(--text-soft)',
@@ -793,9 +786,9 @@ export const AiAssistantChat: React.FC = () => {
                 type="button"
                 onClick={() => clearContext()}
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 12,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
                   border: '1px solid rgba(148,163,184,0.18)',
                   background: 'rgba(15,23,42,0.25)',
                   color: 'var(--text-soft)',
@@ -812,9 +805,9 @@ export const AiAssistantChat: React.FC = () => {
                 type="button"
                 onClick={() => setOpen(false)}
                 style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 12,
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
                   border: '1px solid rgba(148,163,184,0.18)',
                   background: 'rgba(15,23,42,0.25)',
                   color: 'var(--text-soft)',
@@ -832,12 +825,12 @@ export const AiAssistantChat: React.FC = () => {
 
           <aside
             style={{
-              gridRow: '2 / span 4',
+              gridRow: '2 / span 2',
               borderRight: '1px solid rgba(148,163,184,0.16)',
               background: 'rgba(2,6,23,0.20)',
               padding: 10,
-              display: 'grid',
-              gridTemplateRows: 'auto 1fr',
+              display: 'flex',
+              flexDirection: 'column',
               gap: 10,
               overflow: 'hidden',
             }}
@@ -848,28 +841,25 @@ export const AiAssistantChat: React.FC = () => {
               style={{
                 border: '1px solid rgba(148,163,184,0.18)',
                 background: 'linear-gradient(135deg, rgba(99,102,241,0.92), rgba(168,85,247,0.72))',
-                color: 'var(--text-soft)',
+                color: 'white',
                 padding: '8px 10px',
-                borderRadius: 12,
+                borderRadius: 10,
                 fontSize: 12,
                 fontWeight: 800,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-between',
+                justifyContent: 'center',
+                gap: 8,
               }}
               title="New chat"
             >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={14} />
-                New chat
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>Ctrl+Enter</span>
+              <Plus size={14} /> New chat
             </button>
 
-            <div style={{ overflow: 'auto', display: 'grid', gap: 6, paddingRight: 2 }}>
+            <div style={{ flex: 1, overflow: 'auto', display: 'grid', gap: 6, paddingRight: 4 }}>
               {chats.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>No chats yet.</div>
+                <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: 10, textAlign: 'center' }}>No chats yet.</div>
               ) : (
                 chats.map((c) => {
                   const active = c.conversationId === conversationId;
@@ -886,18 +876,30 @@ export const AiAssistantChat: React.FC = () => {
                         border: '1px solid rgba(148,163,184,0.16)',
                         background: active ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.20)',
                         color: 'var(--text-soft)',
-                        borderRadius: 12,
-                        padding: '9px 10px',
+                        borderRadius: 10,
+                        padding: '8px 10px',
                         cursor: 'pointer',
                         display: 'grid',
-                        gap: 4,
+                        gap: 2,
                       }}
-                      title={c.title || 'Chat'}
                     >
-                      <div style={{ fontSize: 12, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c.title || 'Untitled'}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                          {c.title || 'Untitled'}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void deleteChat(c.conversationId);
+                          }}
+                          style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6 }}
+                          title="Delete chat"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>{c.updatedAt || c.createdAt || ''}</div>
+                      <div style={{ fontSize: 9, color: 'var(--text-dim)', opacity: 0.7 }}>{c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : 'Just now'}</div>
                     </button>
                   );
                 })
@@ -905,192 +907,132 @@ export const AiAssistantChat: React.FC = () => {
             </div>
           </aside>
 
-          <div style={{ gridColumn: 2, gridRow: 2, borderBottom: '1px solid rgba(148,163,184,0.16)', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {workspaces.length > 0 ? `Workspace: ${workspaces[0].name}` : 'Workspace'}
-            </div>
-            <div className="ai-assistant__topbar">
-              <button type="button" className="ai-assistant__topbtn" title="Magic"><Sparkles size={16} /></button>
-              <button type="button" className="ai-assistant__topbtn" title="Theme"><Moon size={16} /></button>
-              <button type="button" className="ai-assistant__topbtn" title="Notifications"><Bell size={16} /></button>
-              <div className="ai-assistant__avatar" title={session.fullName || 'Admin'}>
-                <span>{(session.fullName || 'A').slice(0, 1).toUpperCase()}</span>
-                <span className="ai-assistant__avatar-dot" />
+          <main style={{ gridColumn: 2, gridRow: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ borderBottom: '1px solid rgba(148,163,184,0.16)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(2,6,23,0.1)' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>
+                {workspaces.length > 0 ? workspaces[0].name : 'Default Workspace'}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setToolsOpen((v) => !v);
+                    void loadTools();
+                  }}
+                  style={{
+                    border: '1px solid rgba(148,163,184,0.18)',
+                    background: toolsOpen ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.20)',
+                    color: 'var(--text-soft)',
+                    padding: '4px 10px',
+                    borderRadius: 10,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {toolsOpen ? 'Close Tools' : 'Explore Tools'}
+                </button>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: 'white' }}>
+                  {(session.fullName || 'A').charAt(0).toUpperCase()}
+                </div>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setToolsOpen((v) => !v);
-                void loadTools();
-              }}
-              style={{
-                border: '1px solid rgba(148,163,184,0.18)',
-                background: toolsOpen ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.20)',
-                color: 'var(--text-soft)',
-                padding: '6px 10px',
-                borderRadius: 12,
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-              title="Available tools"
-            >
-              Tools
-            </button>
-          </div>
 
-          {toolsOpen && (
-            <div style={{ gridColumn: 2, gridRow: 3, borderBottom: '1px solid rgba(148,163,184,0.16)', padding: '10px 10px', display: 'grid', gap: 8 }}>
-              {toolsError && <div style={{ fontSize: 12, color: '#fb7185' }}>{toolsError}</div>}
-              {tools.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{toolsLoaded ? 'No tools returned.' : 'Loading…'}</div>
-              ) : (
-                <div style={{ maxHeight: 160, overflow: 'auto', display: 'grid', gap: 8 }}>
-                  {tools.map((tool) => (
-                    <div key={tool.name} style={{ border: '1px solid rgba(148,163,184,0.14)', borderRadius: 12, padding: 10, background: 'rgba(2,6,23,0.20)' }}>
-                      <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-strong)' }}>
-                        {tool.name}{tool.requiresConfirmation ? ' (confirmation)' : ''}
+            {toolsOpen && (
+              <div style={{ borderBottom: '1px solid rgba(148,163,184,0.16)', padding: 12, background: 'rgba(15,23,42,0.3)', maxHeight: '40%', overflowY: 'auto' }}>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Available Capabilities</div>
+                  {toolsError && <div style={{ fontSize: 12, color: '#fb7185' }}>{toolsError}</div>}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
+                    {tools.map((tool) => (
+                      <div key={tool.name} style={{ background: 'rgba(2,6,23,0.4)', borderRadius: 12, padding: 10, border: '1px solid rgba(148,163,184,0.1)' }}>
+                        <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-strong)' }}>{tool.name}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2, lineHeight: 1.3 }}>{tool.description}</div>
+                        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {(tool.examplePrompts || []).slice(0, 2).map((p) => (
+                            <button key={p} type="button" onClick={() => setInput(p)} style={{ fontSize: 9, background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)', color: '#38bdf8', borderRadius: 6, padding: '2px 6px', cursor: 'pointer' }}>
+                              Try: {p}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{tool.description}</div>
-                      <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {(tool.examplePrompts || []).slice(0, 6).map((p) => (
-                          <button
-                            key={`${tool.name}-${p}`}
-                            type="button"
-                            onClick={() => setInput(p)}
-                            style={{
-                              border: '1px solid rgba(148,163,184,0.14)',
-                              background: 'rgba(15,23,42,0.35)',
-                              color: 'var(--text-soft)',
-                              borderRadius: 999,
-                              fontSize: 10,
-                              padding: '3px 8px',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            {p}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div
-            ref={scrollRef}
-            className="ai-assistant__thread"
-            style={{
-              gridColumn: 2,
-              gridRow: toolsOpen ? 4 : 3,
-              overflow: 'auto',
-              padding: 12,
-              display: 'grid',
-              gap: 10,
-              background: 'linear-gradient(180deg, rgba(2,6,23,0.15), rgba(2,6,23,0.05))',
-            }}
-          >
-            <div className="ai-assistant__greeting">
-              <div className="ai-assistant__hello">Hello {session.fullName?.split(' ')[0] || 'Admin'}</div>
-              <div className="ai-assistant__sub">How can I help you today?</div>
-            </div>
-            <div className="ai-assistant__daypill">Today</div>
-            {messages.length <= 1 && (
-              <div
-                style={{
-                  border: '1px dashed rgba(148,163,184,0.18)',
-                  borderRadius: 16,
-                  padding: 12,
-                  background: 'rgba(15,23,42,0.28)',
-                  display: 'grid',
-                  gap: 10,
-                }}
-              >
-                <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 900, color: 'var(--text-dim)' }}>
-                  Try one
-                </div>
-                <div style={{ display: 'grid', gap: 8 }}>
-                  {EXAMPLE_PROMPTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      type="button"
-                      disabled={loading}
-                      onClick={() => {
-                        void sendMessage(prompt);
-                      }}
-                      style={{
-                        textAlign: 'left',
-                        borderRadius: 14,
-                        border: '1px solid rgba(148,163,184,0.16)',
-                        background: 'rgba(2,6,23,0.45)',
-                        color: 'var(--text-main)',
-                        padding: '10px 10px',
-                        fontSize: 12,
-                        lineHeight: 1.4,
-                        cursor: loading ? 'not-allowed' : 'pointer',
-                        opacity: loading ? 0.7 : 1,
-                      }}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {messages.map((msg) => (
-              <article
-                key={msg.id}
-                className={`ai-assistant__message${msg.role === 'user' ? ' is-user' : ' is-assistant'}`}
-              >
-                {msg.role === 'user' ? (
-                  <div className="ai-assistant__user-msg">
-                    <div className="ai-assistant__user-bubble">
-                      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45 }}>{msg.text}</p>
-                    </div>
-                    <div className="ai-assistant__stamp">
-                      <span>{formatTime(msg.ts)}</span>
-                      <CheckCheck size={14} />
-                    </div>
+            <div
+              ref={scrollRef}
+              className="ai-assistant__thread"
+              style={{
+                flex: 1,
+                overflow: 'auto',
+                padding: 16,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                background: 'linear-gradient(180deg, rgba(2,6,23,0.1) 0%, rgba(2,6,23,0) 100%)',
+              }}
+            >
+              <div className="ai-assistant__greeting">
+                <div className="ai-assistant__hello">Hello {session.fullName?.split(' ')[0] || 'Admin'}</div>
+                <div className="ai-assistant__sub">How can I help you today?</div>
+              </div>
+              <div className="ai-assistant__daypill">Today</div>
+              {messages.length <= 1 && (
+                <div style={{ border: '1px dashed rgba(148,163,184,0.18)', borderRadius: 16, padding: 12, background: 'rgba(15,23,42,0.28)', display: 'grid', gap: 10 }}>
+                  <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 900, color: 'var(--text-dim)' }}>Try one</div>
+                  <div style={{ display: 'grid', gap: 8 }}>
+                    {EXAMPLE_PROMPTS.map((prompt) => (
+                      <button key={prompt} type="button" disabled={loading} onClick={() => void sendMessage(prompt)} style={{ textAlign: 'left', borderRadius: 14, border: '1px solid rgba(148,163,184,0.16)', background: 'rgba(2,6,23,0.45)', color: 'var(--text-main)', padding: '10px 10px', fontSize: 12, lineHeight: 1.4, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                        {prompt}
+                      </button>
+                    ))}
                   </div>
-                ) : (
-                  <div>
-                    <div className="ai-assistant__assistant-row">
-                      <div className="ai-assistant__assistant-avatar"><Bot size={16} /></div>
-                      <div className="ai-assistant__assistant-bubble">
-                        {renderAssistantResponse(msg.response, msg.text)}
-                        {renderActionChips(msg.response)}
+                </div>
+              )}
+
+              {messages.map((msg) => (
+                <article key={msg.id} className={`ai-assistant__message${msg.role === 'user' ? ' is-user' : ' is-assistant'}`}>
+                  {msg.role === 'user' ? (
+                    <div className="ai-assistant__user-msg">
+                      <div className="ai-assistant__user-bubble">
+                        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45 }}>{msg.text}</p>
+                      </div>
+                      <div className="ai-assistant__stamp">
+                        <span>{formatTime(msg.ts)}</span>
+                        <CheckCheck size={14} />
                       </div>
                     </div>
-                    <div className="ai-assistant__stamp is-assistant">{formatTime(msg.ts)}</div>
-                  </div>
-                )}
-              </article>
-            ))}
-            {loading && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Thinking...</div>}
-          </div>
-
-          <div className="ai-assistant__chips">
-            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Show analytics for this workspace.')}>Show analytics</button>
-            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Total students count.')}>Total students count</button>
-            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Show recent schools.')}>Recent schools</button>
-            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Generate a growth report summary.')}>Growth report</button>
-          </div>
+                  ) : (
+                    <div>
+                      <div className="ai-assistant__assistant-row">
+                        <div className="ai-assistant__assistant-avatar"><Bot size={16} /></div>
+                        <div className="ai-assistant__assistant-bubble">
+                          {renderAssistantResponse(msg.response, msg.text)}
+                        </div>
+                      </div>
+                      <div className="ai-assistant__stamp is-assistant">{formatTime(msg.ts)}</div>
+                    </div>
+                  )}
+                </article>
+              ))}
+              {loading && <div style={{ fontSize: 12, color: 'var(--text-dim)', paddingLeft: 40 }}>Thinking...</div>}
+            </div>
+          </main>
 
           <footer
             className="ai-assistant__composer"
             style={{
               gridColumn: 2,
-              gridRow: toolsOpen ? 5 : 4,
+              gridRow: 3,
               borderTop: '1px solid rgba(148,163,184,0.16)',
-              padding: 10,
+              padding: 12,
               display: 'grid',
               gridTemplateColumns: 'auto 1fr auto',
-              gap: 8,
-              background: 'rgba(2,6,23,0.15)',
+              gap: 12,
+              background: 'rgba(2,6,23,0.35)',
             }}
           >
             <button
@@ -1122,10 +1064,6 @@ export const AiAssistantChat: React.FC = () => {
                     e.preventDefault();
                     void send();
                   }
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                    e.preventDefault();
-                    void startNewChat();
-                  }
                 }}
                 placeholder="Ask anything about your schools..."
                 style={{
@@ -1139,11 +1077,9 @@ export const AiAssistantChat: React.FC = () => {
                   outline: 'none',
                 }}
               />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)', padding: '0 4px' }}>
                 <span>Enter to send • Shift+Enter for newline</span>
-                <span>
-                  {Math.min(MAX_INPUT_CHARS, input.length)}/{MAX_INPUT_CHARS}
-                </span>
+                <span>{Math.min(MAX_INPUT_CHARS, input.length)}/{MAX_INPUT_CHARS}</span>
               </div>
             </div>
             <button
@@ -1180,16 +1116,13 @@ export const AiAssistantChat: React.FC = () => {
             }}
             style={{
               position: 'absolute',
-              right: 6,
-              bottom: 6,
-              width: 14,
-              height: 14,
-              borderRadius: 6,
+              right: 2,
+              bottom: 2,
+              width: 12,
+              height: 12,
               cursor: 'nwse-resize',
-              background: 'rgba(148,163,184,0.26)',
-              border: '1px solid rgba(15,23,42,0.5)',
+              zIndex: 10,
             }}
-            title="Resize"
           />
         </section>
       )}

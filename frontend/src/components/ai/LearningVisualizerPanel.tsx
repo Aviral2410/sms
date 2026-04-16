@@ -123,7 +123,7 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
       >
         <Lightbulb className="w-14 h-14" style={{ color: 'rgba(148, 163, 184, 0.55)' }} />
         <h3>Ready when you are</h3>
-        <p>Enter a question on the left to get a step-by-step interactive breakdown.</p>
+        <p>Enter a question below to get a step-by-step interactive breakdown.</p>
       </div>
     );
   }
@@ -146,7 +146,7 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
         </div>
         <p className="text-slate-400 leading-relaxed text-sm">{data.summary}</p>
         <div className="flex flex-wrap gap-2 pt-2">
-          {data.tags.map(tag => (
+          {data.tags?.map(tag => (
             <span key={tag} className="px-2.5 py-1 rounded-lg bg-slate-800/50 text-[11px] font-bold text-slate-400 border border-slate-700/50">
               #{tag}
             </span>
@@ -384,7 +384,7 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
         })}
       </div>
 
-      {data.approaches.length > 0 && (
+      {data.approaches && data.approaches.length > 0 && (
         <section className="space-y-4 pt-4 border-t border-slate-800/50">
           <div className="flex items-center gap-2 text-slate-300">
             <Code className="w-5 h-5 text-indigo-400" />

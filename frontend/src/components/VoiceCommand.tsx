@@ -78,13 +78,17 @@ export function VoiceCommand({ onClose, onResult, autoStart }: VoiceCommandProps
     // Start mic access for waveform
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const audioCtx = new AudioContext();
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
       const source = audioCtx.createMediaStreamSource(stream);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 256;
       source.connect(analyser);
       analyserRef.current = analyser;
-    } catch { /* waveform unavailable but voice still works */ }
+    } catch (err) { 
+      console.warn('Waveform visualization unavailable:', err);
+      /* waveform unavailable but voice still works */ 
+    }
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US'; recognition.continuous = false; recognition.interimResults = true;

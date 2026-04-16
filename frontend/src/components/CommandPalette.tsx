@@ -6,7 +6,7 @@ import {
   Search, X, LayoutDashboard, ShieldCheck, Building2, BarChart3, Settings,
   Users, Calendar, CreditCard, FileText, Sparkles, ArrowRight, Loader,
   GraduationCap, Clock, Bus, Library, MessageSquare, Mic, Brain, TrendingUp,
-  BookOpen, Bell, Command, ChevronRight
+  BookOpen, Bell, Command, ChevronRight, CornerDownLeft
 } from 'lucide-react';
 import { mcpApi, McpAiResponse } from '../lib/mcp';
 import { VoiceCommand } from './VoiceCommand';
@@ -49,13 +49,13 @@ export function CommandPalette() {
   const { searchOpen, setSearchOpen, session, paletteAiMode, setPaletteAiMode } = useStore();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [aiMode, setAiMode] = useState(false);
   const [aiResponse, setAiResponse] = useState<McpAiResponse | string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [activeAiQuestion, setActiveAiQuestion] = useState<string | null>(null);
   const [showVoice, setShowVoice] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const filteredNav = query.length > 0
     ? NAV_ITEMS.filter(n => n.label.toLowerCase().includes(query.toLowerCase()) || n.category.toLowerCase().includes(query.toLowerCase()))
@@ -66,7 +66,7 @@ export function CommandPalette() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setSearchOpen(!searchOpen); }
       if (e.key === 'Escape') {
         if (aiResponse || activeAiQuestion || query) {
-          setAiResponse('');
+          setAiResponse(null);
           setActiveAiQuestion(null);
           setQuery('');
         } else {
@@ -76,38 +76,39 @@ export function CommandPalette() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [searchOpen, setSearchOpen]);
+  }, [searchOpen, setSearchOpen, aiResponse, activeAiQuestion, query]);
 
   useEffect(() => {
     if (searchOpen) {
       setTimeout(() => inputRef.current?.focus(), 80);
       setQuery('');
-      setAiMode(paletteAiMode);
       setAiResponse(null);
       setActiveAiQuestion(null);
       setSelectedIndex(0);
-    } else {
-      setPaletteAiMode(false);
     }
-  }, [paletteAiMode, searchOpen, setPaletteAiMode]);
+  }, [searchOpen]);
 
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query, aiMode]);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [aiResponse, aiLoading, activeAiQuestion]);
 
   const handleAiQuery = useCallback(async (q: string) => {
-    if (!q.trim()) return;
-    setAiLoading(true); setAiResponse(null);
-    setActiveAiQuestion(q);
+    const text = q.trim();
+    if (!text) return;
+    setAiLoading(true); 
+    setAiResponse(null);
+    setActiveAiQuestion(text);
+    
     try {
       const rawRole = session.role?.toLowerCase() || 'school_admin';
-      // MCP server only accepts 'platform_admin', not 'super_admin'
       const role = rawRole === 'super_admin' ? 'platform_admin' : rawRole;
       const isPlatformAdmin = role === 'platform_admin' || rawRole === 'super_admin';
-      const args: Record<string, any> = { role, question: q };
-      // school-level roles need schoolId + email context
+      const args: Record<string, any> = { role, question: text };
       if (!isPlatformAdmin && session.schoolId) args.schoolId = session.schoolId;
       if (!isPlatformAdmin && session.email) args.email = session.email;
+      
       const res = await mcpApi.callTool('ask_school_data', args);
       const data = JSON.parse(res.content[0].text) as McpAiResponse;
       setAiResponse(data);
@@ -125,199 +126,288 @@ export function CommandPalette() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      if (aiMode) { handleAiQuery(query); }
-      else if (filteredNav.length > 0) { navigate(filteredNav[0].path); setSearchOpen(false); }
+      if (paletteAiMode) { 
+        handleAiQuery(query); 
+      } else if (filteredNav.length > 0) { 
+        navigate(filteredNav[selectedIndex].path); 
+        setSearchOpen(false); 
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!paletteAiMode) setSelectedIndex(prev => (prev + 1) % Math.max(1, filteredNav.length));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (!paletteAiMode) setSelectedIndex(prev => (prev - 1 + filteredNav.length) % Math.max(1, filteredNav.length));
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      setPaletteAiMode(!paletteAiMode);
     }
   };
 
-  const go = (path: string) => { navigate(path); setSearchOpen(false); setQuery(''); };
-
   if (!searchOpen) return null;
+
+  const isModal = !paletteAiMode;
 
   return (
     <>
-      <div onClick={() => setSearchOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 900, background: 'rgba(2,6,23,0.52)', backdropFilter: 'blur(8px)' }} />
+      {/* Backdrop */}
+      <motion.div 
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        onClick={() => setSearchOpen(false)} 
+        style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          zIndex: 900, 
+          background: isModal ? 'rgba(2,6,23,0.52)' : 'rgba(2,6,23,0.2)', 
+          backdropFilter: isModal ? 'blur(8px)' : 'none' 
+        }} 
+      />
 
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         <motion.div
-          initial={{ opacity: 0, scale: 0.94, y: -20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.94, y: -20 }}
-          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-          style={{ position: 'fixed', top: '12vh', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 640, zIndex: 1000, fontFamily: "'Manrope','Inter',system-ui,sans-serif" }}
+          key={paletteAiMode ? 'ai-sidebar' : 'search-modal'}
+          initial={isModal ? { opacity: 0, scale: 0.94, y: -20 } : { x: '100%' }}
+          animate={isModal ? { opacity: 1, scale: 1, y: 0 } : { x: 0 }}
+          exit={isModal ? { opacity: 0, scale: 0.94, y: -20 } : { x: '100%' }}
+          transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+          style={{ 
+            position: 'fixed', 
+            top: isModal ? '12vh' : 0, 
+            right: 0,
+            left: isModal ? '50%' : 'auto',
+            transform: isModal ? 'translateX(-50%)' : 'none',
+            width: '100%', 
+            maxWidth: isModal ? 640 : 480, 
+            height: isModal ? 'auto' : '100vh',
+            maxHeight: isModal ? '80vh' : '100vh',
+            zIndex: 1000, 
+            fontFamily: "'Manrope','Inter',system-ui,sans-serif",
+            display: 'flex',
+            flexDirection: 'column',
+            background: 'var(--bg-dropdown)',
+            borderRadius: isModal ? 22 : 0,
+            boxShadow: isModal 
+              ? '0 30px 80px rgba(2,6,23,0.28), 0 0 0 1px rgba(255,255,255,0.04)' 
+              : '-10px 0 40px rgba(0,0,0,0.3)',
+            overflow: 'hidden',
+            borderLeft: isModal ? 'none' : '1px solid var(--glass-border)'
+          }}
         >
-          {/* Search Box */}
-          <div className="themed-panel" style={{ background: 'color-mix(in srgb, var(--bg-dropdown) 92%, transparent)', borderRadius: 22, overflow: 'hidden', boxShadow: '0 30px 80px rgba(2,6,23,0.28), 0 0 0 1px rgba(255,255,255,0.04)' }}>
-
-            {/* Input Row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 20px', borderBottom: `1px solid ${aiMode ? 'rgba(167,139,250,0.25)' : 'var(--glass-border)'}`, transition: 'border-color 0.2s' }}>
-              {aiMode ? (
-                <motion.div animate={{ rotate: [0, 360] }} transition={{ repeat: Infinity, duration: 4, ease: 'linear' }}>
-                  <Brain size={20} color="#a78bfa" />
-                </motion.div>
-              ) : (
-                <Search size={20} color="var(--text-muted)" />
-              )}
-              <input
-                ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
-                placeholder={aiMode ? 'Ask anything about your school data…' : 'Search pages or press Tab for AI…'}
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: 'var(--text-strong)', fontSize: '1rem', fontFamily: 'inherit', caretColor: aiMode ? '#a78bfa' : '#22d3ee' }}
-                onKeyDown={e => {
-                  if (e.key === 'Tab') {
-                    e.preventDefault();
-                    setAiMode(m => {
-                      const next = !m;
-                      setPaletteAiMode(next);
-                      return next;
-                    });
-                  }
-                  else if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (!aiMode) setSelectedIndex(prev => (prev + 1) % Math.max(1, filteredNav.length));
-                  }
-                  else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (!aiMode) setSelectedIndex(prev => (prev - 1 + filteredNav.length) % Math.max(1, filteredNav.length));
-                  }
-                  else if (e.key === 'Enter') {
-                    if (aiMode) { handleAiQuery(query); }
-                    else if (filteredNav.length > 0) { navigate(filteredNav[selectedIndex].path); setSearchOpen(false); }
-                  }
-                }}
-              />
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                {/* Voice button */}
-                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => setShowVoice(true)}
-                  style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(34,211,238,0.1)', border: '1px solid rgba(34,211,238,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#22d3ee' }}>
-                  <Mic size={14} />
-                </motion.button>
-                {/* AI toggle */}
-                <button onClick={() => {
-                  setAiMode(m => {
-                    const next = !m;
-                    setPaletteAiMode(next);
-                    return next;
-                  });
-                }}
-                  style={{ padding: '4px 10px', borderRadius: 8, background: aiMode ? 'rgba(167,139,250,0.2)' : 'var(--surface-elevated)', border: `1px solid ${aiMode ? 'rgba(167,139,250,0.4)' : 'var(--glass-border)'}`, color: aiMode ? '#a78bfa' : 'var(--text-soft)', fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit', transition: 'all 0.2s' }}>
-                  <Sparkles size={11} /> AI {aiMode ? 'ON' : 'OFF'}
-                </button>
-                <button onClick={() => setSearchOpen(false)} style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'none', border: 'none' }}><X size={16} /></button>
-              </div>
-            </div>
-
-            {/* AI Mode */}
-            {aiMode && (
-              <div style={{ padding: '16px 20px 0' }}>
-                {/* Suggestions / Questions */}
-                {(!query || activeAiQuestion) && (
-                  <div>
-                    <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 10 }}>AI Insights</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-                      {AI_SUGGESTIONS.map(s => {
-                        const isActive = activeAiQuestion === s;
-                        return (
-                          <div key={s} style={{ marginBottom: isActive ? 8 : 0 }}>
-                            <button onClick={() => { setQuery(s); handleAiQuery(s); }}
-                              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: isActive ? 'rgba(167,139,250,0.12)' : 'var(--surface-accent-soft)', border: `1px solid ${isActive ? 'rgba(167,139,250,0.34)' : 'var(--surface-accent-border)'}`, color: isActive ? 'var(--text-strong)' : 'var(--text-soft)', fontSize: '0.82rem', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', transition: 'all 0.2s' }}
-                              onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(167,139,250,0.12)'; e.currentTarget.style.color = 'var(--text-strong)'; } }}
-                              onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = 'var(--surface-accent-soft)'; e.currentTarget.style.color = 'var(--text-soft)'; } }}>
-                              <Sparkles size={12} color="#a78bfa" style={{ flexShrink: 0 }} />
-                              <span style={{ flex: 1 }}>{s}</span>
-                              {isActive ? <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#a78bfa', opacity: 0.5 }} /> : <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />}
-                            </button>
-                            
-                            <AnimatePresence>
-                              {isActive && (aiLoading || aiResponse) && (
-                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-                                  style={{ overflow: 'hidden' }}>
-                                  <div className="ai-response-shell" style={{ margin: '8px 4px 4px 12px', padding: '12px 16px', borderLeft: '2px solid rgba(167,139,250,0.4)', fontSize: '0.85rem', lineHeight: 1.6 }}>
-                                    {aiLoading ? (
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#a78bfa' }}>
-                                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}><Loader size={12} /></motion.div>
-                                        Analyzing data...
-                                      </div>
-                                    ) : (
-                                      <div>
-                                        <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                          <Brain size={10} /> AI Analysis
-                                        </div>
-                                        {typeof aiResponse === 'string' ? <AiRichText content={aiResponse} /> : <AiDataVisualizer response={aiResponse!} />}
-                                      </div>
-                                    )}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Free-form Query results (when not clicking a suggestion or when typing something else) */}
-                {query && !AI_SUGGESTIONS.includes(query) && (
-                  <div>
-                    {aiLoading && !activeAiQuestion && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px', color: '#a78bfa', fontSize: '0.85rem', marginBottom: 12 }}>
-                        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}><Loader size={16} /></motion.div>
-                        Processing your request…
-                      </div>
-                    )}
-                    {aiResponse && !aiLoading && !activeAiQuestion && (
-                      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                        style={{ marginBottom: 16, padding: '16px 18px', borderRadius: 16, background: 'linear-gradient(135deg, rgba(167,139,250,0.08), rgba(99,102,241,0.04))', border: '1px solid rgba(167,139,250,0.2)' }}>
-                        <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 8, display: 'flex', gap: 6, alignItems: 'center' }}><Brain size={11} /> AI Answer</div>
-                        <div style={{ fontSize: '0.88rem', lineHeight: 1.65, margin: 0 }}>
-                          {typeof aiResponse === 'string' ? <AiRichText content={aiResponse} /> : <AiDataVisualizer response={aiResponse!} />}
-                        </div>
-                      </motion.div>
-                    )}
-                  </div>
-                )}
-              </div>
+          {/* Header Row */}
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: 12, 
+            padding: '16px 20px', 
+            borderBottom: `1px solid ${paletteAiMode ? 'rgba(167,139,250,0.25)' : 'var(--glass-border)'}`,
+            background: paletteAiMode ? 'rgba(15,23,42,0.4)' : 'transparent',
+            flexShrink: 0
+          }}>
+            {paletteAiMode ? (
+              <motion.div animate={{ rotate: [0, 360] }} transition={{ repeat: Infinity, duration: 4, ease: 'linear' }}>
+                <Brain size={20} color="#a78bfa" />
+              </motion.div>
+            ) : (
+              <Search size={20} color="var(--text-muted)" />
             )}
+            
+            <input
+              ref={inputRef} 
+              value={query} 
+              onChange={e => setQuery(e.target.value)}
+              placeholder={paletteAiMode ? 'Ask insights about school data…' : 'Search pages or press Tab for AI…'}
+              style={{ 
+                flex: 1, 
+                background: 'none', 
+                border: 'none', 
+                outline: 'none', 
+                color: 'var(--text-strong)', 
+                fontSize: '1rem', 
+                fontFamily: 'inherit', 
+                caretColor: paletteAiMode ? '#a78bfa' : '#22d3ee' 
+              }}
+              onKeyDown={handleKeyDown}
+            />
 
-            {/* Nav Results */}
-            {!aiMode && (
-              <div style={{ padding: '10px 12px 12px' }}>
-                {filteredNav.length === 0 ? (
-                  <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No pages match "{query}"</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {query === '' && <div style={{ fontSize: '0.62rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '6px 10px' }}>Recent / Quick Nav</div>}
-                    {filteredNav.map((item, i) => (
-                      <motion.button key={item.path + item.label} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-                        onClick={() => go(item.path)}
-                        onMouseEnter={() => setSelectedIndex(i)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 14, background: selectedIndex === i ? 'var(--surface-elevated)' : 'transparent', border: `1px solid ${selectedIndex === i ? 'var(--glass-border)' : 'transparent'}`, color: selectedIndex === i ? 'var(--text-strong)' : 'var(--text-soft)', fontSize: '0.88rem', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', textAlign: 'left' }}
-                      >
-                        <div style={{ width: 30, height: 30, borderRadius: 9, background: `${item.color}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <item.icon size={15} color={item.color} />
-                        </div>
-                        <span style={{ flex: 1, fontWeight: 600 }}>{item.label}</span>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', padding: '2px 8px', borderRadius: 6, background: 'var(--surface-elevated)' }}>{item.category}</span>
-                        <ArrowRight size={12} style={{ color: selectedIndex === i ? item.color : 'var(--text-muted)', transform: selectedIndex === i ? 'translateX(2px)' : 'none', transition: 'all 0.2s' }} />
-                      </motion.button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Footer hint */}
-            <div style={{ padding: '10px 20px', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: 16, fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-              <span><kbd style={{ fontFamily: 'monospace', background: 'var(--surface-elevated)', padding: '1px 5px', borderRadius: 4, fontSize: '0.65rem', border: '1px solid var(--glass-border)' }}>↑↓</kbd> Navigate</span>
-              <span><kbd style={{ fontFamily: 'monospace', background: 'var(--surface-elevated)', padding: '1px 5px', borderRadius: 4, fontSize: '0.65rem', border: '1px solid var(--glass-border)' }}>↵</kbd> Select</span>
-              <span><kbd style={{ fontFamily: 'monospace', background: 'var(--surface-elevated)', padding: '1px 5px', borderRadius: 4, fontSize: '0.65rem', border: '1px solid var(--glass-border)' }}>Tab</kbd> Toggle AI</span>
-              <span style={{ marginLeft: 'auto' }}><Mic size={10} style={{ display: 'inline', marginRight: 4 }} />Click mic for voice</span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <motion.button 
+                whileHover={{ scale: 1.1 }} 
+                whileTap={{ scale: 0.9 }} 
+                onClick={() => setShowVoice(true)}
+                style={{ 
+                  width: 32, height: 32, borderRadius: 9, 
+                  background: 'rgba(34,211,238,0.1)', 
+                  border: '1px solid rgba(34,211,238,0.2)', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  cursor: 'pointer', color: '#22d3ee' 
+                }}
+              >
+                <Mic size={14} />
+              </motion.button>
+              
+              <button 
+                onClick={() => setPaletteAiMode(!paletteAiMode)}
+                style={{ 
+                  padding: '5px 12px', borderRadius: 10, 
+                  background: paletteAiMode ? 'rgba(167,139,250,0.2)' : 'var(--surface-elevated)', 
+                  border: `1px solid ${paletteAiMode ? 'rgba(167,139,250,0.4)' : 'var(--glass-border)'}`, 
+                  color: paletteAiMode ? '#a78bfa' : 'var(--text-soft)', 
+                  fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', 
+                  display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' 
+                }}
+              >
+                <Sparkles size={11} /> AI {paletteAiMode ? 'ACTIVE' : 'MODAL'}
+              </button>
+              
+              <button onClick={() => setSearchOpen(false)} style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                <X size={18} />
+              </button>
             </div>
           </div>
+
+          {/* Results Area */}
+          <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: paletteAiMode ? '20px' : '10px 12px 12px' }}>
+            {paletteAiMode ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {/* Suggestions Section */}
+                <div>
+                  <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Quick Insights</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {AI_SUGGESTIONS.map(s => {
+                      const isActive = activeAiQuestion === s;
+                      return (
+                        <div key={s}>
+                          <button 
+                            onClick={() => {
+                              if (isActive) {
+                                setActiveAiQuestion(null);
+                                setAiResponse(null);
+                              } else {
+                                setQuery(s);
+                                handleAiQuery(s);
+                              }
+                            }}
+                            className="suggestion-item"
+                            style={{ 
+                              width: '100%', display: 'flex', alignItems: 'center', gap: 12, 
+                              padding: '12px 16px', borderRadius: 16, 
+                              background: isActive ? 'rgba(167,139,250,0.1)' : 'rgba(255,255,255,0.02)', 
+                              border: `1px solid ${isActive ? 'rgba(167,139,250,0.3)' : 'rgba(255,255,255,0.05)'}`, 
+                              color: isActive ? 'var(--text-strong)' : 'var(--text-soft)', 
+                              fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' 
+                            }}
+                          >
+                            <Sparkles size={14} color="#a78bfa" style={{ flexShrink: 0 }} />
+                            <span style={{ flex: 1, fontWeight: isActive ? 700 : 500 }}>{s}</span>
+                            {isActive ? <X size={14} style={{ color: 'var(--text-muted)' }} /> : <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />}
+                          </button>
+                          
+                          {isActive && (aiLoading || aiResponse) && (
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ overflow: 'hidden' }}>
+                              <div style={{ padding: '20px 0 10px 16px', borderLeft: '2px solid rgba(167,139,250,0.4)', marginTop: 4, marginLeft: 16 }}>
+                                {aiLoading ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#a78bfa', fontSize: '0.85rem' }}>
+                                    <Loader className="animate-spin" size={16} /> Retrieving intel...
+                                  </div>
+                                ) : (
+                                  <div className="animate-in fade-in slide-in-from-left-2 duration-500">
+                                    <div style={{ fontSize: '0.6rem', fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <Brain size={12} /> Live Analysis
+                                    </div>
+                                    {typeof aiResponse === 'string' ? <AiRichText content={aiResponse} /> : <AiDataVisualizer response={aiResponse!} />}
+                                  </div>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Free-form Query results (fallback) */}
+                {query && !AI_SUGGESTIONS.includes(query) && (
+                  <div style={{ padding: '4px' }}>
+                    {aiLoading ? (
+                      <div style={{ padding: '16px', color: '#a78bfa', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(167,139,250,0.05)', borderRadius: 16 }}>
+                        <Loader className="animate-spin" size={18} /> Consulting school database...
+                      </div>
+                    ) : aiResponse ? (
+                      <div style={{ background: 'rgba(15,23,42,0.4)', borderRadius: 20, border: '1px solid rgba(167,139,250,0.2)', padding: '24px' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Brain size={14} /> AI Analysis</div>
+                        {typeof aiResponse === 'string' ? <AiRichText content={aiResponse} /> : <AiDataVisualizer response={aiResponse!} />}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                         <CornerDownLeft size={32} style={{ opacity: 0.2, marginBottom: 12 }} />
+                         <p className="text-sm">Press Enter to process your query</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {filteredNav.length === 0 ? (
+                  <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <Search size={32} style={{ opacity: 0.2, marginBottom: 12 }} />
+                    <p>No pages match "{query}"</p>
+                  </div>
+                ) : (
+                  <>
+                    {query === '' && <div style={{ fontSize: '0.62rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '10px' }}>Global Shortcuts</div>}
+                    {filteredNav.map((item, i) => (
+                      <motion.button 
+                        key={item.path + item.label} 
+                        initial={{ opacity: 0, x: -8 }} 
+                        animate={{ opacity: 1, x: 0 }} 
+                        transition={{ delay: i * 0.03 }}
+                        onClick={() => { navigate(item.path); setSearchOpen(false); }}
+                        onMouseEnter={() => setSelectedIndex(i)}
+                        style={{ 
+                          width: '100%', display: 'flex', alignItems: 'center', gap: 14, 
+                          padding: '12px 16px', borderRadius: 16, 
+                          background: selectedIndex === i ? 'var(--surface-elevated)' : 'transparent', 
+                          border: `1px solid ${selectedIndex === i ? 'var(--glass-border)' : 'transparent'}`, 
+                          color: selectedIndex === i ? 'var(--text-strong)' : 'var(--text-soft)', 
+                          fontSize: '0.9rem', cursor: 'pointer', transition: 'all 0.15s', textAlign: 'left' 
+                        }}
+                      >
+                        <div style={{ width: 34, height: 34, borderRadius: 10, background: `${item.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <item.icon size={16} color={item.color} />
+                        </div>
+                        <span style={{ flex: 1, fontWeight: 600 }}>{item.label}</span>
+                        <ArrowRight size={14} style={{ opacity: selectedIndex === i ? 1 : 0, color: item.color, transform: selectedIndex === i ? 'none' : 'translateX(-4px)', transition: 'all 0.2s' }} />
+                      </motion.button>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          <footer style={{ 
+            padding: '16px 24px', borderTop: '1px solid var(--glass-border)', 
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+            fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700,
+            background: paletteAiMode ? 'rgba(15,23,42,0.4)' : 'transparent',
+            flexShrink: 0 
+          }}>
+            <div style={{ display: 'flex', gap: 16 }}>
+              <span><kbd style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>Tab</kbd> Toggle AI</span>
+              <span><kbd style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>↵</kbd> {paletteAiMode ? 'Ask AI' : 'Navigate'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Mic size={12} />
+              <span>Voice Ready</span>
+            </div>
+          </footer>
         </motion.div>
       </AnimatePresence>
 
-      {/* Voice Command overlay */}
       <AnimatePresence>
         {showVoice && (
           <VoiceCommand 
@@ -325,9 +415,7 @@ export function CommandPalette() {
             onClose={() => setShowVoice(false)} 
             onResult={(text) => {
               setQuery(text);
-              if (aiMode) {
-                handleAiQuery(text);
-              }
+              if (paletteAiMode) handleAiQuery(text);
             }} 
           />
         )}

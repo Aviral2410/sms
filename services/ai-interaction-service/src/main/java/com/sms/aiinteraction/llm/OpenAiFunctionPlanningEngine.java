@@ -33,18 +33,31 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
 
     @Override
     public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
-        if (!"OPENAI".equalsIgnoreCase(properties.llm().provider())) {
+        String provider = properties.llm().provider();
+        boolean isOpenAi = "OPENAI".equalsIgnoreCase(provider);
+        boolean isOllama = "OLLAMA".equalsIgnoreCase(provider);
+        
+        if (!isOpenAi && !isOllama) {
             return Optional.empty();
         }
-        if (properties.llm().openaiApiKey() == null || properties.llm().openaiApiKey().isBlank()) {
+
+        String baseUrl = isOpenAi ? "https://api.openai.com/v1" : properties.llm().ollamaBaseUrl();
+        if (baseUrl.endsWith("/")) {
+            baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+        }
+        String fullUri = baseUrl + "/chat/completions";
+
+        String model = isOpenAi ? properties.llm().openaiModel() : properties.llm().ollamaModel();
+        String apiKey = isOpenAi ? properties.llm().openaiApiKey() : "not-needed";
+
+        if (isOpenAi && (apiKey == null || apiKey.isBlank())) {
             return Optional.empty();
         }
 
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
-            requestBody.put("model", properties.llm().openaiModel());
+            requestBody.put("model", model);
             requestBody.put("temperature", 0);
-            requestBody.put("tool_choice", "auto");
             requestBody.put("max_tokens", 256);
 
             ArrayNode messages = requestBody.putArray("messages");
@@ -67,15 +80,17 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
                 function.set("parameters", descriptor.inputSchema());
             }
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/chat/completions"))
-                    .timeout(Duration.ofSeconds(8))
-                    .header("Authorization", "Bearer " + properties.llm().openaiApiKey())
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
+                    .uri(URI.create(fullUri))
+                    .timeout(Duration.ofSeconds(12))
                     .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody)))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody)));
+            
+            if (isOpenAi) {
+                builder.header("Authorization", "Bearer " + apiKey);
+            }
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 return Optional.empty();
             }

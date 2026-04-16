@@ -33,7 +33,6 @@ export default function LearningModePage() {
   const [subject, setSubject] = useState('');
   const [level, setLevel] = useState<'BEGINNER' | 'STANDARD' | 'ADVANCED'>('STANDARD');
   const [showAdvanced, setShowAdvanced] = useState(false);
-  // Keep the field for backwards compatibility, but default to AUTO to avoid asking the learner to pick a visualization style.
   const [vizStyle] = useState<'AUTO'>('AUTO');
 
   const [visualizeData, setVisualizeData] = useState<VisualizeResponse | null>(null);
@@ -59,7 +58,6 @@ export default function LearningModePage() {
     });
 
   useEffect(() => {
-    // Keep the output panel stable when switching tabs.
     setError(null);
     setUpgradeRequired(false);
     setShowAdvanced(false);
@@ -100,26 +98,16 @@ export default function LearningModePage() {
       }
     } catch (err: any) {
       console.error('LearningModePage: generation failed', err);
-
       if (err instanceof ApiError && err.status === 403) {
         setUpgradeRequired(true);
-        setError(err.message || 'Upgrade required to access this feature.');
-        toast.error(err.message || 'Upgrade required.');
-        if (activeTab === 'visualize') {
-          setVisualizeData(createLocalVisualization());
-        } else {
-          setExamplesData(createLocalExamples());
-        }
+        setError(err.message || 'Upgrade required.');
+        if (activeTab === 'visualize') setVisualizeData(createLocalVisualization());
+        else setExamplesData(createLocalExamples());
         return;
       }
-
-      setError(null);
-      if (activeTab === 'visualize') {
-        setVisualizeData(createLocalVisualization());
-      } else {
-        setExamplesData(createLocalExamples());
-      }
-      toast.error('AI unavailable right now. Showing guided mode instead.');
+      if (activeTab === 'visualize') setVisualizeData(createLocalVisualization());
+      else setExamplesData(createLocalExamples());
+      toast.error('AI unavailable. Showing guided mode.');
     } finally {
       setLoading(false);
     }
@@ -130,17 +118,14 @@ export default function LearningModePage() {
     try {
       const plans = await subscriptionApi.listPlans();
       const premiumPlan = plans.find((plan) => plan.planCode === 'PREMIUM');
-      if (!premiumPlan) {
-        toast.error('Premium plan not available right now.');
-        return;
-      }
+      if (!premiumPlan) return;
       await subscriptionApi.requestUpgrade({
         requestedPlanId: premiumPlan.planId,
         requestNotes: 'Requesting premium AI visualization access.',
       });
-      toast.success('Upgrade request sent to platform admin.');
+      toast.success('Upgrade request sent.');
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send upgrade request.');
+      toast.error('Failed to send request.');
     } finally {
       setRequestingUpgrade(false);
     }
@@ -154,46 +139,19 @@ export default function LearningModePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
-        <section className="admin-management-card admin-management-hero">
-          <div className="admin-management-hero-copy">
-            <div className="admin-management-eyebrow">Intelligence</div>
-            <h1 className="admin-management-title">AI Visualizer</h1>
-            <p className="admin-management-subtitle">
-              Step-by-step explanations, diagrams, and worked examples that match your level.
-            </p>
-          </div>
-          <div className="admin-management-hero-actions">
-            {!premiumEntitled && (
-              <div className="admin-management-highlight">
-                <span>Plan</span>
-                <strong>Standard</strong>
-              </div>
-            )}
-            {!premiumEntitled && (
-              <button className="admin-management-secondary" type="button" onClick={handleRequestUpgrade} disabled={requestingUpgrade}>
-                <Zap size={18} /> Upgrade
-              </button>
-            )}
-            <button
-              className="admin-management-secondary"
-              type="button"
-              onClick={() => setQuestion('')}
-              disabled={!question}
-            >
-              <X size={18} /> Clear
-            </button>
-          </div>
-        </section>
+        <div className="mb-6">
+          <h1 className="text-2xl font-black text-slate-100 tracking-tight">AI Visualizer</h1>
+          <p className="text-slate-400 text-sm">Transforming complex concepts into interactive, step-by-step masterclasses.</p>
+        </div>
 
         <main className="learning-mode-stage">
           <section className="admin-management-card admin-management-panel learning-mode-stage__panel">
             <div className="learning-mode-stage__header">
-              <div>
-                <div className="admin-management-panel-kicker">Output</div>
-                <h2>{activeTab === 'visualize' ? 'Visualization' : 'Examples'}</h2>
-                <p>Ask a question below — the visualization takes the full stage.</p>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Interactive Session</p>
+                <p className="text-[13px] text-slate-400 mt-1">Generate visualizations or examples by asking a question below.</p>
               </div>
-              <div className="learning-mode-tabs" role="tablist" aria-label="Learning output mode">
+              <div className="learning-mode-tabs" role="tablist">
                 {TABS.map((tab) => {
                   const isActive = activeTab === tab.id;
                   return (
@@ -202,8 +160,6 @@ export default function LearningModePage() {
                       onClick={() => setActiveTab(tab.id)}
                       className={`learning-mode-tab ${isActive ? 'is-active' : ''}`}
                       type="button"
-                      role="tab"
-                      aria-selected={isActive}
                     >
                       <tab.icon size={16} />
                       {tab.label}
@@ -214,33 +170,13 @@ export default function LearningModePage() {
             </div>
 
             {upgradeRequired && (
-              <div
-                className="admin-management-helper"
-                style={{
-                  borderColor: 'rgba(251,146,60,0.55)',
-                  background: 'rgba(251,146,60,0.10)',
-                  color: 'rgba(255,255,255,0.92)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 14,
-                  marginBottom: 16,
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <strong style={{ fontSize: 13, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Upgrade Required</strong>
-                  <span style={{ fontSize: 13, opacity: 0.92 }}>
-                    Premium AI is required for the richest diagrams and animations. Guided mode will still render clean output.
-                  </span>
+              <div className="admin-management-helper mt-4 mb-4 flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                <div>
+                  <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest">Premium Feature</h4>
+                  <p className="text-xs text-amber-200/70 mt-1">Upgrade to unlock full AI generation and advanced diagrams.</p>
                 </div>
-                <button
-                  className="admin-management-secondary"
-                  type="button"
-                  onClick={handleRequestUpgrade}
-                  disabled={requestingUpgrade}
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  <Zap size={18} /> {requestingUpgrade ? 'Requesting...' : 'Request Upgrade'}
+                <button className="admin-management-secondary compact" onClick={handleRequestUpgrade} disabled={requestingUpgrade}>
+                  <Zap size={14} /> {requestingUpgrade ? 'Requesting...' : 'Upgrade'}
                 </button>
               </div>
             )}
@@ -260,70 +196,52 @@ export default function LearningModePage() {
             </div>
           </section>
 
-          <form onSubmit={handleProcess} className="learning-mode-composer" aria-label="Ask AI Visualizer">
+          <form onSubmit={handleProcess} className="learning-mode-composer">
             <div className="learning-mode-composer__row">
               <div className="learning-mode-composer__field">
                 <textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="Ask a question… (e.g., Explain binary search with an example)"
+                  placeholder="What would you like to visualize? (e.g. How does photosynthesis work?)"
                   className="learning-mode-composer__input"
                 />
-                {question ? (
-                  <button type="button" className="learning-mode-composer__clear" onClick={() => setQuestion('')} aria-label="Clear question">
+                {question && (
+                  <button type="button" className="learning-mode-composer__clear" onClick={() => setQuestion('')}>
                     <X size={16} />
                   </button>
-                ) : null}
+                )}
               </div>
 
               <div className="learning-mode-composer__controls">
-                <select value={subject} onChange={(e) => setSubject(e.target.value)} className="learning-mode-composer__select" aria-label="Subject">
-                  <option value="">Auto subject</option>
+                <select value={subject} onChange={(e) => setSubject(e.target.value)} className="learning-mode-composer__select">
+                  <option value="">Auto-subject</option>
                   <option value="Mathematics">Mathematics</option>
                   <option value="Physics">Physics</option>
-                  <option value="Chemistry">Chemistry</option>
-                  <option value="Biology">Biology</option>
-                  <option value="History">History</option>
-                  <option value="English">English</option>
                   <option value="Computer Science">Computer Science</option>
                 </select>
                 <button className="learning-mode-composer__send" type="submit" disabled={loading}>
-                  {loading ? <Loader size={18} /> : <Send size={18} />}
+                  {loading ? <Loader className="animate-spin" size={18} /> : <Send size={18} />}
                 </button>
               </div>
             </div>
             <div className="learning-mode-composer__footer">
-              <div className="learning-mode-composer__hint">
-                <Sparkles size={14} /> Visualization style is auto-selected by AI.
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-amber-400" />
+                <span>AI will automatically tailor the visualization to your query.</span>
               </div>
-              <div className="learning-mode-composer__advanced">
-                <button
-                  type="button"
-                  className="learning-mode-composer__advanced-toggle"
-                  onClick={() => setShowAdvanced((s) => !s)}
-                  aria-expanded={showAdvanced}
-                >
-                  {showAdvanced ? 'Hide options' : 'Options'}
-                </button>
-                {showAdvanced ? (
-                  <div className="learning-mode-composer__level" aria-label="Learning level">
-                    <span>Level</span>
-                    <select
-                      value={level}
-                      onChange={(e) => {
-                        const next = e.target.value;
-                        if (next === 'BEGINNER' || next === 'STANDARD' || next === 'ADVANCED') setLevel(next);
-                      }}
-                      className="learning-mode-composer__select"
-                      aria-label="Level"
-                    >
-                      <option value="BEGINNER">Beginner</option>
-                      <option value="STANDARD">Standard</option>
-                      <option value="ADVANCED">Advanced</option>
-                    </select>
-                  </div>
-                ) : null}
-              </div>
+              <button type="button" className="text-indigo-400 hover:text-indigo-300 transition-colors" onClick={() => setShowAdvanced(!showAdvanced)}>
+                {showAdvanced ? 'Simple Mode' : 'Advanced Options'}
+              </button>
+              {showAdvanced && (
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-500 uppercase text-[10px] font-black">Complexity</span>
+                  <select value={level} onChange={(e) => setLevel(e.target.value as any)} className="bg-slate-800 border-none rounded-lg text-xs px-2 py-1 outline-none text-slate-300">
+                    <option value="BEGINNER">Beginner</option>
+                    <option value="STANDARD">Standard</option>
+                    <option value="ADVANCED">Advanced</option>
+                  </select>
+                </div>
+              )}
             </div>
           </form>
         </main>

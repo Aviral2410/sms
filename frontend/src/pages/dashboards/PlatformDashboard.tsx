@@ -224,16 +224,24 @@ export default function PlatformDashboard() {
         <div style={{ display: 'flex', gap: 10 }}>
           <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} 
             onClick={() => {
-              setPaletteAiMode(false);
-              setSearchOpen(true);
+              if (searchOpen && !paletteAiMode) {
+                setSearchOpen(false);
+              } else {
+                setPaletteAiMode(false);
+                setSearchOpen(true);
+              }
             }}
             style={{ padding: '10px 18px', borderRadius: 12, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', color: 'var(--text-strong)', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Search size={14} /> Search
           </motion.button>
           <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} 
             onClick={() => {
-              setPaletteAiMode(true);
-              setSearchOpen(true);
+              if (searchOpen && paletteAiMode) {
+                setSearchOpen(false);
+              } else {
+                setPaletteAiMode(true);
+                setSearchOpen(true);
+              }
             }}
             style={{ padding: '10px 18px', borderRadius: 12, background: 'linear-gradient(135deg, rgba(167,139,250,0.2), rgba(99,102,241,0.1))', border: '1px solid rgba(167,139,250,0.3)', color: '#a78bfa', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}>
             <Sparkles size={14} /> Ask Insights

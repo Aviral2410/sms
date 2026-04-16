@@ -82,6 +82,9 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         if (containsAny(normalized, "forum leaderboard", "leaderboard", "top contributors")) {
             return Optional.of(new ToolCall("getForumLeaderboard", leaderboardArgs(normalized), "rule_based:forum_leaderboard"));
         }
+        if (containsAny(normalized, "school counts", "how many schools", "total schools", "onboarded schools", "school list")) {
+            return Optional.of(new ToolCall("getPlatformSchoolsOverview", objectMapper.createObjectNode(), "rule_based:schools_overview"));
+        }
 
         return Optional.empty();
     }
