@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Globe, MessageCircle, Plus, Send, Trash2, X } from 'lucide-react';
+import { Bell, Bot, CheckCheck, Globe, MessageCircle, Moon, Plus, Send, Sparkles, Trash2, UserCircle2, X } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { readSseStream, tryParseJson } from '../../lib/sse';
@@ -15,6 +15,7 @@ type ChatMessage = {
   role: 'user' | 'assistant';
   text?: string;
   response?: RenderedResponse;
+  ts?: number;
 };
 
 type StreamFinalPayload = {
@@ -90,6 +91,7 @@ export const AiAssistantChat: React.FC = () => {
       id: 'a-welcome',
       role: 'assistant',
       text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
+      ts: Date.now(),
     },
   ]);
 
@@ -99,6 +101,7 @@ export const AiAssistantChat: React.FC = () => {
         id: 'a-welcome',
         role: 'assistant',
         text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
+        ts: Date.now(),
       },
     ]);
   };
@@ -135,7 +138,7 @@ export const AiAssistantChat: React.FC = () => {
   const canSend = useMemo(() => !!session.token && input.trim().length > 0 && !loading, [session.token, input, loading]);
 
   const appendMessage = (msg: ChatMessage) => {
-    setMessages((prev) => [...prev, msg]);
+    setMessages((prev) => [...prev, { ts: Date.now(), ...msg }]);
     setTimeout(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -150,6 +153,11 @@ export const AiAssistantChat: React.FC = () => {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
     }, 0);
+  };
+
+  const formatTime = (ts?: number) => {
+    if (!ts) return '';
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const authHeaders = useMemo(() => {
@@ -705,7 +713,7 @@ export const AiAssistantChat: React.FC = () => {
             zIndex: 130,
             boxShadow: '0 24px 48px rgba(2,6,23,0.4)',
             display: 'grid',
-            gridTemplateColumns: '170px 1fr',
+            gridTemplateColumns: '260px 1fr',
             gridTemplateRows: '54px auto auto 1fr 86px',
             overflow: 'hidden',
           }}
@@ -830,7 +838,7 @@ export const AiAssistantChat: React.FC = () => {
               onClick={() => void startNewChat()}
               style={{
                 border: '1px solid rgba(148,163,184,0.18)',
-                background: 'rgba(15,23,42,0.30)',
+                background: 'linear-gradient(135deg, rgba(99,102,241,0.92), rgba(168,85,247,0.72))',
                 color: 'var(--text-soft)',
                 padding: '8px 10px',
                 borderRadius: 12,
@@ -891,6 +899,15 @@ export const AiAssistantChat: React.FC = () => {
           <div style={{ gridColumn: 2, gridRow: 2, borderBottom: '1px solid rgba(148,163,184,0.16)', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <div style={{ fontSize: 11, color: 'var(--text-dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {workspaces.length > 0 ? `Workspace: ${workspaces[0].name}` : 'Workspace'}
+            </div>
+            <div className="ai-assistant__topbar">
+              <button type="button" className="ai-assistant__topbtn" title="Magic"><Sparkles size={16} /></button>
+              <button type="button" className="ai-assistant__topbtn" title="Theme"><Moon size={16} /></button>
+              <button type="button" className="ai-assistant__topbtn" title="Notifications"><Bell size={16} /></button>
+              <div className="ai-assistant__avatar" title={session.fullName || 'Admin'}>
+                <span>{(session.fullName || 'A').slice(0, 1).toUpperCase()}</span>
+                <span className="ai-assistant__avatar-dot" />
+              </div>
             </div>
             <button
               type="button"
@@ -1018,27 +1035,40 @@ export const AiAssistantChat: React.FC = () => {
             {messages.map((msg) => (
               <article
                 key={msg.id}
-                style={{
-                  justifySelf: msg.role === 'user' ? 'end' : 'start',
-                  maxWidth: '92%',
-                  padding: 12,
-                  borderRadius: 16,
-                  border: '1px solid rgba(148,163,184,0.16)',
-                  background: msg.role === 'user' ? 'rgba(56,189,248,0.16)' : 'rgba(15,23,42,0.35)',
-                  color: 'var(--text-main)',
-                }}
+                className={`ai-assistant__message${msg.role === 'user' ? ' is-user' : ' is-assistant'}`}
               >
                 {msg.role === 'user' ? (
-                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45 }}>{msg.text}</p>
+                  <div className="ai-assistant__user-msg">
+                    <div className="ai-assistant__user-bubble">
+                      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45 }}>{msg.text}</p>
+                    </div>
+                    <div className="ai-assistant__stamp">
+                      <span>{formatTime(msg.ts)}</span>
+                      <CheckCheck size={14} />
+                    </div>
+                  </div>
                 ) : (
                   <div>
-                    {renderAssistantResponse(msg.response, msg.text)}
-                    {renderActionChips(msg.response)}
+                    <div className="ai-assistant__assistant-row">
+                      <div className="ai-assistant__assistant-avatar"><Bot size={16} /></div>
+                      <div className="ai-assistant__assistant-bubble">
+                        {renderAssistantResponse(msg.response, msg.text)}
+                        {renderActionChips(msg.response)}
+                      </div>
+                    </div>
+                    <div className="ai-assistant__stamp is-assistant">{formatTime(msg.ts)}</div>
                   </div>
                 )}
               </article>
             ))}
             {loading && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>Thinking...</div>}
+          </div>
+
+          <div className="ai-assistant__chips">
+            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Show analytics for this workspace.')}>Show analytics</button>
+            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Total students count.')}>Total students count</button>
+            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Show recent schools.')}>Recent schools</button>
+            <button type="button" className="ai-assistant__chip" onClick={() => void sendMessage('Generate a growth report summary.')}>Growth report</button>
           </div>
 
           <footer
