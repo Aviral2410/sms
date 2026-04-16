@@ -1,0 +1,4 @@
+{{- if .Values.services.ollama.enabled }}
+{{ include "sms.serviceService" (dict "root" . "service" .Values.services.ollama "serviceName" "ollama") }}
+{{- end }}
+

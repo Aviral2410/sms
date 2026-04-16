@@ -119,6 +119,51 @@ networking:
       secretName: sms-platform-tls
 
 services:
+  ollama:
+    enabled: true
+    workloadName: ollama
+    image:
+      repository: ollama/ollama
+      tag: "0.3.14"
+      pullPolicy: IfNotPresent
+    replicaCount: 1
+    containerPort: 11434
+    service:
+      port: 11434
+      type: ClusterIP
+    env:
+      - name: OLLAMA_HOST
+        value: 0.0.0.0
+      - name: OLLAMA_KEEP_ALIVE
+        value: "30m"
+    probes:
+      startup:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 30
+      readiness:
+        tcpSocket:
+          port: http
+        periodSeconds: 10
+        failureThreshold: 6
+      liveness:
+        tcpSocket:
+          port: http
+        periodSeconds: 20
+        failureThreshold: 6
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    autoscaling:
+      enabled: false
+    pdb:
+      enabled: false
+
   authService:
     enabled: true
     workloadName: auth-service
@@ -736,16 +781,31 @@ services:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: LLM_PROVIDER
+            optional: true
+      - name: OLLAMA_BASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OLLAMA_BASE_URL
+            optional: true
+      - name: OLLAMA_MODEL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OLLAMA_MODEL
+            optional: true
       - name: OPENAI_API_KEY
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENAI_API_KEY
+            optional: true
       - name: OPENAI_MODEL
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: OPENAI_MODEL
+            optional: true
       - name: AI_TOOL_RATE_LIMITS_FILE
         value: /var/run/sms-secrets/AI_TOOL_RATE_LIMITS_JSON
     probes:

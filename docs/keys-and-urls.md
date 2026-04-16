@@ -18,6 +18,11 @@
 - Port-forward: `kubectl -n vault port-forward svc/vault-ui 30200:8200`
 - Root token (local dev mode): `root`
 
+### Ollama (local LLM planner)
+
+- Port-forward: `kubectl -n sms port-forward svc/ollama 11434:11434`
+- URL: `http://localhost:11434`
+
 ### Monitoring
 
 - Grafana: `http://localhost:30090`
@@ -46,6 +51,8 @@ Values shown below are the **current local/dev defaults used in this repo**. Rep
 | `MCP_REQUIRE_AUTH` | `true` |
 | `MCP_ENABLE_DOCKER_INSIGHTS` | `false` |
 | `LLM_PROVIDER` |  |
+| `OLLAMA_BASE_URL` |  |
+| `OLLAMA_MODEL` |  |
 | `OPENAI_API_KEY` |  |
 | `OPENAI_MODEL` |  |
 | `GEMINI_API_KEY` |  |

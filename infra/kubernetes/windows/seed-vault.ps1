@@ -52,7 +52,10 @@ $platformData = @{
         AI_TOOL_RATE_LIMITS_JSON = $rateLimitJson
         # Placeholders for AI Providers
         LLM_PROVIDER = "ollama"
+        OLLAMA_BASE_URL = "http://ollama:11434"
+        OLLAMA_MODEL = "llama3.2:1b"
         OPENAI_API_KEY = ""
+        OPENAI_MODEL = "gpt-4o-mini"
         GEMINI_API_KEY = ""
     }
 } | ConvertTo-Json
