@@ -33,7 +33,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -53,7 +53,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -71,7 +71,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -91,7 +91,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -109,7 +109,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -127,7 +127,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -145,7 +145,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -205,7 +205,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -241,7 +241,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
@@ -263,7 +263,7 @@ services:
       targetCPUUtilizationPercentage: 70
     image:
       repository: ghcr.io/aviral2410/sms-frontend
-      tag: 04d5cae8d874c49f6586fe52e8e14572b9bc330a
+      tag: b4df96bae7c6efcce81bea425dceaa3e132b3196
       pullPolicy: Always
     resources:
       requests:
