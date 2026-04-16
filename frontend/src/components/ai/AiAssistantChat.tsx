@@ -458,27 +458,31 @@ export const AiAssistantChat: React.FC = () => {
     await sendMessage();
   };
 
+  const [toolsLoading, setToolsLoading] = useState(false);
   const loadTools = async () => {
-    if (!session.token || toolsLoaded) return;
+    if (!session.token || toolsLoading) return;
+    setToolsLoading(true);
+    setToolsError(null);
     try {
-      setToolsError(null);
       const res = await fetch('/api/v1/ai-interaction/tools', {
         headers: authHeaders ?? { Authorization: `Bearer ${session.token}` },
       });
       if (!res.ok) {
-        setToolsError(`Tools endpoint returned ${res.status}.`);
+        setToolsError(`Tools endpoint returned ${res.status}: ${res.statusText}`);
         return;
       }
-      const raw = (await safeReadJson<any>(res)) ?? null;
-      if (!Array.isArray(raw)) {
-        setToolsError('Tools response was not a list.');
+      const data = (await safeReadJson<ToolCatalogItem[]>(res)) ?? [];
+      if (!Array.isArray(data)) {
+        setToolsError('Invalid response format from tools API.');
         return;
       }
-      const data = raw as ToolCatalogItem[];
       setTools(data);
       setToolsLoaded(true);
-    } catch {
-      setToolsError('Failed to load tools.');
+    } catch (err) {
+      setToolsError('Network error while loading tools.');
+      console.error('Tools load error:', err);
+    } finally {
+      setToolsLoading(false);
     }
   };
 
@@ -941,8 +945,14 @@ export const AiAssistantChat: React.FC = () => {
             {toolsOpen && (
               <div style={{ borderBottom: '1px solid rgba(148,163,184,0.16)', padding: 12, background: 'rgba(15,23,42,0.3)', maxHeight: '40%', overflowY: 'auto' }}>
                 <div style={{ display: 'grid', gap: 10 }}>
-                  <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Available Capabilities</div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Available Capabilities</div>
+                    {toolsLoading && <div style={{ fontSize: 10, color: '#38bdf8', animate: 'pulse 1s infinite' }}>Fetching latest...</div>}
+                  </div>
                   {toolsError && <div style={{ fontSize: 12, color: '#fb7185' }}>{toolsError}</div>}
+                  {tools.length === 0 && !toolsLoading && !toolsError && (
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 0' }}>No specific AI tools authorized for your role yet.</div>
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
                     {tools.map((tool) => (
                       <div key={tool.name} style={{ background: 'rgba(2,6,23,0.4)', borderRadius: 12, padding: 10, border: '1px solid rgba(148,163,184,0.1)' }}>

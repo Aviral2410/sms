@@ -16,7 +16,7 @@ public class ToolCatalogService {
 
     public List<AiInteractionDtos.ToolCatalogItem> forUser(UserContext user) {
         return toolRegistry.all().stream()
-                .filter(tool -> tool.allowedRoles().contains(user.role()))
+                .filter(tool -> user.role() == UserRole.PLATFORM_ADMIN || tool.allowedRoles().contains(user.role()))
                 .map(tool -> new AiInteractionDtos.ToolCatalogItem(
                         tool.name(),
                         tool.descriptor().description(),

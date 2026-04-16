@@ -12,6 +12,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class RbacPolicyService {
     public void assertAllowed(AiTool tool, UserContext user, ObjectNode args) {
+        if (user.role() == UserRole.PLATFORM_ADMIN) {
+            return;
+        }
+
         if (!tool.allowedRoles().contains(user.role())) {
             throw new ForbiddenException("You do not have permission to use this assistant action.");
         }
