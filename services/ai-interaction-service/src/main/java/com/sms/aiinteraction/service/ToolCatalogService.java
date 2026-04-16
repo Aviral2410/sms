@@ -2,6 +2,7 @@ package com.sms.aiinteraction.service;
 
 import com.sms.aiinteraction.api.AiInteractionDtos;
 import com.sms.aiinteraction.security.UserContext;
+import com.sms.aiinteraction.security.UserRole;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

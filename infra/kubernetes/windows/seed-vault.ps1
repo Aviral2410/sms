@@ -50,7 +50,7 @@ $platformData = @{
         PLATFORM_CONFIG_ENCRYPTION_KEY = "dev-platform-config-encryption-key"
         BOOTSTRAP_SUPERADMIN_PASSWORD = $BootstrapPassword
         AI_TOOL_RATE_LIMITS_JSON = $rateLimitJson
-        # Placeholders for AI Providers
+        # AI Providers
         LLM_PROVIDER = "ollama"
         OLLAMA_BASE_URL = "http://ollama:11434"
         OLLAMA_MODEL = "llama3.2:1b"
@@ -59,6 +59,15 @@ $platformData = @{
         GEMINI_API_KEY = ""
         OPENROUTER_API_KEY = ""
         ANTHROPIC_API_KEY = ""
+        # Payment Providers
+        RAZORPAY_KEY_ID = ""
+        RAZORPAY_KEY_SECRET = ""
+        STRIPE_SECRET_KEY = ""
+        STRIPE_PUBLISHABLE_KEY = ""
+        # Communication
+        SENDGRID_API_KEY = ""
+        TWILIO_ACCOUNT_SID = ""
+        TWILIO_AUTH_TOKEN = ""
     }
 } | ConvertTo-Json
 

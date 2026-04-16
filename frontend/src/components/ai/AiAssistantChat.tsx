@@ -947,7 +947,7 @@ export const AiAssistantChat: React.FC = () => {
                 <div style={{ display: 'grid', gap: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Available Capabilities</div>
-                    {toolsLoading && <div style={{ fontSize: 10, color: '#38bdf8', animate: 'pulse 1s infinite' }}>Fetching latest...</div>}
+                    {toolsLoading && <div style={{ fontSize: 10, color: '#38bdf8', animation: 'pulse 1s infinite' }}>Fetching latest...</div>}
                   </div>
                   {toolsError && <div style={{ fontSize: 12, color: '#fb7185' }}>{toolsError}</div>}
                   {tools.length === 0 && !toolsLoading && !toolsError && (
