@@ -31,10 +31,6 @@ public class PlatformConfigController {
     private final PlatformConfigService service;
     private final boolean writesEnabled;
 
-    public PlatformConfigController(PlatformConfigService service) {
-        this(service, false);
-    }
-
     public PlatformConfigController(
             PlatformConfigService service,
             @Value("${platform.config.writes.enabled:false}") boolean writesEnabled

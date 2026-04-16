@@ -8,6 +8,11 @@ global:
   imageRegistry: ""
   imagePullSecrets:
     - ghcr-pull-secret
+  deployment:
+    revisionHistoryLimit: 2
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
 
 networking:
   ingress:

@@ -111,6 +111,33 @@ CREATE INDEX IF NOT EXISTS idx_password_reset_token_school_email
 CREATE INDEX IF NOT EXISTS idx_password_reset_token_expires_at
     ON identity.password_reset_token (expires_at);
 
+CREATE TABLE IF NOT EXISTS identity.tenant_domain (
+    domain_id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL REFERENCES identity.tenant(tenant_id) ON DELETE CASCADE,
+    domain VARCHAR(255) NOT NULL UNIQUE,
+    host VARCHAR(255) NOT NULL UNIQUE,
+    domain_type VARCHAR(80) NOT NULL,
+    is_primary BOOLEAN NOT NULL DEFAULT FALSE,
+    is_canonical BOOLEAN NOT NULL DEFAULT FALSE,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    verification_status VARCHAR(80) NOT NULL DEFAULT 'PENDING',
+    verification_method VARCHAR(80) NOT NULL DEFAULT 'DNS_TXT',
+    verification_token VARCHAR(255),
+    verification_details_json JSONB,
+    ssl_mode VARCHAR(80) NOT NULL DEFAULT 'PLATFORM_MANAGED',
+    ssl_status VARCHAR(80) DEFAULT 'PENDING',
+    dns_status VARCHAR(80) DEFAULT 'PENDING',
+    last_verified_at TIMESTAMPTZ,
+    last_dns_check_at TIMESTAMPTZ,
+    last_ssl_check_at TIMESTAMPTZ,
+    redirect_target_domain_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_tenant_domain_tenant_id
+    ON identity.tenant_domain (tenant_id);
+
 -- NOTE:
 -- Do not seed fixed admin credentials in SQL.
 -- For local/dev, bootstrap a SUPER_ADMIN using auth-service env vars:

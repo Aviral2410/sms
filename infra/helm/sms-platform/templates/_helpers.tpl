@@ -92,6 +92,18 @@ spec:
 {{- if not $service.autoscaling.enabled }}
   replicas: {{ $service.replicaCount }}
 {{- end }}
+{{- with $root.Values.global.deployment }}
+{{- if .revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .revisionHistoryLimit }}
+{{- end }}
+{{- if .rollingUpdate }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: {{ .rollingUpdate.maxSurge | default "25%" }}
+      maxUnavailable: {{ .rollingUpdate.maxUnavailable | default "25%" }}
+{{- end }}
+{{- end }}
   selector:
     matchLabels:
 {{ include "sms.selectorLabels" (dict "root" $root "serviceName" $service.workloadName) | indent 6 }}

@@ -3,6 +3,11 @@ global:
   imagePullSecrets: []
   commonLabels: {}
   podAnnotations: {}
+  deployment:
+    # Optional knobs for local/dev rollouts.
+    # When unset, Kubernetes defaults are used (25% surge/unavailable, revHistory=10).
+    revisionHistoryLimit: null
+    rollingUpdate: null
   nodeSelector: {}
   tolerations: []
   affinity: {}
