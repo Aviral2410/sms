@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS identity.tenant (
     activated_at TIMESTAMPTZ NOT NULL
 );
 
+ALTER TABLE identity.tenant
+    ADD COLUMN IF NOT EXISTS realm_name VARCHAR(255);
+
+ALTER TABLE identity.tenant
+    ADD COLUMN IF NOT EXISTS routing_status VARCHAR(80);
+
+ALTER TABLE identity.tenant
+    ADD COLUMN IF NOT EXISTS onboarding_status VARCHAR(80);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tenant_school_code
     ON identity.tenant (LOWER(school_code));
 
