@@ -215,20 +215,20 @@ services:
         cpu: "1"
         memory: 512Mi
     env:
-      - name: DB_URL
+      - name: SPRING_DATASOURCE_URL
         value: "jdbc:postgresql://postgres:5432/sms_platform"
-      - name: DB_USERNAME
+      - name: SPRING_DATASOURCE_USERNAME
         valueFrom:
           secretKeyRef:
             name: sms-secrets
             key: POSTGRES_USER
-      - name: DB_PASSWORD
+      - name: SPRING_DATASOURCE_PASSWORD
         valueFrom:
           secretKeyRef:
             name: sms-secrets
             key: POSTGRES_PASSWORD
-      - name: DB_SCHEMA
-        value: "public"
+      - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: "org.postgresql.Driver"
       - name: SPRING_DATASOURCE_URL
         value: "jdbc:postgresql://postgres:5432/sms_platform"
 

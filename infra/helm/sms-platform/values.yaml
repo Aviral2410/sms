@@ -702,6 +702,9 @@ services:
       - name: redis
         host: redis
         port: 6379
+      - name: postgres
+        host: postgres
+        port: 5432
     secretMount:
       enabled: true
       mountPath: /var/run/sms-secrets
@@ -714,6 +717,20 @@ services:
         value: redis
       - name: REDIS_PORT
         value: "6379"
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: org.postgresql.Driver
       - name: LLM_PROVIDER
         valueFrom:
           secretKeyRef:
