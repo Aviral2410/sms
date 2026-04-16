@@ -138,6 +138,19 @@ CREATE TABLE IF NOT EXISTS identity.tenant_domain (
 CREATE INDEX IF NOT EXISTS idx_tenant_domain_tenant_id
     ON identity.tenant_domain (tenant_id);
 
+CREATE TABLE IF NOT EXISTS identity.tenant_routing_config (
+    config_id UUID PRIMARY KEY,
+    tenant_id UUID NOT NULL UNIQUE REFERENCES identity.tenant(tenant_id) ON DELETE CASCADE,
+    preferred_host VARCHAR(255),
+    fallback_host VARCHAR(255),
+    redirect_mode VARCHAR(80) NOT NULL DEFAULT 'NONE',
+    enforce_https BOOLEAN NOT NULL DEFAULT TRUE,
+    allow_multiple_hosts BOOLEAN NOT NULL DEFAULT TRUE,
+    host_match_strategy VARCHAR(80) NOT NULL DEFAULT 'STRICT',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- NOTE:
 -- Do not seed fixed admin credentials in SQL.
 -- For local/dev, bootstrap a SUPER_ADMIN using auth-service env vars:
