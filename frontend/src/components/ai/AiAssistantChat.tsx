@@ -19,6 +19,7 @@ type ChatMessage = {
 };
 
 type StreamFinalPayload = {
+  workspaceId?: string | null;
   conversationId: string;
   response: RenderedResponse;
 };
@@ -298,17 +299,31 @@ export const AiAssistantChat: React.FC = () => {
     return created?.conversationId ?? null;
   };
 
+  const createChatInDefaultWorkspace = async () => {
+    if (!authHeaders) return null;
+    const res = await fetch('/api/v1/ai-interaction/chats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders },
+      body: JSON.stringify({ title: null }),
+    });
+    if (!res.ok) return null;
+    const created =
+      (await safeReadJson<{ conversationId: string; workspaceId?: string; title?: string | null }>(res)) ?? null;
+    if (!created?.conversationId) return null;
+    if (created.workspaceId) setWorkspaceId(created.workspaceId);
+    return created.conversationId;
+  };
+
   const startNewChat = async () => {
     if (!authHeaders) return;
     setHistoryLoading(true);
     try {
-      const ws = await ensureWorkspace();
-      if (!ws) return;
-      const newId = await createChat(ws);
+      const newId = await createChatInDefaultWorkspace();
       if (!newId) return;
       setConversationId(newId);
       resetThread();
-      await loadChats(ws);
+      const ws = workspaceId ?? (await ensureWorkspace());
+      if (ws) await loadChats(ws);
     } finally {
       setHistoryLoading(false);
     }
@@ -347,28 +362,16 @@ export const AiAssistantChat: React.FC = () => {
     appendMessage({ id: assistantId, role: 'assistant', text: '' });
 
     try {
-      const activeWorkspaceId = await ensureWorkspace();
-      if (!activeWorkspaceId) {
-        throw new Error('Unable to locate workspace.');
-      }
-
-      let activeConversationId = conversationId;
-      if (!activeConversationId) {
-        activeConversationId = await createChat(activeWorkspaceId);
-        if (activeConversationId) {
-          setConversationId(activeConversationId);
-          await loadChats(activeWorkspaceId);
-        }
-      }
+      const activeConversationId = conversationId;
 
       const response = await fetch('/api/v1/ai-interaction/chat/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.token}`,
+          ...authHeaders,
         },
         body: JSON.stringify({
-          workspaceId: activeWorkspaceId,
+          workspaceId: workspaceId,
           conversationId: activeConversationId,
           message,
           context: { route: window.location.pathname },
@@ -410,6 +413,7 @@ export const AiAssistantChat: React.FC = () => {
       const payload = finalPayload as StreamFinalPayload | null;
       if (payload?.response) {
         setConversationId(payload.conversationId);
+        if (payload.workspaceId) setWorkspaceId(payload.workspaceId);
         patchMessage(assistantId, { response: payload.response, text: streamingText || undefined });
       } else if (!gotAny) {
         patchMessage(assistantId, { text: 'No response.' });
@@ -433,13 +437,18 @@ export const AiAssistantChat: React.FC = () => {
     try {
       setToolsError(null);
       const res = await fetch('/api/v1/ai-interaction/tools', {
-        headers: { Authorization: `Bearer ${session.token}` },
+        headers: authHeaders ?? { Authorization: `Bearer ${session.token}` },
       });
       if (!res.ok) {
         setToolsError(`Tools endpoint returned ${res.status}.`);
         return;
       }
-      const data = (await res.json()) as ToolCatalogItem[];
+      const raw = (await safeReadJson<any>(res)) ?? null;
+      if (!Array.isArray(raw)) {
+        setToolsError('Tools response was not a list.');
+        return;
+      }
+      const data = raw as ToolCatalogItem[];
       setTools(data);
       setToolsLoaded(true);
     } catch {

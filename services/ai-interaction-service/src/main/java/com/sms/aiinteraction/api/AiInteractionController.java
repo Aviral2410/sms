@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -53,16 +54,16 @@ public class AiInteractionController {
     }
 
     @PostMapping("/chat")
-    public AiInteractionDtos.ChatResponse chat(
+    public ResponseEntity<AiInteractionDtos.ChatResponse> chat(
             @Valid @RequestBody AiInteractionDtos.ChatRequest request,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return orchestrator.chat(user, request);
+        return ResponseEntity.ok(orchestrator.chat(user, request));
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(
+    public ResponseEntity<SseEmitter> stream(
             @Valid @RequestBody AiInteractionDtos.ChatRequest request,
             HttpServletRequest servletRequest
     ) {
@@ -79,44 +80,60 @@ public class AiInteractionController {
             }
         }, emitter::completeWithError, emitter::complete);
 
-        return emitter;
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .header("Cache-Control", "no-cache")
+                .header("X-Accel-Buffering", "no")
+                .body(emitter);
     }
 
     @PostMapping("/actions/confirm")
-    public AiInteractionDtos.ChatResponse confirmAction(
+    public ResponseEntity<AiInteractionDtos.ChatResponse> confirmAction(
             @Valid @RequestBody AiInteractionDtos.ConfirmActionRequest request,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return orchestrator.confirmAction(user, request.confirmationToken());
+        return ResponseEntity.ok(orchestrator.confirmAction(user, request.confirmationToken()));
     }
 
     @GetMapping("/tools")
-    public List<AiInteractionDtos.ToolCatalogItem> tools(HttpServletRequest servletRequest) {
+    public ResponseEntity<List<AiInteractionDtos.ToolCatalogItem>> tools(HttpServletRequest servletRequest) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return toolCatalogService.forUser(user);
+        return ResponseEntity.ok(toolCatalogService.forUser(user));
     }
 
     @PostMapping("/workspaces")
-    public AiInteractionDtos.WorkspaceResponse createWorkspace(
+    public ResponseEntity<AiInteractionDtos.WorkspaceResponse> createWorkspace(
             @Valid @RequestBody AiInteractionDtos.WorkspaceCreateRequest request,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
         ConversationMemoryService.WorkspaceRecord workspace = conversationMemoryService.createWorkspace(user, request.name());
-        return toWorkspaceResponse(workspace);
+        return ResponseEntity.ok(toWorkspaceResponse(workspace));
     }
 
     @GetMapping("/workspaces")
-    public List<AiInteractionDtos.WorkspaceResponse> listWorkspaces(HttpServletRequest servletRequest) {
+    public ResponseEntity<List<AiInteractionDtos.WorkspaceResponse>> listWorkspaces(HttpServletRequest servletRequest) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return conversationMemoryService.listWorkspaces(user).stream()
+        return ResponseEntity.ok(conversationMemoryService.listWorkspaces(user).stream()
                 .map(this::toWorkspaceResponse)
-                .toList();
+                .toList());
+    }
+
+    @PostMapping("/chats")
+    public ResponseEntity<AiInteractionDtos.ChatSummaryResponse> createChatInDefaultWorkspace(
+            @RequestBody(required = false) AiInteractionDtos.ChatCreateRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        String title = request == null ? null : request.title();
+        ConversationMemoryService.WorkspaceRecord workspace = conversationMemoryService.ensureDefaultWorkspace(user);
+        ConversationMemoryService.ChatRecord chat = conversationMemoryService.createChat(user, workspace.workspaceId(), title);
+        return ResponseEntity.ok(toChatSummary(chat));
     }
 
     @PostMapping("/workspaces/{workspaceId}/chats")
-    public AiInteractionDtos.ChatSummaryResponse createChat(
+    public ResponseEntity<AiInteractionDtos.ChatSummaryResponse> createChat(
             @PathVariable java.util.UUID workspaceId,
             @RequestBody(required = false) AiInteractionDtos.ChatCreateRequest request,
             HttpServletRequest servletRequest
@@ -124,54 +141,54 @@ public class AiInteractionController {
         UserContext user = userContextResolver.resolve(servletRequest);
         String title = request == null ? null : request.title();
         ConversationMemoryService.ChatRecord chat = conversationMemoryService.createChat(user, workspaceId, title);
-        return toChatSummary(chat);
+        return ResponseEntity.ok(toChatSummary(chat));
     }
 
     @GetMapping("/workspaces/{workspaceId}/chats")
-    public List<AiInteractionDtos.ChatSummaryResponse> listChats(
+    public ResponseEntity<List<AiInteractionDtos.ChatSummaryResponse>> listChats(
             @PathVariable java.util.UUID workspaceId,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return conversationMemoryService.listChats(user, workspaceId).stream()
+        return ResponseEntity.ok(conversationMemoryService.listChats(user, workspaceId).stream()
                 .map(this::toChatSummary)
-                .toList();
+                .toList());
     }
 
     @GetMapping("/chats/{conversationId}/messages")
-    public List<AiInteractionDtos.ChatMessageResponse> listChatMessages(
+    public ResponseEntity<List<AiInteractionDtos.ChatMessageResponse>> listChatMessages(
             @PathVariable java.util.UUID conversationId,
             @RequestParam(defaultValue = "50") int limit,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return conversationMemoryService.listMessages(user, conversationId, limit).stream()
+        return ResponseEntity.ok(conversationMemoryService.listMessages(user, conversationId, limit).stream()
                 .map(this::toChatMessage)
-                .toList();
+                .toList());
     }
 
     @GetMapping("/audit/events")
-    public List<com.fasterxml.jackson.databind.JsonNode> auditEvents(
+    public ResponseEntity<List<com.fasterxml.jackson.databind.JsonNode>> auditEvents(
             @RequestParam(defaultValue = "100") int limit,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return auditTrailStore.list(user, limit);
+        return ResponseEntity.ok(auditTrailStore.list(user, limit));
     }
 
     @GetMapping("/admin/rate-limits")
-    public AiInteractionDtos.RateLimitPolicyResponse getRateLimits(HttpServletRequest servletRequest) {
+    public ResponseEntity<AiInteractionDtos.RateLimitPolicyResponse> getRateLimits(HttpServletRequest servletRequest) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return rateLimitPolicyService.readPolicy(user);
+        return ResponseEntity.ok(rateLimitPolicyService.readPolicy(user));
     }
 
     @PostMapping("/admin/rate-limits")
-    public AiInteractionDtos.RateLimitPolicyResponse updateRateLimits(
+    public ResponseEntity<AiInteractionDtos.RateLimitPolicyResponse> updateRateLimits(
             @Valid @RequestBody AiInteractionDtos.PlanToolRateLimits request,
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        return rateLimitPolicyService.updatePolicy(user, request);
+        return ResponseEntity.ok(rateLimitPolicyService.updatePolicy(user, request));
     }
 
     @PostMapping("/health-check")

@@ -961,6 +961,16 @@ services:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: LLM_PROVIDER
+      - name: OLLAMA_BASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OLLAMA_BASE_URL
+      - name: OLLAMA_MODEL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OLLAMA_MODEL
       - name: GEMINI_API_KEY
         valueFrom:
           secretKeyRef:

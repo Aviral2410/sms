@@ -16,7 +16,9 @@ const geminiApiKey = process.env.GEMINI_API_KEY ?? "";
 const openaiApiKey = process.env.OPENAI_API_KEY ?? "";
 const openrouterApiKey = process.env.OPENROUTER_API_KEY ?? "";
 const googleTtsApiKey = process.env.GOOGLE_TTS_API_KEY ?? "";
-const llmProvider = process.env.LLM_PROVIDER ?? "auto";
+const ollamaBaseUrl = process.env.OLLAMA_BASE_URL ?? "";
+const ollamaModel = process.env.OLLAMA_MODEL ?? "";
+const llmProvider = (process.env.LLM_PROVIDER ?? "auto").toLowerCase();
 const supportedRoles = ["platform_admin", "school_admin", "teacher", "student", "staff"];
 const requestContext = new AsyncLocalStorage();
 
@@ -115,7 +117,36 @@ async function callOpenRouter(prompt) {
   }
 }
 
+async function callOllama(prompt) {
+  if (!ollamaBaseUrl || !ollamaModel) return null;
+  try {
+    const base = ollamaBaseUrl.replace(/\/+$/, "");
+    const response = await fetch(`${base}/api/chat`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: ollamaModel,
+        stream: false,
+        temperature: 0.7,
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data?.message?.content || null;
+  } catch (e) {
+    console.error("Ollama call failed:", e);
+    return null;
+  }
+}
+
 async function callLlm(prompt) {
+  if (llmProvider === "ollama" || (llmProvider === "auto" && ollamaBaseUrl && ollamaModel)) {
+    const res = await callOllama(prompt);
+    if (res) return res;
+  }
   if (llmProvider === "gemini" || (llmProvider === "auto" && geminiApiKey)) {
     const res = await callGemini(prompt);
     if (res) return res;

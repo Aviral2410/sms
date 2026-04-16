@@ -299,7 +299,7 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
             transition={{ duration: 0.35 }}
             style={{ overflow: 'hidden' }}
           >
-            <MermaidDiagram definition={data.diagramDefinition} />
+            <MermaidDiagram definition={data.diagramDefinition!} />
           </motion.div>
         </section>
       )}

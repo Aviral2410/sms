@@ -87,7 +87,7 @@ public class ConversationOrchestrator {
                 summarizeAssistantResponse(rendered),
                 toStoredPayload(rendered)
         );
-        return new AiInteractionDtos.ChatResponse(conversationId, rendered);
+        return new AiInteractionDtos.ChatResponse(chat.workspaceId(), conversationId, rendered);
     }
 
     public void streamChat(
@@ -119,7 +119,7 @@ public class ConversationOrchestrator {
                 conversationId,
                 true
         );
-        return new AiInteractionDtos.ChatResponse(conversationId, rendered);
+        return new AiInteractionDtos.ChatResponse(null, conversationId, rendered);
     }
 
     private AiInteractionDtos.RenderedResponse execute(UserContext userContext, String message, UUID conversationId) {

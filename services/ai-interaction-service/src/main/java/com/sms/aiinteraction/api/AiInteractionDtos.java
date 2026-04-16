@@ -15,6 +15,7 @@ public class AiInteractionDtos {
     ) {}
 
     public record ChatResponse(
+            UUID workspaceId,
             UUID conversationId,
             RenderedResponse response
     ) {}
