@@ -158,10 +158,13 @@ public class AIService {
                 : requestedStyle;
 
         VisualizeResponse base = buildBaseVisualization(question, subject, level, style);
+        boolean isPremium = request.premiumRequest();
 
-        if (request.premiumRequest()) {
-            requirePremiumAiEntitlement();
-            VisualizeResponse resp = buildLlmVisualization(question, subject, level, style, base, true);
+        // If we have an LLM key, use the LLM to provide a smart response, 
+        // even if it's not a premium request, to avoid the rule-based flowchart fallback.
+        if (hasLlmKey() || isPremium) {
+            if (isPremium) requirePremiumAiEntitlement();
+            VisualizeResponse resp = buildLlmVisualization(question, subject, level, style, base, isPremium);
             persistVisualization(userId, schoolId, question, resp);
             return resp;
         }
@@ -233,87 +236,50 @@ public class AIService {
 
     private VisualizeResponse buildLlmVisualization(String question, String subject, String level, String style, VisualizeResponse base, boolean isPremium) {
         String prompt = """
-                You are an AI visualization engine for an interactive learning platform.
+                You are a senior educational visualization expert and conceptual mentor.
 
-                Your task is to convert a user's explanation of a concept into structured visualization data that can be rendered in an interactive UI.
+                TASK:
+                Explain the following concept using deep pedagogical reasoning and structured visualization data for an interactive UI.
 
-                When the user submits a concept or explanation, analyze it and return a JSON object with the following structure.
+                USER INPUT: %s
 
-                Return ONLY valid JSON.
+                REQUIREMENTS:
+                1. CONCEPT ANALOGY: Provide a simple, relatable analogy for the concept.
+                2. STEP-BY-STEP REASONING: Break down the concept into logical stages.
+                3. REAL-WORLD EXAMPLES: Provide at least 2-3 diverse real-world applications.
+                4. VISUAL METAPHORS: Describe elements (arrows, nodes, forces) that represent the dynamics of the concept.
 
+                OUTPUT FORMAT (JSON ONLY):
                 {
-                "concept_title": "",
-                "summary": "",
-                "subject": "",
-                "difficulty_level": "",
-                "step_by_step_visualization": [
-                {
-                "step": 1,
-                "title": "",
-                "description": "",
-                "visual_elements": [
-                {
-                "type": "arrow | object | label | motion",
-                "name": "",
-                "direction": "",
-                "note": ""
-                }
-                ]
-                }
-                ],
-                "concept_map": {
-                "nodes": [
-                {"id": "", "label": ""},
-                {"id": "", "label": ""}
-                ],
-                "connections": [
-                {"from": "", "to": "", "relationship": ""}
-                ]
-                },
-                "simulation": {
-                "objects": [
-                {
-                "name": "",
-                "type": "",
-                "properties": {}
-                }
-                ],
-                "forces": [
-                {
-                "source": "",
-                "target": "",
-                "magnitude_relation": "",
-                "direction": ""
-                }
-                ]
-                },
-                "flow_diagram": [
-                {
-                "stage": "",
-                "description": ""
-                }
-                ],
-                "real_world_examples": [
-                {
-                "title": "",
-                "explanation": ""
-                }
-                ]
+                  "concept_title": "Primary Title",
+                  "summary": "Analogy: ... | Core: ...",
+                  "subject": "%s",
+                  "difficulty_level": "%s",
+                  "step_by_step_visualization": [
+                    {
+                      "step": 1,
+                      "title": "Stage Title",
+                      "description": "Deep pedagogical breakdown",
+                      "visual_elements": [{"type": "arrow|object|motion", "name": "label", "direction": "direction", "note": "hint"}]
+                    }
+                  ],
+                  "concept_map": {
+                    "nodes": [{"id": "n1", "label": "Label"}],
+                    "connections": [{"from": "n1", "to": "n2", "relationship": "rel"}]
+                  },
+                  "simulation": {
+                    "objects": [{"name": "obj", "type": "type", "properties": {}}],
+                    "forces": [{"source": "s", "target": "t", "magnitude_relation": "rel", "direction": "dir"}]
+                  },
+                  "flow_diagram": [{"stage": "Name", "description": "Step detail"}],
+                  "real_world_examples": [{"title": "Example Name", "explanation": "Detailed real-world case"}]
                 }
 
-                Rules:
-                * Ensure visual elements can be rendered in diagrams or animations.
-                * Keep descriptions concise.
-                * Prefer physics-style vectors, arrows, and object interactions when applicable.
-                * Ensure the output can power multiple visualization modes such as:
-                  Step-by-step diagrams, concept maps, simulations, flow charts, and examples.
-
-                Subject hint: %s
-                Difficulty hint: %s
-                Requested style: %s
+                Subject: %s
+                Level: %s
+                Mode: %s
                 Tier: %s
-                User Input: %s
-                """.formatted(subject, level, style, isPremium ? "PREMIUM" : "BASE", question);
+                """.formatted(question, subject, level, subject, level, style, isPremium ? "PREMIUM" : "BASE");
 
         try {
             String raw = stripMarkdown(callLlm(prompt));

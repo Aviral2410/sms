@@ -7,6 +7,8 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "ai_visualization_history", schema = "schoolops")
@@ -21,6 +23,7 @@ public class AiVisualizationEntity {
     private UUID userId;
     @Column(name = "question", nullable = false, columnDefinition = "TEXT")
     private String question;
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "response_json", nullable = false, columnDefinition = "JSONB")
     private String responseJson;
     @Column(name = "created_at", nullable = false)
