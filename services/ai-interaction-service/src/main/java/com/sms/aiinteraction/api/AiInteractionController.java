@@ -68,17 +68,60 @@ public class AiInteractionController {
             HttpServletRequest servletRequest
     ) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        SseEmitter emitter = new SseEmitter(120_000L);
+        SseEmitter emitter = new SseEmitter(300_000L);
+
+        emitter.onTimeout(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream timed out.\"}"));
+            } catch (Exception ignored) {
+                // ignore
+            } finally {
+                emitter.complete();
+            }
+        });
+
+        emitter.onError((_ex) -> {
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream error.\"}"));
+            } catch (Exception ignored) {
+                // ignore
+            } finally {
+                emitter.complete();
+            }
+        });
 
         orchestrator.streamChat(user, request, event -> {
             try {
                 emitter.send(SseEmitter.event()
                         .name(event.event())
-                        .data(objectMapper.writeValueAsString(event.payload())));
+                        .data(objectMapper.writeValueAsString(event.payload()), MediaType.APPLICATION_JSON));
             } catch (IOException e) {
-                emitter.completeWithError(e);
+                try {
+                    emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream write failed.\"}"));
+                } catch (Exception ignored) {
+                    // ignore
+                } finally {
+                    emitter.complete();
+                }
             }
-        }, emitter::completeWithError, emitter::complete);
+        }, ex -> {
+            try {
+                String msg = ex == null ? "Stream failed." : ex.getMessage();
+                emitter.send(SseEmitter.event().name("error").data(objectMapper.writeValueAsString(Map.of("text", msg == null ? "Stream failed." : msg)), MediaType.APPLICATION_JSON));
+            } catch (Exception ignored) {
+                // ignore
+            } finally {
+                emitter.complete();
+            }
+        }, () -> {
+            try {
+                emitter.send(SseEmitter.event().name("done").data("[DONE]"));
+            } catch (Exception ignored) {
+                // ignore
+            } finally {
+                emitter.complete();
+            }
+        });
 
         return ResponseEntity.ok()
                 .contentType(MediaType.TEXT_EVENT_STREAM)

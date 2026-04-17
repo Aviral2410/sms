@@ -625,7 +625,8 @@ public class SchoolOperationsDtos {
             boolean llmEnhanced,                    // true if LLM was used
             String diagramType,                    // NONE | MIND_MAP | FLOWCHART
             String diagramDefinition,              // Mermaid syntax script
-            StructuredVisualization structuredVisualization
+            StructuredVisualization structuredVisualization,
+            com.fasterxml.jackson.databind.JsonNode tutorResponse
     ) {}
 
     public record VisualizeRequest(

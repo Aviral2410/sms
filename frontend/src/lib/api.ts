@@ -1353,6 +1353,7 @@ export interface VisualizeResponse {
   diagramType?: 'NONE' | 'MIND_MAP' | 'FLOWCHART' | 'XY_CHART';
   diagramDefinition?: string;
   structuredVisualization?: StructuredVisualization;
+  tutorResponse?: any;
   toolLinks?: VisualizationToolLink[];
   chart?: VisualizationChart;
   generationMode?: 'LOCAL' | 'AI';

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Lightbulb, 
@@ -35,7 +36,37 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
   loading, 
   error 
 }) => {
-  const steps = data?.steps ?? [];
+  const tutor = (data as any)?.tutorResponse;
+  const summaryText =
+    typeof tutor?.explanation?.summary === 'string' && tutor.explanation.summary.trim()
+      ? (tutor.explanation.summary as string)
+      : data?.summary ?? '';
+
+  const steps = useMemo(() => {
+    const tutorSteps = tutor?.visualization?.steps;
+    if (Array.isArray(tutorSteps) && tutorSteps.length) {
+      return tutorSteps
+        .filter((s: any) => s && (typeof s.title === 'string' || typeof s.description === 'string'))
+        .map((s: any, idx: number) => ({
+          key: typeof s.step === 'number' ? s.step : idx + 1,
+          title: typeof s.title === 'string' && s.title.trim() ? (s.title as string) : `Step ${idx + 1}`,
+          description: typeof s.description === 'string' ? (s.description as string) : '',
+          highlight: typeof s.highlight === 'string' ? (s.highlight as string) : '',
+        }));
+    }
+
+    const legacySteps = data?.steps ?? [];
+    return legacySteps.map((s: any, idx: number) => ({
+      key: typeof s.stepNumber === 'number' ? s.stepNumber : idx + 1,
+      title: typeof s.heading === 'string' && s.heading.trim() ? (s.heading as string) : `Step ${idx + 1}`,
+      description: typeof s.explanation === 'string' ? (s.explanation as string) : '',
+      highlight: typeof s.tip === 'string' ? (s.tip as string) : (typeof s.visual === 'string' ? (s.visual as string) : ''),
+      icon: s?.icon,
+      visual: typeof s.visual === 'string' ? (s.visual as string) : '',
+      tip: typeof s.tip === 'string' ? (s.tip as string) : '',
+    }));
+  }, [data, tutor]);
+
   const [activeStep, setActiveStep] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [intervalMs, setIntervalMs] = useState(3200);
@@ -144,7 +175,7 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
             </span>
           )}
         </div>
-        <p className="text-slate-400 leading-relaxed text-sm">{data.summary}</p>
+        <p className="text-slate-400 leading-relaxed text-sm">{summaryText}</p>
         <div className="flex flex-wrap gap-2 pt-2">
           {data.tags?.map(tag => (
             <span key={tag} className="px-2.5 py-1 rounded-lg bg-slate-800/50 text-[11px] font-bold text-slate-400 border border-slate-700/50">
@@ -307,11 +338,11 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
       <div className="relative space-y-6">
         <div className="absolute left-6 top-8 bottom-8 w-px bg-gradient-to-b from-amber-500/50 via-amber-500/20 to-transparent" />
         
-        {data.steps.map((step, idx) => {
+        {steps.map((step: any, idx: number) => {
           const isActive = idx === activeStep;
           return (
           <motion.div
-            key={step.stepNumber}
+            key={step.key}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: idx * 0.1 }}
@@ -359,11 +390,11 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
             >
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-black text-slate-200 uppercase tracking-wider">
-                  Step {step.stepNumber}: {step.heading}
+                  Step {step.key}: {step.title}
                 </h4>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed">
-                {step.explanation}
+                {step.description}
               </p>
               
               {step.visual && (
@@ -372,10 +403,10 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
                 </div>
               )}
               
-              {step.tip && (
+              {(step.tip || step.highlight) && (
                 <div className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
                   <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-amber-200/70 italic">Pro Tip: {step.tip}</p>
+                  <p className="text-[12px] text-amber-200/70 italic">Pro Tip: {step.tip || step.highlight}</p>
                 </div>
               )}
             </motion.div>

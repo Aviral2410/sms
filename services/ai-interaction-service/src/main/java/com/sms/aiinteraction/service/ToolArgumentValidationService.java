@@ -12,8 +12,9 @@ public class ToolArgumentValidationService {
     public void validate(String toolName, ObjectNode args) {
         switch (toolName) {
             case "getAttendanceReport" -> validateAttendance(args);
+            case "getEnrollmentTrend" -> validateEnrollmentTrend(args);
             case "getFeeDefaulters", "getAnnouncements", "getHomeworkSummary", "getExamResultsSummary", "getTransportOverview",
-                 "getSchoolDashboard", "getLibraryResources", "getMessageThreads", "getMyLeaveRequests" -> {
+                 "getSchoolDashboard", "getLibraryResources", "getMessageThreads", "getMyLeaveRequests", "getPlatformSchoolsOverview" -> {
                 // No required arguments for now.
             }
             case "getForumLeaderboard" -> validateForumLeaderboard(args);
@@ -24,6 +25,14 @@ public class ToolArgumentValidationService {
             case "createLeaveRequest" -> validateCreateLeaveRequest(args);
             case "reviewLeaveRequest" -> validateReviewLeaveRequest(args);
             default -> throw new IllegalArgumentException("Unsupported tool.");
+        }
+    }
+
+    private void validateEnrollmentTrend(ObjectNode args) {
+        if (args == null || !args.hasNonNull("months")) return;
+        int months = args.path("months").asInt(12);
+        if (months < 3 || months > 24) {
+            throw new IllegalArgumentException("months must be between 3 and 24.");
         }
     }
 

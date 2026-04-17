@@ -4,6 +4,17 @@ import {
   Database, List, Activity, CheckCircle2, 
   ChevronRight, BarChart3 
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+} from 'recharts';
 import { McpAiResponse } from '../lib/mcp';
 import { AiRichText } from './ai/AiRichText';
 import './ai-panels.css';
@@ -22,10 +33,98 @@ export const AiDataVisualizer: React.FC<AiDataVisualizerProps> = ({ response, co
     );
   }
 
+  const widgetsRaw = (data as any)?.widgets;
+  const widgets = Array.isArray(widgetsRaw) ? (widgetsRaw as any[]).slice(0, 2) : [];
+  const dataWithoutWidgets: any = (() => {
+    if (!widgets.length) return data;
+    const copy: any = { ...(data as any) };
+    delete copy.widgets;
+    return copy;
+  })();
+
   const renderValue = (val: any) => {
     if (typeof val === 'number') return <span className="is-number">{val.toLocaleString()}</span>;
     if (typeof val === 'boolean') return val ? <CheckCircle2 size={14} className="inline text-emerald-400" /> : <Activity size={14} className="inline text-rose-400" />;
     return <span>{String(val)}</span>;
+  };
+
+  const renderWidget = (widget: any, idx: number) => {
+    const type = typeof widget?.type === 'string' ? widget.type : '';
+    const title = typeof widget?.title === 'string' ? widget.title : '';
+
+    if (type === 'cards' && Array.isArray(widget?.items)) {
+      return (
+        <section key={`w-${idx}`} className="ai-data-section">
+          <div className="ai-data-section-title">
+            <BarChart3 size={14} className="is-violet" />
+            <span className="is-violet">{title || 'At a glance'}</span>
+          </div>
+          <div className="ai-data-stat-grid">
+            {widget.items.slice(0, 6).map((item: any, i: number) => (
+              <div key={i} className="ai-data-stat-card">
+                <span className="ai-data-stat-label">{formatLabel(String(item?.label ?? `Item ${i + 1}`))}</span>
+                <div className="ai-data-stat-value">{renderValue(item?.value)}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (type === 'chart' && Array.isArray(widget?.points)) {
+      const chartType = widget?.chartType === 'bar' ? 'bar' : 'line';
+      const points = widget.points.slice(0, 60);
+      const xKey = typeof widget?.xKey === 'string' ? widget.xKey : 'label';
+      const yKey = typeof widget?.yKey === 'string' ? widget.yKey : 'y';
+
+      return (
+        <section key={`w-${idx}`} className="ai-data-section">
+          <div className="ai-data-section-title">
+            <BarChart3 size={14} className="is-cyan" />
+            <span className="is-cyan">{title || 'Chart'}</span>
+          </div>
+          <div className="ai-data-record-list" style={{ height: compact ? 180 : 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              {chartType === 'bar' ? (
+                <BarChart data={points}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
+                  <XAxis dataKey={xKey} stroke="rgba(148,163,184,0.85)" tickLine={false} axisLine={false} />
+                  <YAxis stroke="rgba(148,163,184,0.85)" tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Bar dataKey={yKey} fill="#22d3ee" />
+                </BarChart>
+              ) : (
+                <LineChart data={points}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.18)" />
+                  <XAxis dataKey={xKey} stroke="rgba(148,163,184,0.85)" tickLine={false} axisLine={false} />
+                  <YAxis stroke="rgba(148,163,184,0.85)" tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey={yKey} stroke="#38bdf8" strokeWidth={2} dot={false} />
+                </LineChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        </section>
+      );
+    }
+
+    if (type === 'table' && Array.isArray(widget?.rows)) {
+      const rows = widget.rows.slice(0, compact ? 6 : 10);
+      return (
+        <section key={`w-${idx}`} className="ai-data-section">
+          <div className="ai-data-section-title">
+            <Database size={14} className="is-indigo" />
+            <span className="is-indigo">{title || 'Details'}</span>
+            <span className="ai-data-badge">{rows.length}</span>
+          </div>
+          <div className="ai-data-record-list is-scrollable custom-scrollbar">
+            {rows.map((row: any, i: number) => renderRecord(row, i))}
+          </div>
+        </section>
+      );
+    }
+
+    return null;
   };
 
   const renderRecord = (record: any, index: number) => {
@@ -136,7 +235,8 @@ export const AiDataVisualizer: React.FC<AiDataVisualizerProps> = ({ response, co
       <AiRichText content={answer} className="text-sm md:text-base" />
 
       <div className="ai-data-divider">
-        {Object.entries(data).map(([key, value]) => renderSection(key, value))}
+        {widgets.length ? widgets.map(renderWidget) : null}
+        {Object.entries(dataWithoutWidgets).map(([key, value]) => renderSection(key, value))}
       </div>
     </div>
   );

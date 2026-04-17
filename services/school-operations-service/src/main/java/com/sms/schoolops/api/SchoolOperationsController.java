@@ -4,7 +4,9 @@ import com.sms.common.exception.ForbiddenException;
 import com.sms.schoolops.api.SchoolOperationsDtos.*;
 import com.sms.schoolops.service.AIService;
 import com.sms.schoolops.service.SchoolOperationsService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -27,10 +31,12 @@ public class SchoolOperationsController {
 
     private final SchoolOperationsService schoolOperationsService;
     private final AIService aiService;
+    private final ObjectMapper objectMapper;
 
-    public SchoolOperationsController(SchoolOperationsService schoolOperationsService, AIService aiService) {
+    public SchoolOperationsController(SchoolOperationsService schoolOperationsService, AIService aiService, ObjectMapper objectMapper) {
         this.schoolOperationsService = schoolOperationsService;
         this.aiService = aiService;
+        this.objectMapper = objectMapper;
     }
 
     @GetMapping("/departments")
@@ -592,6 +598,113 @@ public class SchoolOperationsController {
             }
         }
         return aiService.visualize(userId, effectiveSchoolId, request);
+    }
+
+    @PostMapping(value = "/ai/visualize/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public org.springframework.http.ResponseEntity<SseEmitter> visualizeStream(
+            @RequestHeader(value = "X-User-ID", required = false) UUID userId,
+            @RequestHeader(value = "X-School-ID", required = false) UUID schoolId,
+            @RequestHeader(value = "X-User-Role", required = false) String roleHeader,
+            @RequestBody VisualizeRequest request
+    ) {
+        UUID effectiveSchoolId = schoolId;
+        if (effectiveSchoolId == null) {
+            String role = roleHeader != null ? roleHeader.trim().toUpperCase() : "";
+            if (role.equals("SUPER_ADMIN") || role.equals("PLATFORM_ADMIN")) {
+                effectiveSchoolId = new UUID(0L, 0L);
+            } else {
+                throw new IllegalArgumentException("Missing required header: X-School-ID");
+            }
+        }
+
+        SseEmitter emitter = new SseEmitter(300_000L);
+        final UUID resolvedSchoolId = effectiveSchoolId;
+
+        emitter.onTimeout(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream timed out.\"}", MediaType.APPLICATION_JSON));
+                emitter.send(SseEmitter.event().name("done").data("[DONE]"));
+            } catch (Exception ignored) {
+                // ignore
+            } finally {
+                emitter.complete();
+            }
+        });
+
+        emitter.onError((_ex) -> {
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream error.\"}", MediaType.APPLICATION_JSON));
+                emitter.send(SseEmitter.event().name("done").data("[DONE]"));
+            } catch (Exception ignored) {
+                // ignore
+            } finally {
+                emitter.complete();
+            }
+        });
+
+        final java.util.concurrent.ScheduledExecutorService heartbeat = java.util.concurrent.Executors.newSingleThreadScheduledExecutor();
+        emitter.onCompletion(heartbeat::shutdownNow);
+
+        java.util.concurrent.CompletableFuture.runAsync(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("status").data("{\"text\":\"Generating visualization...\"}", MediaType.APPLICATION_JSON));
+
+                // Keep the connection alive through gateways/proxies while the LLM thinks.
+                heartbeat.scheduleAtFixedRate(() -> {
+                    try {
+                        emitter.send(SseEmitter.event().name("ping").data("{}", MediaType.APPLICATION_JSON));
+                    } catch (Exception ignored) {
+                        // ignore heartbeat failures
+                    }
+                }, 12, 12, java.util.concurrent.TimeUnit.SECONDS);
+
+                final int[] totalChars = {0};
+                final int[] lastSent = {0};
+                final long[] lastAt = {0L};
+
+                VisualizeResponse response = aiService.visualizeWithStream(userId, resolvedSchoolId, request, (delta) -> {
+                    try {
+                        totalChars[0] += delta == null ? 0 : delta.length();
+                        long now = System.currentTimeMillis();
+                        if ((totalChars[0] - lastSent[0] >= 240) || (now - lastAt[0] >= 700)) {
+                            lastSent[0] = totalChars[0];
+                            lastAt[0] = now;
+                            emitter.send(SseEmitter.event()
+                                    .name("token")
+                                    .data(objectMapper.writeValueAsString(java.util.Map.of("chars", totalChars[0])), MediaType.APPLICATION_JSON));
+                        }
+                    } catch (Exception ignored) {
+                        // ignore streaming token errors
+                    }
+                });
+                emitter.send(SseEmitter.event().name("final").data(objectMapper.writeValueAsString(response), MediaType.APPLICATION_JSON));
+                emitter.send(SseEmitter.event().name("done").data("[DONE]"));
+                emitter.complete();
+            } catch (IOException io) {
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(objectMapper.writeValueAsString(java.util.Map.of("text", io.getMessage())), MediaType.APPLICATION_JSON));
+                } catch (Exception ignored) {
+                    // ignore
+                } finally {
+                    emitter.complete();
+                }
+            } catch (Exception ex) {
+                try {
+                    emitter.send(SseEmitter.event().name("error").data(objectMapper.writeValueAsString(java.util.Map.of("text", ex.getMessage())), MediaType.APPLICATION_JSON));
+                } catch (Exception ignored) {
+                    // ignore
+                } finally {
+                    emitter.complete();
+                }
+            }
+        });
+
+        return org.springframework.http.ResponseEntity.ok()
+                .contentType(MediaType.TEXT_EVENT_STREAM)
+                .header("Cache-Control", "no-cache")
+                .header("Connection", "keep-alive")
+                .header("X-Accel-Buffering", "no")
+                .body(emitter);
     }
 
     @PostMapping("/ai/example")

@@ -457,6 +457,18 @@ services:
             name: '{{ include "sms.secretName" . }}'
             key: LLM_PROVIDER
             optional: true
+      - name: OLLAMA_BASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OLLAMA_BASE_URL
+            optional: true
+      - name: OLLAMA_MODEL
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: OLLAMA_MODEL
+            optional: true
       - name: GEMINI_API_KEY
         valueFrom:
           secretKeyRef:
@@ -1075,4 +1087,3 @@ services:
     pdb:
       enabled: true
       minAvailable: 1
-

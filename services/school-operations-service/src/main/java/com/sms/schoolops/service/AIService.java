@@ -2,6 +2,8 @@ package com.sms.schoolops.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sms.common.exception.ForbiddenException;
 import com.sms.common.exception.ServiceUnavailableException;
 import com.sms.schoolops.api.SchoolOperationsDtos.*;
@@ -12,13 +14,21 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * AIService — Learning Mode AI backend.
  *
- * SUPPORTED LLM PROVIDERS: Gemini, OpenAI, OpenRouter, Anthropic.
+ * SUPPORTED LLM PROVIDERS: Ollama (local), Gemini, OpenAI, OpenRouter, Anthropic.
  *
  * TIERED VISUALIZATION STYLES:
  *   - BASE (Free): STEP_LIST, SUMMARY, KEY_POINTS
@@ -29,9 +39,9 @@ public class AIService {
 
     static final String LLM_KEY_REQUIRED =
             "LLM key is required for premium AI features. Configure at least one of: " +
-            "GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, or ANTHROPIC_API_KEY.";
+            "OLLAMA_BASE_URL + OLLAMA_MODEL (recommended), or GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, or ANTHROPIC_API_KEY.";
 
-    enum LlmProvider { GEMINI, OPENAI, OPENROUTER, ANTHROPIC, NONE }
+    enum LlmProvider { OLLAMA, GEMINI, OPENAI, OPENROUTER, ANTHROPIC, NONE }
 
     private final SubscriptionService subscriptionService;
     private final PlatformConfigRuntimeClient platformConfigRuntimeClient;
@@ -43,11 +53,15 @@ public class AIService {
     private final String openRouterApiKey;
     private final String anthropicApiKey;
     private final String providerPreference;
+    private final String ollamaBaseUrl;
+    private final String ollamaModel;
 
     private final RestClient geminiClient;
     private final RestClient openAiClient;
     private final RestClient openRouterClient;
     private final RestClient anthropicClient;
+    private final RestClient ollamaClient;
+    private final HttpClient ollamaStreamClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build();
 
     public AIService(
             SubscriptionService subscriptionService,
@@ -58,7 +72,9 @@ public class AIService {
             @Value("${app.openai-api-key:}") String openAiApiKey,
             @Value("${app.openrouter-api-key:}") String openRouterApiKey,
             @Value("${app.anthropic-api-key:}") String anthropicApiKey,
-            @Value("${app.llm-provider:auto}") String providerPreference) {
+            @Value("${LLM_PROVIDER:${app.llm-provider:auto}}") String providerPreference,
+            @Value("${OLLAMA_BASE_URL:}") String ollamaBaseUrl,
+            @Value("${OLLAMA_MODEL:}") String ollamaModel) {
 
         this.subscriptionService = subscriptionService;
         this.platformConfigRuntimeClient = platformConfigRuntimeClient;
@@ -69,20 +85,27 @@ public class AIService {
         this.openRouterApiKey = trim(openRouterApiKey);
         this.anthropicApiKey = trim(anthropicApiKey);
         this.providerPreference = trim(providerPreference).isEmpty() ? "auto" : trim(providerPreference);
+        this.ollamaBaseUrl = trim(ollamaBaseUrl);
+        this.ollamaModel = trim(ollamaModel);
 
         this.geminiClient = restClientBuilder.clone().baseUrl("https://generativelanguage.googleapis.com").build();
         this.openAiClient = restClientBuilder.clone().baseUrl("https://api.openai.com").build();
         this.openRouterClient = restClientBuilder.clone().baseUrl("https://openrouter.ai/api").build();
         this.anthropicClient = restClientBuilder.clone().baseUrl("https://api.anthropic.com").build();
+        this.ollamaClient = restClientBuilder.clone()
+                .baseUrl(this.ollamaBaseUrl.isEmpty() ? "http://localhost:11434" : this.ollamaBaseUrl.replaceAll("/+$", ""))
+                .build();
     }
 
     LlmProvider resolveProvider() {
         return switch (providerPreference.toLowerCase()) {
+            case "ollama"    -> hasOllamaConfig() ? LlmProvider.OLLAMA : LlmProvider.NONE;
             case "gemini"    -> !resolvedGeminiApiKey().isEmpty()    ? LlmProvider.GEMINI    : LlmProvider.NONE;
             case "openai"    -> !resolvedOpenAiApiKey().isEmpty()    ? LlmProvider.OPENAI    : LlmProvider.NONE;
             case "openrouter" -> hasOpenRouterKey()        ? LlmProvider.OPENROUTER : LlmProvider.NONE;
             case "anthropic" -> !resolvedAnthropicApiKey().isEmpty() ? LlmProvider.ANTHROPIC : LlmProvider.NONE;
             default -> {
+                if (hasOllamaConfig())           yield LlmProvider.OLLAMA;
                 if (!resolvedGeminiApiKey().isEmpty())    yield LlmProvider.GEMINI;
                 if (hasOpenRouterKey())         yield LlmProvider.OPENROUTER;
                 if (!resolvedOpenAiApiKey().isEmpty())    yield LlmProvider.OPENAI;
@@ -93,23 +116,126 @@ public class AIService {
     }
 
     boolean hasLlmKey() { return resolveProvider() != LlmProvider.NONE; }
-    void requireLlmKey() { if (!hasLlmKey()) throw new RuntimeException(LLM_KEY_REQUIRED); }
+    void requireLlmKey() { if (!hasLlmKey()) throw new ServiceUnavailableException(LLM_KEY_REQUIRED); }
+
+    private boolean hasOllamaConfig() {
+        // Base URL is optional (defaults to localhost). Model is required.
+        return !ollamaModel.isEmpty();
+    }
 
     String callLlm(String prompt) {
         requireLlmKey();
         LlmProvider provider = resolveProvider();
         return switch (provider) {
+            case OLLAMA    -> callOllama(prompt);
             case GEMINI    -> callGemini(prompt);
             case OPENAI    -> callOpenAi(prompt);
             case OPENROUTER -> callOpenRouter(prompt);
             case ANTHROPIC -> callAnthropic(prompt);
-            case NONE      -> throw new RuntimeException(LLM_KEY_REQUIRED);
+            case NONE      -> throw new ServiceUnavailableException(LLM_KEY_REQUIRED);
         };
+    }
+
+    private String callOllama(String prompt) {
+        try {
+            String body = objectMapper.writeValueAsString(Map.of(
+                    "model", ollamaModel,
+                    "stream", false,
+                    "temperature", 0.4,
+                    "options", Map.of(
+                            "num_predict", 900,
+                            "top_p", 0.9
+                    ),
+                    "messages", List.of(
+                            Map.of("role", "system", "content",
+                                    "You are an educational tutor. Return JSON only, no markdown. Keep output concise and UI-friendly."),
+                            Map.of("role", "user", "content", prompt)
+                    )
+            ));
+            String resp = ollamaClient.post()
+                    .uri("/api/chat")
+                    .header("Content-Type", "application/json")
+                    .body((Object) body)
+                    .retrieve()
+                    .body(String.class);
+            JsonNode root = objectMapper.readTree(resp);
+            return root.path("message").path("content").asText("");
+        } catch (Exception e) {
+            throw new ServiceUnavailableException("Ollama failed: " + e.getMessage(), e);
+        }
+    }
+
+    private String callOllamaStream(String prompt, Consumer<String> onDelta) {
+        try {
+            if (ollamaModel.isEmpty()) {
+                throw new ServiceUnavailableException("Ollama is not configured.");
+            }
+
+            String base = (ollamaBaseUrl == null || ollamaBaseUrl.isBlank())
+                    ? "http://localhost:11434"
+                    : ollamaBaseUrl.replaceAll("/+$", "");
+            String body = objectMapper.writeValueAsString(Map.of(
+                    "model", ollamaModel,
+                    "stream", true,
+                    "temperature", 0.4,
+                    "options", Map.of(
+                            "num_predict", 900,
+                            "top_p", 0.9
+                    ),
+                    "messages", List.of(
+                            Map.of("role", "system", "content",
+                                    "You are an educational tutor. Return JSON only, no markdown. Keep output concise and UI-friendly."),
+                            Map.of("role", "user", "content", prompt)
+                    )
+            ));
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(base + "/api/chat"))
+                    .timeout(Duration.ofSeconds(90))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(body))
+                    .build();
+
+            HttpResponse<java.io.InputStream> response = ollamaStreamClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new ServiceUnavailableException("Ollama returned HTTP " + response.statusCode());
+            }
+
+            StringBuilder full = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.body()))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isBlank()) continue;
+                    JsonNode evt;
+                    try {
+                        evt = objectMapper.readTree(line);
+                    } catch (Exception ignored) {
+                        continue;
+                    }
+                    String delta = evt.path("message").path("content").asText("");
+                    if (delta != null && !delta.isEmpty()) {
+                        full.append(delta);
+                        if (onDelta != null) {
+                            onDelta.accept(delta);
+                        }
+                    }
+                    if (evt.path("done").asBoolean(false)) {
+                        break;
+                    }
+                }
+            }
+            return full.toString();
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new ServiceUnavailableException("Ollama interrupted.", ex);
+        } catch (Exception e) {
+            throw new ServiceUnavailableException("Ollama streaming failed: " + e.getMessage(), e);
+        }
     }
 
     private String callGemini(String prompt) {
         try {
-            String body = "{\"contents\":[{\"parts\":[{\"text\":"+objectMapper.writeValueAsString(prompt)+"}]}],\"generationConfig\":{\"temperature\":0.7,\"maxOutputTokens\":2048}}";
+            String body = "{\"contents\":[{\"parts\":[{\"text\":"+objectMapper.writeValueAsString(prompt)+"}]}],\"generationConfig\":{\"temperature\":0.7,\"maxOutputTokens\":1024}}";
             String resp = geminiClient.post().uri("/v1beta/models/gemini-1.5-flash:generateContent?key=" + resolvedGeminiApiKey()).header("Content-Type", "application/json").body((Object) body).retrieve().body(String.class);
             JsonNode root = objectMapper.readTree(resp);
             return root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("");
@@ -118,7 +244,7 @@ public class AIService {
 
     private String callOpenAi(String prompt) {
         try {
-            String body = "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":"+objectMapper.writeValueAsString(prompt)+"}],\"max_tokens\":2048,\"temperature\":0.7}";
+            String body = "{\"model\":\"gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":"+objectMapper.writeValueAsString(prompt)+"}],\"max_tokens\":1024,\"temperature\":0.7}";
             String resp = openAiClient.post().uri("/v1/chat/completions").header("Content-Type", "application/json").header("Authorization", "Bearer " + resolvedOpenAiApiKey()).body((Object) body).retrieve().body(String.class);
             return objectMapper.readTree(resp).path("choices").get(0).path("message").path("content").asText("");
         } catch (Exception e) { throw new RuntimeException("OpenAI failed: " + e.getMessage(), e); }
@@ -126,7 +252,7 @@ public class AIService {
 
     private String callOpenRouter(String prompt) {
         try {
-            String body = "{\"model\":\"openai/gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":"+objectMapper.writeValueAsString(prompt)+"}],\"max_tokens\":2048,\"temperature\":0.7}";
+            String body = "{\"model\":\"openai/gpt-4o-mini\",\"messages\":[{\"role\":\"user\",\"content\":"+objectMapper.writeValueAsString(prompt)+"}],\"max_tokens\":1024,\"temperature\":0.7}";
             String resp = openRouterClient.post()
                     .uri("/v1/chat/completions")
                     .header("Content-Type", "application/json")
@@ -140,7 +266,7 @@ public class AIService {
 
     private String callAnthropic(String prompt) {
         try {
-            String body = "{\"model\":\"claude-3-haiku-20240307\",\"max_tokens\":2048,\"messages\":[{\"role\":\"user\",\"content\":"+objectMapper.writeValueAsString(prompt)+"}]}";
+            String body = "{\"model\":\"claude-3-haiku-20240307\",\"max_tokens\":1024,\"messages\":[{\"role\":\"user\",\"content\":"+objectMapper.writeValueAsString(prompt)+"}]}";
             String resp = anthropicClient.post().uri("/v1/messages").header("Content-Type", "application/json").header("x-api-key", resolvedAnthropicApiKey()).header("anthropic-version", "2023-06-01").body((Object) body).retrieve().body(String.class);
             return objectMapper.readTree(resp).path("content").get(0).path("text").asText("");
         } catch (Exception e) { throw new RuntimeException("Anthropic failed: " + e.getMessage(), e); }
@@ -149,7 +275,10 @@ public class AIService {
     // -- Learning Mode: Visualize ---------------------------------------------
 
     public VisualizeResponse visualize(UUID userId, UUID schoolId, VisualizeRequest request) {
-        String question = request.question().trim();
+        if (request == null || request.question() == null || request.question().isBlank()) {
+            throw new IllegalArgumentException("question is required.");
+        }
+        String question = sanitizeQuestion(request.question());
         String subject = !isEmpty(request.subject()) ? request.subject() : detectSubject(question);
         String level   = !isEmpty(request.level())   ? request.level()   : "STANDARD";
         String requestedStyle = !isEmpty(request.visualizationStyle()) ? request.visualizationStyle() : "AUTO";
@@ -171,6 +300,52 @@ public class AIService {
 
         persistVisualization(userId, schoolId, question, base);
         return base;
+    }
+
+    public VisualizeResponse visualizeWithStream(UUID userId, UUID schoolId, VisualizeRequest request, Consumer<String> onDelta) {
+        if (request == null || request.question() == null || request.question().isBlank()) {
+            throw new IllegalArgumentException("question is required.");
+        }
+        String question = sanitizeQuestion(request.question());
+        String subject = !isEmpty(request.subject()) ? request.subject() : detectSubject(question);
+        String level = !isEmpty(request.level()) ? request.level() : "STANDARD";
+        String requestedStyle = !isEmpty(request.visualizationStyle()) ? request.visualizationStyle() : "AUTO";
+        String style = "AUTO".equalsIgnoreCase(requestedStyle)
+                ? detectVisualizationStyle(question, subject)
+                : requestedStyle;
+
+        VisualizeResponse base = buildBaseVisualization(question, subject, level, style);
+        boolean isPremium = request.premiumRequest();
+
+        if (hasLlmKey() || isPremium) {
+            if (isPremium) requirePremiumAiEntitlement();
+            VisualizeResponse resp = buildLlmVisualizationStream(question, subject, level, style, base, isPremium, onDelta);
+            persistVisualization(userId, schoolId, question, resp);
+            return resp;
+        }
+
+        persistVisualization(userId, schoolId, question, base);
+        return base;
+    }
+
+    private String sanitizeQuestion(String raw) {
+        String trimmed = raw == null ? "" : raw.trim();
+        // Hard limits to prevent oversized prompts/responses and reduce gateway timeouts.
+        trimmed = truncate(trimmed, 1600);
+        trimmed = applyWordLimit(trimmed, 220);
+        return trimmed;
+    }
+
+    private String applyWordLimit(String text, int maxWords) {
+        if (text == null || text.isBlank()) return "";
+        String[] words = text.trim().split("\\s+");
+        if (words.length <= maxWords) return text.trim();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < maxWords; i++) {
+            if (i > 0) sb.append(' ');
+            sb.append(words[i]);
+        }
+        return sb.toString();
     }
 
     private String detectVisualizationStyle(String question, String subject) {
@@ -228,9 +403,11 @@ public class AIService {
             default -> "A structured breakdown of " + concept + " within " + subject + " to build a solid foundation.";
         };
 
+        JsonNode tutor = buildTutorResponse(question, subject, detectIntent(question, subject), level, style, steps, structuredVisualization, diagramType, diagramDefinition);
+
         return new VisualizeResponse(
                 "Understanding: " + truncate(concept, 50),
-                summary, subject, level, steps, List.of(), buildTags(subject, level), false, diagramType, diagramDefinition, structuredVisualization
+                summary, subject, level, steps, List.of(), buildTags(subject, level), false, diagramType, diagramDefinition, structuredVisualization, tutor
         );
     }
 
@@ -242,6 +419,12 @@ public class AIService {
                 Explain the following concept using deep pedagogical reasoning and structured visualization data for an interactive UI.
 
                 USER INPUT: %s
+
+                OUTPUT CONSTRAINTS:
+                - Respond with JSON only (no markdown, no code fences).
+                - Keep it short and UI-friendly: 4-7 steps, <= 8 concept-map nodes, <= 6 connections, <= 3 examples.
+                - Keep each description under ~320 characters.
+                - Include at least one worked example inside real_world_examples.
 
                 REQUIREMENTS:
                 1. CONCEPT ANALOGY: Provide a simple, relatable analogy for the concept.
@@ -255,6 +438,18 @@ public class AIService {
                   "summary": "Analogy: ... | Core: ...",
                   "subject": "%s",
                   "difficulty_level": "%s",
+                  "tutor_response": {
+                    "subject": "physics | chemistry | math | computer_science | biology | general",
+                    "intent": "concept | problem | derivation | process | algorithm",
+                    "explanation": { "summary": "short", "detailed": "step-by-step" },
+                    "visualization": {
+                      "type": "animation | simulation | flowchart | graph | interactive | video_like",
+                      "style": "playful | realistic | diagrammatic | 3d",
+                      "data": {},
+                      "steps": [{ "step": 1, "title": "", "description": "", "highlight": "" }]
+                    },
+                    "interactions": ["play","pause","step_forward","step_backward","change_input","quiz_mode"]
+                  },
                   "step_by_step_visualization": [
                     {
                       "step": 1,
@@ -283,25 +478,330 @@ public class AIService {
 
         try {
             String raw = stripMarkdown(callLlm(prompt));
-            JsonNode node = objectMapper.readTree(raw);
+            JsonNode node = tryExtractJsonObject(raw);
+            if (node == null || !node.isObject()) {
+                return base;
+            }
             StructuredVisualization structuredVisualization = parseStructuredVisualization(node, question, subject, level, base.steps());
             List<VisualizationStep> steps = toLegacySteps(structuredVisualization);
             String diagramDefinition = buildMermaidFromConceptMap(structuredVisualization.conceptMap());
+            String resolvedDiagramType = isEmpty(diagramDefinition) ? base.diagramType() : "FLOWCHART";
+            String resolvedDiagramDefinition = isEmpty(diagramDefinition) ? base.diagramDefinition() : diagramDefinition;
+            List<VisualizationStep> resolvedSteps = steps.isEmpty() ? base.steps() : steps;
+            String resolvedSubject = nonBlank(structuredVisualization.subject(), base.subject());
+            String resolvedLevel = nonBlank(structuredVisualization.difficultyLevel(), base.level());
+            JsonNode tutor = extractTutorResponse(
+                    node,
+                    question,
+                    resolvedSubject,
+                    detectIntent(question, resolvedSubject),
+                    resolvedLevel,
+                    style,
+                    resolvedSteps,
+                    structuredVisualization,
+                    resolvedDiagramType,
+                    resolvedDiagramDefinition
+            );
 
             return new VisualizeResponse(
                     nonBlank(structuredVisualization.conceptTitle(), base.title()),
                     nonBlank(structuredVisualization.summary(), base.summary()),
-                    nonBlank(structuredVisualization.subject(), base.subject()),
-                    nonBlank(structuredVisualization.difficultyLevel(), base.level()),
-                    steps.isEmpty() ? base.steps() : steps,
+                    resolvedSubject,
+                    resolvedLevel,
+                    resolvedSteps,
                     toApproachList(structuredVisualization),
-                    buildTags(nonBlank(structuredVisualization.subject(), base.subject()), nonBlank(structuredVisualization.difficultyLevel(), base.level())),
+                    buildTags(resolvedSubject, resolvedLevel),
                     true,
-                    isEmpty(diagramDefinition) ? base.diagramType() : "FLOWCHART",
-                    isEmpty(diagramDefinition) ? base.diagramDefinition() : diagramDefinition,
-                    structuredVisualization
+                    resolvedDiagramType,
+                    resolvedDiagramDefinition,
+                    structuredVisualization,
+                    tutor
             );
         } catch (Exception e) { return base; }
+    }
+
+    private VisualizeResponse buildLlmVisualizationStream(
+            String question,
+            String subject,
+            String level,
+            String style,
+            VisualizeResponse base,
+            boolean isPremium,
+            Consumer<String> onDelta
+    ) {
+        if (resolveProvider() != LlmProvider.OLLAMA) {
+            return buildLlmVisualization(question, subject, level, style, base, isPremium);
+        }
+
+        String prompt = """
+                You are a senior educational visualization expert and conceptual mentor.
+
+                TASK:
+                Explain the following concept using deep pedagogical reasoning and structured visualization data for an interactive UI.
+
+                USER INPUT: %s
+
+                OUTPUT CONSTRAINTS:
+                - Respond with JSON only (no markdown, no code fences).
+                - Keep it short and UI-friendly: 4-7 steps, <= 8 concept-map nodes, <= 6 connections, <= 3 examples.
+                - Keep each description under ~320 characters.
+                - Include at least one worked example inside real_world_examples.
+
+                OUTPUT FORMAT (JSON ONLY):
+                {
+                  "concept_title": "Primary Title",
+                  "summary": "Analogy: ... | Core: ...",
+                  "subject": "%s",
+                  "difficulty_level": "%s",
+                  "tutor_response": {
+                    "subject": "physics | chemistry | math | computer_science | biology | general",
+                    "intent": "concept | problem | derivation | process | algorithm",
+                    "explanation": { "summary": "short", "detailed": "step-by-step" },
+                    "visualization": {
+                      "type": "animation | simulation | flowchart | graph | interactive | video_like",
+                      "style": "playful | realistic | diagrammatic | 3d",
+                      "data": {},
+                      "steps": [{ "step": 1, "title": "", "description": "", "highlight": "" }]
+                    },
+                    "interactions": ["play","pause","step_forward","step_backward","change_input","quiz_mode"]
+                  },
+                  "step_by_step_visualization": [
+                    {
+                      "step": 1,
+                      "title": "Stage Title",
+                      "description": "Deep pedagogical breakdown",
+                      "visual_elements": [{"type": "arrow|object|motion", "name": "label", "direction": "direction", "note": "hint"}]
+                    }
+                  ],
+                  "concept_map": {
+                    "nodes": [{"id": "n1", "label": "Label"}],
+                    "connections": [{"from": "n1", "to": "n2", "relationship": "rel"}]
+                  },
+                  "simulation": {
+                    "objects": [{"name": "obj", "type": "type", "properties": {}}],
+                    "forces": [{"source": "s", "target": "t", "magnitude_relation": "rel", "direction": "dir"}]
+                  },
+                  "flow_diagram": [{"stage": "Name", "description": "Step detail"}],
+                  "real_world_examples": [{"title": "Example Name", "explanation": "Detailed real-world case"}]
+                }
+
+                Subject: %s
+                Level: %s
+                Mode: %s
+                Tier: %s
+                """.formatted(question, subject, level, subject, level, style, isPremium ? "PREMIUM" : "BASE");
+
+        try {
+            String raw = stripMarkdown(callOllamaStream(prompt, onDelta));
+            JsonNode node = tryExtractJsonObject(raw);
+            if (node == null || !node.isObject()) return base;
+
+            StructuredVisualization structuredVisualization = parseStructuredVisualization(node, question, subject, level, base.steps());
+            List<VisualizationStep> steps = toLegacySteps(structuredVisualization);
+            String diagramDefinition = buildMermaidFromConceptMap(structuredVisualization.conceptMap());
+            String resolvedDiagramType = isEmpty(diagramDefinition) ? base.diagramType() : "FLOWCHART";
+            String resolvedDiagramDefinition = isEmpty(diagramDefinition) ? base.diagramDefinition() : diagramDefinition;
+            List<VisualizationStep> resolvedSteps = steps.isEmpty() ? base.steps() : steps;
+            String resolvedSubject = nonBlank(structuredVisualization.subject(), base.subject());
+            String resolvedLevel = nonBlank(structuredVisualization.difficultyLevel(), base.level());
+            JsonNode tutor = extractTutorResponse(
+                    node,
+                    question,
+                    resolvedSubject,
+                    detectIntent(question, resolvedSubject),
+                    resolvedLevel,
+                    style,
+                    resolvedSteps,
+                    structuredVisualization,
+                    resolvedDiagramType,
+                    resolvedDiagramDefinition
+            );
+
+            return new VisualizeResponse(
+                    nonBlank(structuredVisualization.conceptTitle(), base.title()),
+                    nonBlank(structuredVisualization.summary(), base.summary()),
+                    resolvedSubject,
+                    resolvedLevel,
+                    resolvedSteps,
+                    toApproachList(structuredVisualization),
+                    buildTags(resolvedSubject, resolvedLevel),
+                    true,
+                    resolvedDiagramType,
+                    resolvedDiagramDefinition,
+                    structuredVisualization,
+                    tutor
+            );
+        } catch (Exception e) {
+            return base;
+        }
+    }
+
+    private JsonNode tryExtractJsonObject(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        String trimmed = raw.trim();
+        try {
+            return objectMapper.readTree(trimmed);
+        } catch (Exception ignored) {
+            // fallthrough
+        }
+        int start = trimmed.indexOf('{');
+        int end = trimmed.lastIndexOf('}');
+        if (start < 0 || end <= start) return null;
+        String slice = trimmed.substring(start, end + 1);
+        try {
+            return objectMapper.readTree(slice);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private JsonNode extractTutorResponse(
+            JsonNode root,
+            String question,
+            String subject,
+            String intent,
+            String level,
+            String style,
+            List<VisualizationStep> steps,
+            StructuredVisualization structuredVisualization,
+            String diagramType,
+            String diagramDefinition
+    ) {
+        if (root != null) {
+            JsonNode node = root.path("tutor_response");
+            if (node != null && node.isObject()) {
+                return node;
+            }
+        }
+        return buildTutorResponse(question, subject, intent, level, style, steps, structuredVisualization, diagramType, diagramDefinition);
+    }
+
+    private String detectIntent(String question, String subject) {
+        String q = question == null ? "" : question.toLowerCase();
+        String s = subject == null ? "" : subject.toLowerCase();
+
+        if (q.contains("solve") || q.contains("calculate") || q.contains("find") || q.contains("balance")) return "problem";
+        if (q.contains("derive") || q.contains("proof") || q.contains("show that")) return "derivation";
+        if (q.contains("process") || q.contains("cycle") || q.contains("how does") || q.contains("how do")) return "process";
+        if (q.contains("algorithm") || q.contains("binary search") || q.contains("dfs") || q.contains("bfs") || q.contains("sort")) return "algorithm";
+        if (s.contains("biology") || s.contains("chemistry") || s.contains("physics")) return "concept";
+        return "concept";
+    }
+
+    private String normalizeTutorSubject(String subject) {
+        String s = subject == null ? "" : subject.trim().toLowerCase();
+        if (s.contains("physics")) return "physics";
+        if (s.contains("chem")) return "chemistry";
+        if (s.contains("math")) return "math";
+        if (s.contains("computer")) return "computer_science";
+        if (s.contains("biology")) return "biology";
+        return "general";
+    }
+
+    private ObjectNode buildTutorResponse(
+            String question,
+            String subject,
+            String intent,
+            String level,
+            String style,
+            List<VisualizationStep> steps,
+            StructuredVisualization structuredVisualization,
+            String diagramType,
+            String diagramDefinition
+    ) {
+        String normalizedSubject = normalizeTutorSubject(subject);
+        String normalizedIntent = isEmpty(intent) ? detectIntent(question, normalizedSubject) : intent;
+
+        // Prefer intent-based routing first, then subject defaults.
+        String vizType = switch (normalizedIntent) {
+            case "algorithm" -> "flowchart";
+            case "derivation" -> "graph";
+            case "process" -> "animation";
+            case "problem" -> "interactive";
+            default -> switch (normalizedSubject) {
+                case "physics" -> "simulation";
+                case "chemistry" -> "animation";
+                case "math" -> "graph";
+                case "computer_science" -> "flowchart";
+                case "biology" -> "animation";
+                default -> "interactive";
+            };
+        };
+
+        String vizStyle = switch (normalizedSubject) {
+            case "physics" -> "realistic";
+            case "chemistry" -> "diagrammatic";
+            case "math" -> "diagrammatic";
+            case "computer_science" -> "diagrammatic";
+            case "biology" -> "diagrammatic";
+            default -> "playful";
+        };
+
+        ObjectNode root = objectMapper.createObjectNode();
+        root.put("subject", normalizedSubject);
+        root.put("intent", nonBlank(normalizedIntent, "concept"));
+
+        ObjectNode explanation = root.putObject("explanation");
+        String fallbackSummary = nonBlank(structuredVisualization == null ? null : structuredVisualization.summary(), "A guided explanation.");
+        explanation.put("summary", fallbackSummary);
+        explanation.put("detailed", buildDetailedExplanation(steps, fallbackSummary));
+
+        ObjectNode visualization = root.putObject("visualization");
+        visualization.put("type", vizType);
+        visualization.put("style", vizStyle);
+
+        ObjectNode data = visualization.putObject("data");
+        data.put("level", nonBlank(level, "STANDARD"));
+        data.put("mode", nonBlank(style, "AUTO"));
+        data.put("diagramType", nonBlank(diagramType, "NONE"));
+        if (!isEmpty(diagramDefinition)) data.put("diagramDefinition", diagramDefinition);
+
+        if (structuredVisualization != null) {
+            // Pass through structured elements for richer clients.
+            if (structuredVisualization.conceptMap() != null) {
+                data.set("conceptMap", objectMapper.valueToTree(structuredVisualization.conceptMap()));
+            }
+            if (structuredVisualization.simulation() != null) {
+                data.set("simulation", objectMapper.valueToTree(structuredVisualization.simulation()));
+            }
+            if (structuredVisualization.flowDiagram() != null && !structuredVisualization.flowDiagram().isEmpty()) {
+                data.set("flowDiagram", objectMapper.valueToTree(structuredVisualization.flowDiagram()));
+            }
+            if (structuredVisualization.realWorldExamples() != null && !structuredVisualization.realWorldExamples().isEmpty()) {
+                data.set("realWorldExamples", objectMapper.valueToTree(structuredVisualization.realWorldExamples()));
+            }
+        }
+
+        ArrayNode stepArray = visualization.putArray("steps");
+        if (steps != null) {
+            for (VisualizationStep s : steps) {
+                ObjectNode st = stepArray.addObject();
+                st.put("step", s.stepNumber());
+                st.put("title", nonBlank(s.heading(), "Step " + s.stepNumber()));
+                st.put("description", nonBlank(s.explanation(), ""));
+                st.put("highlight", nonBlank(s.tip(), nonBlank(s.visual(), "")));
+            }
+        }
+
+        ArrayNode interactions = root.putArray("interactions");
+        interactions.add("play");
+        interactions.add("pause");
+        interactions.add("step_forward");
+        interactions.add("step_backward");
+        interactions.add("change_input");
+        interactions.add("quiz_mode");
+
+        return root;
+    }
+
+    private String buildDetailedExplanation(List<VisualizationStep> steps, String fallback) {
+        if (steps == null || steps.isEmpty()) return fallback == null ? "" : fallback;
+        StringBuilder sb = new StringBuilder();
+        for (VisualizationStep step : steps) {
+            if (sb.length() > 0) sb.append("\n");
+            sb.append(step.stepNumber()).append(". ").append(nonBlank(step.heading(), "Step")).append(": ").append(nonBlank(step.explanation(), ""));
+        }
+        return sb.toString();
     }
 
     // -- Remaining methods (Risk, Lesson Plan, Feedback, etc.) maintained -----

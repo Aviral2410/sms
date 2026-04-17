@@ -34,6 +34,10 @@ public class ToolCatalogService {
                     "Show attendance trend for last 30 days",
                     "Attendance overview from 2026-04-01 to 2026-04-14"
             );
+            case "getEnrollmentTrend" -> List.of(
+                    "Show enrollment trend for last 12 months",
+                    "Show admissions trend for last 6 months"
+            );
             case "getAnnouncements" -> List.of(
                     "Show latest school announcements",
                     "List notices for my role"

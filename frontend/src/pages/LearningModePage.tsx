@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -15,6 +16,7 @@ import { LearningVisualizerPanel } from '../components/ai/LearningVisualizerPane
 import { ApiError, schoolOpsApi, subscriptionApi, type ExampleResponse, type VisualizeResponse } from '../lib/api';
 import { hasFeature } from '../lib/features';
 import { buildBasicExamples, buildBasicVisualization } from '../lib/learningFallback';
+import { readSseStream, tryParseJson } from '../lib/sse';
 import { useStore } from '../store/useStore';
 import '../styles/admin-management.css';
 import './learning-mode.css';
@@ -39,6 +41,7 @@ export default function LearningModePage() {
   const [examplesData, setExamplesData] = useState<ExampleResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamStatus, setStreamStatus] = useState<string | null>(null);
   const [upgradeRequired, setUpgradeRequired] = useState(false);
   const [requestingUpgrade, setRequestingUpgrade] = useState(false);
 
@@ -61,6 +64,7 @@ export default function LearningModePage() {
     setError(null);
     setUpgradeRequired(false);
     setShowAdvanced(false);
+    setStreamStatus(null);
   }, [activeTab]);
 
   const handleProcess = async (e?: React.FormEvent) => {
@@ -72,19 +76,88 @@ export default function LearningModePage() {
 
     setLoading(true);
     setError(null);
+    setStreamStatus(null);
     setUpgradeRequired(false);
 
     try {
       if (activeTab === 'visualize') {
         setExamplesData(null);
-        const res = await schoolOpsApi.visualize({
+        const payload = {
           question: question.trim(),
           subject: subject || undefined,
           level,
           visualizationStyle: vizStyle,
           premiumRequest: premiumEntitled,
+        };
+
+        const streamRes = await fetch('/api/v1/school-ops/ai/visualize/stream', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
+          },
+          body: JSON.stringify(payload),
         });
-        setVisualizeData({ ...res, generationMode: 'AI' });
+
+        if (!streamRes.ok || !streamRes.body) {
+          const res = await schoolOpsApi.visualize(payload);
+          setVisualizeData({ ...res, generationMode: 'AI' });
+        } else {
+          let final: VisualizeResponse | null = null;
+          await readSseStream(streamRes.body, {
+            onEvent: ({ event, data }) => {
+              if (data === '[DONE]') return;
+              if (event === 'status') {
+                const parsed = tryParseJson<any>(data);
+                const text = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : '';
+                if (text) setStreamStatus(text);
+                return;
+              }
+              if (event === 'token') {
+                const parsed = tryParseJson<any>(data);
+                const chars = parsed.ok && typeof parsed.value?.chars === 'number' ? (parsed.value.chars as number) : null;
+                if (chars != null) {
+                  setStreamStatus(`Drafting visualization… (${chars.toLocaleString()} chars)`);
+                }
+                return;
+              }
+              if (event === 'final') {
+                const parsed = tryParseJson<VisualizeResponse>(data);
+                if (parsed.ok) final = parsed.value;
+                return;
+              }
+              if (event === 'error') {
+                const parsed = tryParseJson<any>(data);
+                const text = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : 'Stream failed.';
+                setError(text);
+                setStreamStatus(null);
+              }
+            },
+          });
+
+          if (!final) {
+            throw new Error('Visualization stream ended before returning a result.');
+          }
+
+          const full = { ...final, generationMode: 'AI' as const };
+          const steps = Array.isArray(full.steps) ? full.steps : [];
+          setStreamStatus(null);
+
+          if (steps.length <= 1) {
+            setVisualizeData(full);
+          } else {
+            setVisualizeData({ ...full, steps: [steps[0]] });
+            let idx = 1;
+            const id = window.setInterval(() => {
+              setVisualizeData((current) => {
+                if (!current) return current;
+                return { ...current, steps: steps.slice(0, idx + 1) };
+              });
+              idx += 1;
+              if (idx >= steps.length) window.clearInterval(id);
+            }, 650);
+          }
+        }
       } else {
         setVisualizeData(null);
         const premiumRequest = premiumEntitled;
@@ -101,15 +174,18 @@ export default function LearningModePage() {
       if (err instanceof ApiError && err.status === 403) {
         setUpgradeRequired(true);
         setError(err.message || 'Upgrade required.');
+        setStreamStatus(null);
         if (activeTab === 'visualize') setVisualizeData(createLocalVisualization());
         else setExamplesData(createLocalExamples());
         return;
       }
       if (activeTab === 'visualize') setVisualizeData(createLocalVisualization());
       else setExamplesData(createLocalExamples());
+      setStreamStatus(null);
       toast.error('AI unavailable. Showing guided mode.');
     } finally {
       setLoading(false);
+      setStreamStatus(null);
     }
   };
 
@@ -185,6 +261,19 @@ export default function LearningModePage() {
               <AnimatePresence mode="wait">
                 {activeTab === 'visualize' ? (
                   <motion.div key="visualize" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+                    {streamStatus ? (
+                      <div
+                        className="admin-management-helper"
+                        style={{
+                          marginBottom: 14,
+                          borderColor: 'rgba(56,189,248,0.35)',
+                          background: 'rgba(56,189,248,0.08)',
+                          color: 'rgba(255,255,255,0.92)',
+                        }}
+                      >
+                        {streamStatus}
+                      </div>
+                    ) : null}
                     <LearningVisualizerPanel data={visualizeData} loading={loading} error={error} />
                   </motion.div>
                 ) : (

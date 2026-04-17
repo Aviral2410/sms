@@ -37,6 +37,9 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         if (containsAny(normalized, "dashboard", "kpi", "school summary", "overall summary")) {
             return Optional.of(new ToolCall("getSchoolDashboard", objectMapper.createObjectNode(), "rule_based:dashboard"));
         }
+        if (containsAny(normalized, "enrollment trend", "enrolment trend", "admission trend", "admissions trend", "student trend", "enrollment over time", "trend", "over time")) {
+            return Optional.of(new ToolCall("getEnrollmentTrend", trendArgs(normalized), "rule_based:enrollment_trend"));
+        }
         if (containsAny(normalized, "announcement", "announcements", "notice", "notices", "broadcast")) {
             if (containsAny(normalized, "create", "publish", "post")) {
                 return Optional.of(new ToolCall("createAnnouncement", announcementArgs(message), "rule_based:create_announcement"));
@@ -87,6 +90,20 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         }
 
         return Optional.empty();
+    }
+
+    private ObjectNode trendArgs(String message) {
+        ObjectNode args = objectMapper.createObjectNode();
+        // Simple heuristic: if user mentions "6 months" / "12 months", capture first integer.
+        Matcher m = Pattern.compile("\\b(\\d{1,2})\\s*(month|months)\\b").matcher(message);
+        if (m.find()) {
+            try {
+                args.put("months", Integer.parseInt(m.group(1)));
+            } catch (Exception ignored) {
+                // ignore
+            }
+        }
+        return args;
     }
 
     private ObjectNode attendanceArgs(String message) {

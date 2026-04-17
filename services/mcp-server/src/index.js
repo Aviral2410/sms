@@ -45,6 +45,19 @@ function resolveOpenRouterApiKey() {
   return openaiApiKey.startsWith("sk-or-") ? openaiApiKey : "";
 }
 
+function applyWordLimit(text, maxWords) {
+  if (!text || typeof text !== "string") return "";
+  const words = text.trim().split(/\s+/g);
+  if (words.length <= maxWords) return text.trim();
+  return words.slice(0, maxWords).join(" ");
+}
+
+function truncateText(text, maxChars) {
+  if (!text || typeof text !== "string") return "";
+  if (text.length <= maxChars) return text;
+  return text.slice(0, Math.max(0, maxChars - 3)) + "...";
+}
+
 async function callGemini(prompt) {
   if (!geminiApiKey) return null;
   try {
@@ -156,6 +169,78 @@ async function callLlm(prompt) {
     if (res) return res;
   }
   return callOpenAi(prompt);
+}
+
+function sanitizeQuestion(question) {
+  const trimmed = typeof question === "string" ? question.trim() : "";
+  return applyWordLimit(truncateText(trimmed, 1600), 220);
+}
+
+async function maybeEnhanceInteractiveAnswer({ role, question, base }) {
+  const normalizedRole = typeof role === "string" ? role : "unknown";
+  const cleanQuestion = sanitizeQuestion(question);
+  if (!cleanQuestion) return base;
+
+  const dataJson = (() => {
+    try {
+      return JSON.stringify(base?.data ?? {}, null, 2);
+    } catch {
+      return "{}";
+    }
+  })();
+
+  // Keep prompts bounded to avoid long LLM calls / timeouts.
+  const boundedDataJson = truncateText(dataJson, 12000);
+
+  const prompt = [
+    "You are an AI analytics assistant embedded in a school platform UI.",
+    "Your job: answer the user's question using ONLY the provided JSON data snapshot.",
+    "",
+    "Return JSON ONLY (no markdown fences).",
+    "Output schema:",
+    "{",
+    '  "answer": "A concise, friendly markdown answer with bullets where helpful.",',
+    '  "widgets": [',
+    '    { "type": "cards", "title": "At a glance", "items": [{ "label": "Students", "value": 123 }] },',
+    '    { "type": "chart", "title": "Trend", "chartType": "line|bar", "xKey": "label", "yKey": "y", "points": [{"label":"Jan","y":10}] },',
+    '    { "type": "table", "title": "Details", "rows": [{"name":"..."}] }',
+    "  ],",
+    '  "suggestedQuestions": ["...", "..."]',
+    "}",
+    "",
+    "Rules:",
+    "- Never invent numbers. If missing, say unknown.",
+    "- Keep widgets to max 2, and keep them small.",
+    "- Keep suggestedQuestions to max 4.",
+    "",
+    `ROLE: ${normalizedRole}`,
+    `QUESTION: ${cleanQuestion}`,
+    "",
+    "DATA_SNAPSHOT_JSON:",
+    boundedDataJson,
+  ].join("\n");
+
+  const raw = await callLlm(prompt);
+  if (!raw) return base;
+  const parsed = extractJsonObject(raw);
+  if (!parsed || typeof parsed !== "object") return base;
+
+  const answer = typeof parsed.answer === "string" && parsed.answer.trim() ? parsed.answer.trim() : null;
+  const widgets = Array.isArray(parsed.widgets) ? parsed.widgets.slice(0, 2) : null;
+  const suggestedQuestions = Array.isArray(parsed.suggestedQuestions)
+    ? parsed.suggestedQuestions.filter((q) => typeof q === "string" && q.trim()).slice(0, 4)
+    : null;
+
+  return {
+    ...base,
+    answer: answer ?? base.answer,
+    data: {
+      ...(base?.data ?? {}),
+      ...(widgets ? { widgets } : {}),
+    },
+    ...(suggestedQuestions ? { suggestedQuestions } : {}),
+    mode: "interactive",
+  };
 }
 
 async function fetchJson(path) {
@@ -999,7 +1084,7 @@ async function answerRoleQuestion({ role, question, schoolId, email }) {
   const effectiveSchoolId = schoolId || context?.schoolId;
   const effectiveEmail = email || context?.email;
 
-  console.info(`[GEMINI-AI] Assistant (gemini-1.5-flash) processing question for role: ${effectiveRole} (School: ${effectiveSchoolId})`);
+  console.info(`[MCP] Assistant processing question for role: ${effectiveRole} (School: ${effectiveSchoolId})`);
   
   if (!effectiveRole || !supportedRoles.includes(effectiveRole)) {
     throw new Error(`Unsupported or missing role '${effectiveRole}'. Supported roles: ${supportedRoles.join(", ")}`);
@@ -1009,8 +1094,11 @@ async function answerRoleQuestion({ role, question, schoolId, email }) {
     throw new Error("Question is required.");
   }
 
+  const cleanQuestion = sanitizeQuestion(question);
+
   if (effectiveRole === "platform_admin") {
-    return answerPlatformQuestion(question);
+    const base = await answerPlatformQuestion(cleanQuestion);
+    return maybeEnhanceInteractiveAnswer({ role: effectiveRole, question: cleanQuestion, base });
   }
 
   if (!effectiveSchoolId) {
@@ -1018,21 +1106,24 @@ async function answerRoleQuestion({ role, question, schoolId, email }) {
   }
 
   if (effectiveRole === "school_admin" || effectiveRole === "staff") {
-    return answerSchoolAdminQuestion(question, effectiveSchoolId);
+    const base = await answerSchoolAdminQuestion(cleanQuestion, effectiveSchoolId);
+    return maybeEnhanceInteractiveAnswer({ role: effectiveRole, question: cleanQuestion, base });
   }
 
   if (effectiveRole === "teacher") {
     if (!effectiveEmail) {
       throw new Error("email is required for teacher questions.");
     }
-    return answerTeacherQuestion(question, effectiveSchoolId, effectiveEmail);
+    const base = await answerTeacherQuestion(cleanQuestion, effectiveSchoolId, effectiveEmail);
+    return maybeEnhanceInteractiveAnswer({ role: effectiveRole, question: cleanQuestion, base });
   }
 
   if (effectiveRole === "student") {
     if (!effectiveEmail) {
       throw new Error("email is required for student questions.");
     }
-    return answerStudentQuestion(question, effectiveSchoolId, effectiveEmail);
+    const base = await answerStudentQuestion(cleanQuestion, effectiveSchoolId, effectiveEmail);
+    return maybeEnhanceInteractiveAnswer({ role: effectiveRole, question: cleanQuestion, base });
   }
 
   throw new Error("Unable to resolve the requested role.");

@@ -557,14 +557,138 @@ export const AiAssistantChat: React.FC = () => {
     );
   };
 
+  const renderWidgets = (widgets: any[]) => {
+    if (!Array.isArray(widgets) || widgets.length === 0) return null;
+
+    return (
+      <div style={{ display: 'grid', gap: 12 }}>
+        {widgets.slice(0, 3).map((widget, idx) => {
+          const type = typeof widget?.type === 'string' ? widget.type : '';
+          const title = typeof widget?.title === 'string' ? widget.title : '';
+
+          if (type === 'cards' && Array.isArray(widget?.items)) {
+            return (
+              <div
+                key={`w-${idx}`}
+                style={{
+                  border: '1px solid rgba(148,163,184,0.14)',
+                  background: 'rgba(15,23,42,0.22)',
+                  borderRadius: 14,
+                  padding: 12,
+                  display: 'grid',
+                  gap: 10,
+                }}
+              >
+                {title ? <div style={{ fontSize: 12, fontWeight: 900 }}>{title}</div> : null}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+                  {widget.items.slice(0, 6).map((item: any, i: number) => (
+                    <div
+                      key={i}
+                      style={{
+                        border: '1px solid rgba(148,163,184,0.12)',
+                        background: 'rgba(2,6,23,0.28)',
+                        borderRadius: 12,
+                        padding: 10,
+                        display: 'grid',
+                        gap: 4,
+                      }}
+                    >
+                      <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>{String(item?.label ?? '')}</div>
+                      <div style={{ fontSize: 16, fontWeight: 950, color: 'var(--text-strong)' }}>{String(item?.value ?? '')}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          if ((type === 'chart' || widget?.chartType) && Array.isArray(widget?.points)) {
+            const points = widget.points as Record<string, unknown>[];
+            const xKey = typeof widget?.xKey === 'string' ? widget.xKey : 'x';
+            const yKey = typeof widget?.yKey === 'string' ? widget.yKey : 'y';
+            const chartType = widget?.chartType === 'bar' ? 'bar' : 'line';
+
+            return (
+              <div
+                key={`w-${idx}`}
+                style={{
+                  border: '1px solid rgba(148,163,184,0.14)',
+                  background: 'rgba(15,23,42,0.22)',
+                  borderRadius: 14,
+                  padding: 12,
+                  display: 'grid',
+                  gap: 10,
+                }}
+              >
+                {title ? <div style={{ fontSize: 12, fontWeight: 900 }}>{title}</div> : null}
+                <div style={{ width: '100%', height: 220 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartType === 'bar' ? (
+                      <BarChart data={points}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey={xKey} />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey={yKey} fill="#22d3ee" />
+                      </BarChart>
+                    ) : (
+                      <LineChart data={points}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey={xKey} />
+                        <YAxis />
+                        <Tooltip />
+                        <Line type="monotone" dataKey={yKey} stroke="#38bdf8" strokeWidth={2} dot={false} />
+                      </LineChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          }
+
+          if (type === 'table' && Array.isArray(widget?.rows)) {
+            const rows = widget.rows as Record<string, unknown>[];
+            return (
+              <div
+                key={`w-${idx}`}
+                style={{
+                  border: '1px solid rgba(148,163,184,0.14)',
+                  background: 'rgba(15,23,42,0.22)',
+                  borderRadius: 14,
+                  padding: 12,
+                  display: 'grid',
+                  gap: 10,
+                }}
+              >
+                {title ? <div style={{ fontSize: 12, fontWeight: 900 }}>{title}</div> : null}
+                <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
+                  {JSON.stringify(rows.slice(0, 10), null, 2)}
+                </pre>
+              </div>
+            );
+          }
+
+          return null;
+        })}
+      </div>
+    );
+  };
+
   const renderAssistantResponse = (response?: RenderedResponse, fallback?: string) => {
     if (!response) {
       return <p style={{ margin: 0, fontSize: 13 }}>{fallback || 'No response.'}</p>;
     }
 
+    const widgets = Array.isArray((response.data as any)?.widgets) ? ((response.data as any).widgets as any[]) : [];
+
     if (response.type === 'text') {
       const text = typeof response.data?.text === 'string' ? response.data.text : JSON.stringify(response.data);
-      return <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{text}</p>;
+      return (
+        <div style={{ display: 'grid', gap: 10 }}>
+          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{text}</p>
+          {renderWidgets(widgets)}
+        </div>
+      );
     }
 
     if (response.type === 'table') {
@@ -608,6 +732,7 @@ export const AiAssistantChat: React.FC = () => {
       return (
         <div style={{ display: 'grid', gap: 10 }}>
           {text && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{text}</p>}
+          {renderWidgets(widgets)}
           {points.length > 0 && (
             <button
               type="button"
