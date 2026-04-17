@@ -120,10 +120,10 @@ public class GetEnrollmentTrendTool implements AiTool {
         chartCumulative.put("yKey", "total");
         ArrayNode cumulativePoints = chartCumulative.putArray("points");
         int running = 0;
-        byMonth.forEach((month, count) -> {
-            running += count;
-            cumulativePoints.addObject().put("month", month).put("total", running);
-        });
+        for (Map.Entry<String, Integer> entry : byMonth.entrySet()) {
+            running += entry.getValue();
+            cumulativePoints.addObject().put("month", entry.getKey()).put("total", running);
+        }
 
         // Cards
         ObjectNode cards = objectMapper.createObjectNode();

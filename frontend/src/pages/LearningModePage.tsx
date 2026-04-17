@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import React, { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BookOpen,
@@ -139,7 +138,7 @@ export default function LearningModePage() {
             throw new Error('Visualization stream ended before returning a result.');
           }
 
-          const full = { ...final, generationMode: 'AI' as const };
+          const full = { ...final!, generationMode: 'AI' as const };
           const steps = Array.isArray(full.steps) ? full.steps : [];
           setStreamStatus(null);
 
