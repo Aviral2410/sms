@@ -116,6 +116,14 @@ public class ConversationMemoryService {
         appendMessage(user, conversationId, "assistant", textSummary, structuredPayload);
     }
 
+    public void clearMessages(UserContext user, UUID conversationId) {
+        ChatRecord chat = requireChatOwnedByUser(user, conversationId);
+        if (!clearMessagesRedis(chat.conversationId())) {
+            messagesFallback.remove(chat.conversationId());
+        }
+        touchChatUpdatedAt(chat);
+    }
+
     public List<String> getRecentTextHistory(UserContext user, UUID conversationId) {
         List<ChatMessageRecord> rows = listMessages(user, conversationId, MAX_CONTEXT_MESSAGES);
         List<String> out = new ArrayList<>();
@@ -331,6 +339,17 @@ public class ConversationMemoryService {
             return out;
         } catch (Exception ex) {
             return List.of();
+        }
+    }
+
+    private boolean clearMessagesRedis(UUID conversationId) {
+        try {
+            if (redisTemplate == null) return false;
+            String key = "ai:chat:" + conversationId + ":messages";
+            redisTemplate.delete(key);
+            return true;
+        } catch (Exception ex) {
+            return false;
         }
     }
 

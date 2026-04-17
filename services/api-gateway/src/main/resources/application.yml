@@ -12,6 +12,7 @@ spring:
           "[/**]":
             allowedOrigins:
               - http://localhost:3000
+              - http://localhost:5173
             allowedMethods:
               - GET
               - POST
@@ -52,6 +53,10 @@ spring:
           uri: ${AI_INTERACTION_SERVICE_URL:http://localhost:8090}
           predicates:
             - Path=/api/v1/ai-interaction/**
+        - id: ai-chat-compat
+          uri: ${AI_INTERACTION_SERVICE_URL:http://localhost:8090}
+          predicates:
+            - Path=/api/chat,/api/health,/api/clear/**,/api/conversations/**/clear
         - id: subscription-service
           uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
           predicates:
