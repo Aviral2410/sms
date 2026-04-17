@@ -116,7 +116,7 @@ export default function LearningModePage() {
                 const parsed = tryParseJson<any>(data);
                 const chars = parsed.ok && typeof parsed.value?.chars === 'number' ? (parsed.value.chars as number) : null;
                 if (chars != null) {
-                  setStreamStatus(`Drafting visualization… (${chars.toLocaleString()} chars)`);
+                  setStreamStatus(`Drafting visualization... (${chars.toLocaleString()} chars)`);
                 }
                 return;
               }
@@ -138,7 +138,7 @@ export default function LearningModePage() {
             throw new Error('Visualization stream ended before returning a result.');
           }
 
-          const full = { ...final!, generationMode: 'AI' as const };
+          const full = { ...(final as any), generationMode: 'AI' as const } as VisualizeResponse;
           const steps = Array.isArray(full.steps) ? full.steps : [];
           setStreamStatus(null);
 
