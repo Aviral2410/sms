@@ -1,19 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Lightbulb, 
-  AlertCircle, 
-  Code, 
-  Info,
-  Pause,
-  Play,
-  RotateCcw,
-  StepBack,
-  StepForward,
-  Sparkles
-} from 'lucide-react';
+import { AlertCircle, Code, Info, Lightbulb, Sparkles } from 'lucide-react';
 import { VisualizeResponse } from '../../lib/api';
-import { MermaidDiagram } from './MermaidDiagram';
 import {
   CartesianGrid,
   Line,
@@ -30,18 +18,23 @@ interface LearningVisualizerPanelProps {
   error: string | null;
 }
 
-export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = ({ 
-  data, 
-  loading, 
-  error 
-}) => {
+type UiStep = {
+  key: number;
+  title: string;
+  description: string;
+  highlight?: string;
+  visual?: string;
+};
+
+export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = ({ data, loading, error }) => {
   const tutor = (data as any)?.tutorResponse;
+
   const summaryText =
     typeof tutor?.explanation?.summary === 'string' && tutor.explanation.summary.trim()
       ? (tutor.explanation.summary as string)
       : data?.summary ?? '';
 
-  const steps = useMemo(() => {
+  const steps = useMemo<UiStep[]>(() => {
     const tutorSteps = tutor?.visualization?.steps;
     if (Array.isArray(tutorSteps) && tutorSteps.length) {
       return tutorSteps
@@ -59,65 +52,40 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
       key: typeof s.stepNumber === 'number' ? s.stepNumber : idx + 1,
       title: typeof s.heading === 'string' && s.heading.trim() ? (s.heading as string) : `Step ${idx + 1}`,
       description: typeof s.explanation === 'string' ? (s.explanation as string) : '',
-      highlight: typeof s.tip === 'string' ? (s.tip as string) : (typeof s.visual === 'string' ? (s.visual as string) : ''),
-      icon: s?.icon,
+      highlight: typeof s.tip === 'string' ? (s.tip as string) : '',
       visual: typeof s.visual === 'string' ? (s.visual as string) : '',
-      tip: typeof s.tip === 'string' ? (s.tip as string) : '',
     }));
   }, [data, tutor]);
 
+  const examples = useMemo(() => {
+    const fromTutor = tutor?.visualization?.data?.realWorldExamples;
+    if (Array.isArray(fromTutor) && fromTutor.length) return fromTutor;
+    const fromStructured = (data as any)?.structuredVisualization?.realWorldExamples;
+    if (Array.isArray(fromStructured) && fromStructured.length) return fromStructured;
+    return [];
+  }, [data, tutor]);
+
   const [activeStep, setActiveStep] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [intervalMs, setIntervalMs] = useState(3200);
   const stepRefs = useRef<Array<HTMLDivElement | null>>([]);
 
   useEffect(() => {
     setActiveStep(0);
-    setPlaying(false);
-    setIntervalMs(3200);
     stepRefs.current = [];
   }, [data?.title]);
 
   useEffect(() => {
-    if (!playing) return;
-    if (!steps.length) return;
-    const id = window.setInterval(() => {
-      setActiveStep((prev) => {
-        const next = prev + 1;
-        if (next >= steps.length) {
-          window.clearInterval(id);
-          setPlaying(false);
-          return Math.max(0, steps.length - 1);
-        }
-        return next;
-      });
-    }, intervalMs);
-    return () => window.clearInterval(id);
-  }, [playing, steps.length, intervalMs]);
-
-  useEffect(() => {
     const el = stepRefs.current[activeStep];
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [activeStep]);
-
-  const diagramAllowed = useMemo(
-    () => Boolean(data?.diagramDefinition && (data?.llmEnhanced || Boolean(data?.structuredVisualization))),
-    [data?.diagramDefinition, data?.llmEnhanced, data?.structuredVisualization],
-  );
 
   if (loading) {
     return (
       <div className="admin-management-empty-state" style={{ minHeight: 520 }}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        >
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}>
           <Sparkles className="w-12 h-12" style={{ color: 'rgba(252, 211, 77, 0.75)' }} />
         </motion.div>
         <h3>Generating</h3>
-        <p>Creating a clear, step-by-step breakdown.</p>
+        <p>Creating a clear explanation and visuals.</p>
       </div>
     );
   }
@@ -152,11 +120,14 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
         }}
       >
         <Lightbulb className="w-14 h-14" style={{ color: 'rgba(148, 163, 184, 0.55)' }} />
-        <h3>Ready when you are</h3>
-        <p>Enter a question below to get a step-by-step interactive breakdown.</p>
+        <h3>Ask a learning question</h3>
+        <p>Enter a question below and the tutor will respond with visuals and examples.</p>
       </div>
     );
   }
+
+  const safeActiveIndex = Math.min(activeStep, Math.max(0, steps.length - 1));
+  const active = steps[safeActiveIndex];
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -176,98 +147,16 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
         </div>
         <p className="text-slate-400 leading-relaxed text-sm">{summaryText}</p>
         <div className="flex flex-wrap gap-2 pt-2">
-          {data.tags?.map(tag => (
-            <span key={tag} className="px-2.5 py-1 rounded-lg bg-slate-800/50 text-[11px] font-bold text-slate-400 border border-slate-700/50">
+          {data.tags?.map((tag) => (
+            <span
+              key={tag}
+              className="px-2.5 py-1 rounded-lg bg-slate-800/50 text-[11px] font-bold text-slate-400 border border-slate-700/50"
+            >
               #{tag}
             </span>
           ))}
         </div>
       </header>
-
-      {steps.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-            <div className="flex items-center gap-2 text-slate-200">
-              <Sparkles className="h-4 w-4 text-amber-400" />
-              <div className="text-xs font-black uppercase tracking-widest text-slate-300">Step playback</div>
-              <div className="text-xs text-slate-400">({activeStep + 1}/{steps.length})</div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.02] px-3 py-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Speed</span>
-                <select
-                  value={intervalMs}
-                  onChange={(e) => setIntervalMs(Number(e.target.value))}
-                  className="bg-transparent text-xs font-black text-slate-200 outline-none"
-                  aria-label="Playback speed"
-                >
-                  <option value={4500}>0.7×</option>
-                  <option value={3200}>1×</option>
-                  <option value={2200}>1.5×</option>
-                  <option value={1400}>2×</option>
-                </select>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setPlaying(false);
-                  setActiveStep((s) => Math.max(0, s - 1));
-                }}
-                disabled={activeStep === 0}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-black text-slate-200 transition hover:bg-white/[0.06] disabled:opacity-40 disabled:hover:bg-white/[0.03]"
-                title="Previous step"
-              >
-                <span className="inline-flex items-center gap-2"><StepBack className="h-4 w-4" /> Prev</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPlaying((p) => !p)}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-black text-slate-200 transition hover:bg-white/[0.06]"
-              >
-                {playing ? (
-                  <span className="inline-flex items-center gap-2"><Pause className="h-4 w-4" /> Pause</span>
-                ) : (
-                  <span className="inline-flex items-center gap-2"><Play className="h-4 w-4" /> Play</span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPlaying(false);
-                  setActiveStep(0);
-                }}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-black text-slate-200 transition hover:bg-white/[0.06]"
-                title="Restart"
-              >
-                <span className="inline-flex items-center gap-2"><RotateCcw className="h-4 w-4" /> Restart</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setPlaying(false);
-                  setActiveStep((s) => Math.min(steps.length - 1, s + 1));
-                }}
-                disabled={activeStep >= steps.length - 1}
-                className="rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-black text-slate-200 transition hover:bg-white/[0.06]"
-                title="Next step"
-              >
-                <span className="inline-flex items-center gap-2"><StepForward className="h-4 w-4" /> Next</span>
-              </button>
-            </div>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full border border-white/[0.06] bg-white/[0.02]">
-            <motion.div
-              className="h-full rounded-full"
-              style={{
-                background: 'linear-gradient(90deg, rgba(56,189,248,0.95), rgba(168,85,247,0.85))',
-                width: `${Math.round(((activeStep + 1) / Math.max(1, steps.length)) * 100)}%`,
-              }}
-              animate={{ width: `${((activeStep + 1) / Math.max(1, steps.length)) * 100}%` }}
-              transition={{ duration: 0.35 }}
-            />
-          </div>
-        </section>
-      )}
 
       {data.chart && (
         <motion.section
@@ -316,113 +205,107 @@ export const LearningVisualizerPanel: React.FC<LearningVisualizerPanelProps> = (
         </motion.section>
       )}
 
-      {diagramAllowed && (
+      {steps.length > 0 && (
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-amber-400">
-            <Sparkles className="w-4 h-4" />
-            <h3 className="font-black uppercase tracking-widest text-[10px]">Visual Concept Map</h3>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.5rem] border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+            <div className="flex items-center gap-2 text-slate-200">
+              <Sparkles className="h-4 w-4 text-amber-400" />
+              <div className="text-xs font-black uppercase tracking-widest text-slate-300">Key steps</div>
+              <div className="text-xs text-slate-400">({safeActiveIndex + 1}/{steps.length})</div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {steps.map((step, idx) => (
+                <button
+                  key={`chip-${step.key}`}
+                  type="button"
+                  onClick={() => setActiveStep(idx)}
+                  className={
+                    idx === safeActiveIndex
+                      ? 'rounded-2xl border border-indigo-400/40 bg-indigo-500/15 px-3 py-2 text-xs font-black text-indigo-100'
+                      : 'rounded-2xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-black text-slate-200 hover:bg-white/[0.06]'
+                  }
+                >
+                  {step.title}
+                </button>
+              ))}
+            </div>
           </div>
-          <motion.div
-            key={`diagram-${activeStep}`}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            style={{ overflow: 'hidden' }}
-          >
-            <MermaidDiagram definition={data.diagramDefinition!} />
-          </motion.div>
+
+          {active && (
+            <div className="rounded-[2rem] border border-white/[0.06] bg-white/[0.02] p-6">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step {active.key}</p>
+              <h4 className="mt-2 text-lg font-black text-white">{active.title}</h4>
+              <p className="mt-2 text-sm text-slate-300 leading-relaxed">{active.description}</p>
+
+              {active.visual ? (
+                <div className="mt-4 p-4 rounded-xl bg-black/40 font-mono text-xs text-amber-200/80 border border-amber-500/10 overflow-x-auto">
+                  <pre className="whitespace-pre-wrap">{active.visual}</pre>
+                </div>
+              ) : null}
+
+              {active.highlight ? (
+                <div className="mt-4 flex items-start gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                  <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-amber-200/70 italic">{active.highlight}</p>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {steps.map((step, idx) => (
+              <div
+                key={`step-${step.key}`}
+                ref={(el) => {
+                  stepRefs.current[idx] = el;
+                }}
+                className={
+                  idx === safeActiveIndex
+                    ? 'rounded-3xl border border-indigo-400/30 bg-indigo-500/10 p-5'
+                    : 'rounded-3xl border border-white/[0.06] bg-white/[0.02] p-5'
+                }
+              >
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step {step.key}</p>
+                <p className="mt-2 text-sm font-black text-slate-100">{step.title}</p>
+                <p className="mt-2 text-xs text-slate-400 leading-relaxed">{step.description}</p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
-      <div className="relative space-y-6">
-        <div className="absolute left-6 top-8 bottom-8 w-px bg-gradient-to-b from-amber-500/50 via-amber-500/20 to-transparent" />
-        
-        {steps.map((step: any, idx: number) => {
-          const isActive = idx === activeStep;
-          return (
-          <motion.div
-            key={step.key}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: idx * 0.1 }}
-            className="relative pl-14 group"
-            ref={(el) => {
-              stepRefs.current[idx] = el;
-            }}
-          >
-            <motion.div
-              className="absolute left-0 w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-xl shadow-xl group-hover:border-amber-500/50 transition-colors z-10"
-              animate={
-                isActive
-                  ? {
-                      scale: 1.03,
-                      borderColor: 'rgba(251,191,36,0.45)',
-                      boxShadow: '0 18px 48px rgba(2,6,23,0.75)',
-                    }
-                  : {
-                      scale: 1,
-                      borderColor: 'rgba(30,41,59,1)',
-                      boxShadow: '0 12px 28px rgba(2,6,23,0.55)',
-                    }
-              }
-              transition={{ duration: 0.22 }}
-            >
-              {step.icon || (idx + 1)}
-            </motion.div>
-            
-            <motion.div
-              className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors space-y-3"
-              animate={
-                isActive
-                  ? {
-                      boxShadow: '0 22px 60px rgba(2,6,23,0.55)',
-                      borderColor: 'rgba(99,102,241,0.48)',
-                      backgroundColor: 'rgba(99,102,241,0.065)',
-                    }
-                  : {
-                      boxShadow: '0 12px 36px rgba(2,6,23,0.22)',
-                      borderColor: 'rgba(255,255,255,0.05)',
-                      backgroundColor: 'rgba(255,255,255,0.02)',
-                    }
-              }
-              transition={{ duration: 0.25 }}
-            >
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-black text-slate-200 uppercase tracking-wider">
-                  Step {step.key}: {step.title}
-                </h4>
+      {examples.length > 0 && (
+        <section className="space-y-4 pt-4 border-t border-slate-800/50">
+          <div className="flex items-center gap-2 text-slate-300">
+            <Sparkles className="w-5 h-5 text-emerald-400" />
+            <h3 className="font-black uppercase tracking-widest text-xs">Examples</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {examples.slice(0, 3).map((ex: any, i: number) => (
+              <div
+                key={`ex-${i}`}
+                className="p-5 rounded-3xl bg-emerald-500/5 border border-emerald-500/10 hover:border-emerald-500/30 transition-all"
+              >
+                <p className="text-sm font-black text-emerald-100">{ex?.title || `Example ${i + 1}`}</p>
+                <p className="mt-2 text-xs text-slate-300 leading-relaxed">{ex?.explanation || ''}</p>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                {step.description}
-              </p>
-              
-              {step.visual && (
-                <div className="mt-4 p-4 rounded-xl bg-black/40 font-mono text-xs text-amber-200/80 border border-amber-500/10 overflow-x-auto">
-                  <pre className="whitespace-pre-wrap">{step.visual}</pre>
-                </div>
-              )}
-              
-              {(step.tip || step.highlight) && (
-                <div className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                  <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-amber-200/70 italic">Pro Tip: {step.tip || step.highlight}</p>
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {data.approaches && data.approaches.length > 0 && (
         <section className="space-y-4 pt-4 border-t border-slate-800/50">
           <div className="flex items-center gap-2 text-slate-300">
             <Code className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-black uppercase tracking-widest text-xs">Alternative Approaches</h3>
+            <h3 className="font-black uppercase tracking-widest text-xs">Alternative perspectives</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {data.approaches.map((approach, i) => (
-              <div key={i} className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-default">
+              <div
+                key={i}
+                className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 hover:border-indigo-500/30 transition-all cursor-default"
+              >
                 <p className="text-xs text-indigo-200 font-medium leading-relaxed">{approach}</p>
               </div>
             ))}

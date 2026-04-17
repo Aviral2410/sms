@@ -1187,14 +1187,9 @@ public class AIService {
                     """.formatted(safeConcept);
         }
 
-        return """
-                graph TD
-                    A["Question: %s"] --> B["Subject: %s"]
-                    B --> C["Identify the core idea"]
-                    C --> D["Break it into parts"]
-                    D --> E["Apply the rule or pattern"]
-                    E --> F["Review the takeaway"]
-                """.formatted(safeConcept, safeSubject);
+        // Avoid rendering a static placeholder flowchart for base mode; the UI should focus on the tutor response.
+        // When LLM is enabled, diagramDefinition is derived from the LLM concept map instead.
+        return null;
     }
 
     private List<String> buildTags(String subject, String level) {
