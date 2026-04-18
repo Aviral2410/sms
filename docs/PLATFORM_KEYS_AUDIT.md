@@ -14,9 +14,9 @@ These keys are the backbone of system security and data persistence.
 | `POSTGRES_PASSWORD` | Vault | **Yes** | `change-me` |
 | `JWT_SECRET_KEY` | Vault | **Yes** | `change_me_...` |
 | `INTERNAL_API_KEY` | Vault | **Yes** | `dev-internal-api-key` |
-| `PLATFORM_CONFIG_ENCRYPTION` | Vault | **Yes** | `dev-platform-config-...` |
-| `BOOTSTRAP_SUPERADMIN_PWD` | Vault | **Yes** | `SuperAdmin@2026!` |
-| `GHCR_TOKEN` | Infrastructure | **Yes** | **EMPTY** (Pat required for CD) |
+| `PLATFORM_CONFIG_ENCRYPTION_KEY` | Vault | **Yes** | `dev-platform-config-encryption-key` |
+| `BOOTSTRAP_SUPERADMIN_PASSWORD` | Vault | **Yes** | `SuperAdmin@2026!` |
+| `GHCR username/token` | Vault (`secret/sms/ghcr`) | **Yes** | **EMPTY** (PAT required to pull private images) |
 
 ## 2. AI & LLM Provider Keys
 Determines the intelligence capabilities of the AI Assistant and Tools.
@@ -49,13 +49,22 @@ Used for alerts, notifications, and OTP delivery.
 | `TWILIO_ACCOUNT_SID` | Twilio | SMS/WhatsApp | **EMPTY** |
 | `TWILIO_AUTH_TOKEN` | Twilio | SMS/WhatsApp | **EMPTY** |
 
-## 5. Non-Sensitive Configurable Keys
-These remain adjustable via Helm `values.yaml` or Deployment patches.
+## 5. Runtime Routing & Base URLs (Vault-managed)
 
+These are injected via `Secret/sms-secrets` so you can change routing centrally in Vault without editing Helm values.
+
+- `ONBOARDING_SERVICE_URL`: `http://school-onboarding-service:8081`
+- `AUTH_SERVICE_URL`: `http://auth-service:8082`
+- `SCHOOL_OPERATIONS_SERVICE_URL`: `http://school-operations-service:8083`
+- `COMMUNICATION_SERVICE_URL`: `http://communication-service:8089`
+- `FINANCE_SERVICE_URL`: `http://finance-service:8085`
+- `SUBSCRIPTION_SERVICE_URL`: `http://subscription-service:8086`
+- `PLATFORM_CONFIG_SERVICE_URL`: `http://school-onboarding-service:8081`
+- `MCP_SERVER_URL`: `http://mcp-server:8084`
+- `AI_INTERACTION_SERVICE_URL`: `http://ai-interaction-service:8090`
 - `GATEWAY_BASE_URL`: `http://api-gateway:8080`
-- `REDIS_HOST`: `redis`
-- `REDIS_PORT`: `6379`
-- `OLLAMA_MODEL`: `llama3.2:1b`
+- `GATEWAY_PUBLIC_BASE_URL`: `http://api-gateway:8080`
+- `MCP_PUBLIC_BASE_URL`: `http://mcp-server:8084`
 
 ## 6. Mutable Platform Settings (UI Safe)
 These parameters can be modified by Platform Admins via the **Platform Engine** UI as they do not contain credentials.

@@ -1,10 +1,19 @@
 # HashiCorp Vault (OSS) + External Secrets Operator (ESO)
 
-This repo standardizes on a single in-cluster Secret interface: `sms/sms-secrets`.
+This repo standardizes on a single in-cluster Secret interface: `Secret/sms-secrets` in namespace `sms`.
 
 Vault is the source of truth for secret values, ESO syncs them into Kubernetes.
 
-## Local kind (recommended dev path)
+## Recommended (Helm chart-managed)
+
+The platform Helm chart includes a Vault `SecretStore` + `ExternalSecret`:
+- `infra/helm/sms-platform/templates/secrets/external-secrets.yaml`
+
+Vault KV v2 paths used by the chart:
+- `secret/sms/platform`
+- `secret/sms/ghcr`
+
+## Local kind (standalone manifest example)
 
 1) Install ESO:
 
@@ -26,12 +35,11 @@ kubectl apply -f .\infra\kubernetes\operations\secrets\vault\sms-externalsecret.
 ```
 
 4) Put the values in Vault under a single KV v2 secret:
-- mount: `kv` (KV v2)
-- secret path: `sms/sms-secrets`
-- keys: match `infra/secrets/day0keyvaultseed.yaml`
+- mount: `secret` (KV v2)
+- secret path: `sms/platform`
+- keys: see `docs/keys-and-urls.md` and `infra/kubernetes/windows/seed-vault.ps1`
 
 ## Future cloud clusters
 
 For non-local clusters, do not use static tokens. Use Vault Kubernetes auth or AppRole and restrict policies by namespace/service account.
 This repo keeps local manifests simple, and provides a clean place to add hardened cluster-specific overlays later.
-

@@ -68,6 +68,19 @@ $platformData = @{
         SENDGRID_API_KEY = ""
         TWILIO_ACCOUNT_SID = ""
         TWILIO_AUTH_TOKEN = ""
+        # Internal service URLs (Kubernetes Services; override in Vault if needed)
+        ONBOARDING_SERVICE_URL = "http://school-onboarding-service:8081"
+        AUTH_SERVICE_URL = "http://auth-service:8082"
+        SCHOOL_OPERATIONS_SERVICE_URL = "http://school-operations-service:8083"
+        COMMUNICATION_SERVICE_URL = "http://communication-service:8089"
+        FINANCE_SERVICE_URL = "http://finance-service:8085"
+        SUBSCRIPTION_SERVICE_URL = "http://subscription-service:8086"
+        PLATFORM_CONFIG_SERVICE_URL = "http://school-onboarding-service:8081"
+        MCP_SERVER_URL = "http://mcp-server:8084"
+        AI_INTERACTION_SERVICE_URL = "http://ai-interaction-service:8090"
+        GATEWAY_BASE_URL = "http://api-gateway:8080"
+        GATEWAY_PUBLIC_BASE_URL = "http://api-gateway:8080"
+        MCP_PUBLIC_BASE_URL = "http://mcp-server:8084"
     }
 } | ConvertTo-Json
 

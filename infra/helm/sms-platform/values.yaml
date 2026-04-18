@@ -20,6 +20,12 @@ global:
     create: false
     existingSecret: sms-secrets
     data: {}
+  vault:
+    # Vault endpoint reachable from the cluster (used by External Secrets Operator SecretStore).
+    server: http://vault.vault.svc.cluster.local:8200
+    # KV v2 mount name in Vault (e.g. `secret` for `secret/data/...` API paths).
+    kvMount: secret
+    kvVersion: v2
 
 platform:
   redis:
@@ -229,9 +235,15 @@ services:
             name: '{{ include "sms.secretName" . }}'
             key: JWT_SECRET_KEY
       - name: COMMUNICATION_SERVICE_URL
-        value: http://communication-service:8089
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: COMMUNICATION_SERVICE_URL
       - name: SCHOOL_OPERATIONS_SERVICE_URL
-        value: http://school-operations-service:8083
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: SCHOOL_OPERATIONS_SERVICE_URL
       - name: BOOTSTRAP_SUPERADMIN_ENABLED
         valueFrom:
           secretKeyRef:
@@ -337,11 +349,20 @@ services:
       - name: APP_MQTT_BROKER_URL
         value: tcp://emqx:1883
       - name: AUTH_SERVICE_URL
-        value: http://auth-service:8082
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: AUTH_SERVICE_URL
       - name: COMMUNICATION_SERVICE_URL
-        value: http://communication-service:8089
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: COMMUNICATION_SERVICE_URL
       - name: SUBSCRIPTION_SERVICE_URL
-        value: http://subscription-service:8086
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: SUBSCRIPTION_SERVICE_URL
       - name: INTERNAL_API_KEY
         valueFrom:
           secretKeyRef:
@@ -435,22 +456,40 @@ services:
       - name: APP_MQTT_CLIENT_ID
         value: school-operations-service
       - name: AUTH_SERVICE_URL
-        value: http://auth-service:8082
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: AUTH_SERVICE_URL
       - name: COMMUNICATION_SERVICE_URL
-        value: http://communication-service:8089
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: COMMUNICATION_SERVICE_URL
       - name: SUBSCRIPTION_SERVICE_URL
-        value: http://subscription-service:8086
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: SUBSCRIPTION_SERVICE_URL
       - name: PLATFORM_CONFIG_SERVICE_URL
-        value: http://school-onboarding-service:8081
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: PLATFORM_CONFIG_SERVICE_URL
       - name: INTERNAL_API_KEY
         valueFrom:
           secretKeyRef:
             name: '{{ include "sms.secretName" . }}'
             key: INTERNAL_API_KEY
       - name: MCP_SERVER_URL
-        value: http://mcp-server:8084
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: MCP_SERVER_URL
       - name: AI_INTERACTION_SERVICE_URL
-        value: http://ai-interaction-service:8090
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: AI_INTERACTION_SERVICE_URL
       - name: LLM_PROVIDER
         valueFrom:
           secretKeyRef:
@@ -564,7 +603,10 @@ services:
       - name: MQTT_CLIENT_ID
         value: communication-service
       - name: SUBSCRIPTION_SERVICE_URL
-        value: http://subscription-service:8086
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: SUBSCRIPTION_SERVICE_URL
     probes:
       startup:
         tcpSocket:
@@ -641,7 +683,10 @@ services:
       - name: SPRING_PROFILES_ACTIVE
         value: docker
       - name: PLATFORM_CONFIG_SERVICE_URL
-        value: http://school-onboarding-service:8081
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: PLATFORM_CONFIG_SERVICE_URL
       - name: INTERNAL_API_KEY
         valueFrom:
           secretKeyRef:
@@ -781,7 +826,10 @@ services:
       - name: SERVER_PORT
         value: "8090"
       - name: GATEWAY_BASE_URL
-        value: http://api-gateway:8080
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: GATEWAY_BASE_URL
       - name: REDIS_HOST
         value: redis
       - name: REDIS_PORT
@@ -892,19 +940,40 @@ services:
             name: '{{ include "sms.secretName" . }}'
             key: POSTGRES_PASSWORD
       - name: ONBOARDING_SERVICE_URL
-        value: http://school-onboarding-service:8081
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: ONBOARDING_SERVICE_URL
       - name: AUTH_SERVICE_URL
-        value: http://auth-service:8082
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: AUTH_SERVICE_URL
       - name: SCHOOL_OPERATIONS_SERVICE_URL
-        value: http://school-operations-service:8083
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: SCHOOL_OPERATIONS_SERVICE_URL
       - name: MCP_SERVER_URL
-        value: http://mcp-server:8084
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: MCP_SERVER_URL
       - name: FINANCE_SERVICE_URL
-        value: http://finance-service:8085
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: FINANCE_SERVICE_URL
       - name: COMMUNICATION_SERVICE_URL
-        value: http://communication-service:8089
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: COMMUNICATION_SERVICE_URL
       - name: SUBSCRIPTION_SERVICE_URL
-        value: http://subscription-service:8086
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: SUBSCRIPTION_SERVICE_URL
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -962,7 +1031,10 @@ services:
       - name: PORT
         value: "8084"
       - name: GATEWAY_BASE_URL
-        value: http://api-gateway:8080
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: GATEWAY_BASE_URL
       - name: MCP_REQUIRE_AUTH
         valueFrom:
           secretKeyRef:
@@ -1053,9 +1125,15 @@ services:
       - name: FRONTEND_PORT
         value: "3000"
       - name: GATEWAY_PUBLIC_BASE_URL
-        value: http://api-gateway:8080
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: GATEWAY_PUBLIC_BASE_URL
       - name: MCP_PUBLIC_BASE_URL
-        value: http://mcp-server:8084
+        valueFrom:
+          secretKeyRef:
+            name: '{{ include "sms.secretName" . }}'
+            key: MCP_PUBLIC_BASE_URL
     probes:
       startup:
         tcpSocket:

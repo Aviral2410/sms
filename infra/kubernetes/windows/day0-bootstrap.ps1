@@ -56,7 +56,7 @@ if ($InstallVaultAndEso) {
     & $kubectlExe apply -f (Join-Path $RepoRoot "infra\\kubernetes\\operations\\secrets\\vault\\sms-externalsecret.vault-kv2.yaml")
 
     Write-Host ""
-    Write-Host "Next: put values into Vault KV v2 at path kv/sms/sms-secrets (keys listed in infra/secrets/day0keyvaultseed.yaml)."
+    Write-Host "Next: put values into Vault KV v2 at path secret/sms/platform (see docs/keys-and-urls.md)."
 }
 
 if ($InstallMonitoring) {
@@ -108,4 +108,3 @@ Write-Host "Docs:"
 Write-Host "  docs/secrets-vault-oss.md"
 Write-Host "  docs/gitops-argocd-local.md"
 Write-Host "  docs/endpoints.md"
-

@@ -35,9 +35,11 @@ This repo publishes images to GHCR using a **lowercase owner** (Docker requires 
 
 - `ghcr.io/aviral2410/sms-<service>:<git-sha>`
 
-## Keys (Vault → Kubernetes Secret `sms/sms-secrets`)
+## Keys (Vault → Kubernetes Secret `Secret/sms-secrets`)
 
-Canonical inventory: `infra/secrets/day0keyvaultseed.yaml`
+Canonical inventory (what gets synced into `Secret/sms-secrets`):
+- `infra/helm/sms-platform/templates/secrets/external-secrets.yaml`
+- `infra/kubernetes/windows/seed-vault.ps1` (dev defaults + example values)
 
 Values shown below are the **current local/dev defaults used in this repo**. Replace them in Vault for any real environment.
 
@@ -66,6 +68,27 @@ Values shown below are the **current local/dev defaults used in this repo**. Rep
 | `BOOTSTRAP_SUPERADMIN_PASSWORD` |  |
 | `BOOTSTRAP_SUPERADMIN_FULL_NAME` | `Platform Super Admin` |
 
+## Internal URLs (Vault-managed)
+
+These are injected into pods via `Secret/sms-secrets` so you can change routing centrally in Vault.
+
+Defaults seeded by `infra/kubernetes/windows/seed-vault.ps1` (Kubernetes Service DNS):
+
+| Key | Value (dev) |
+|---|---|
+| `ONBOARDING_SERVICE_URL` | `http://school-onboarding-service:8081` |
+| `AUTH_SERVICE_URL` | `http://auth-service:8082` |
+| `SCHOOL_OPERATIONS_SERVICE_URL` | `http://school-operations-service:8083` |
+| `COMMUNICATION_SERVICE_URL` | `http://communication-service:8089` |
+| `FINANCE_SERVICE_URL` | `http://finance-service:8085` |
+| `SUBSCRIPTION_SERVICE_URL` | `http://subscription-service:8086` |
+| `PLATFORM_CONFIG_SERVICE_URL` | `http://school-onboarding-service:8081` |
+| `MCP_SERVER_URL` | `http://mcp-server:8084` |
+| `AI_INTERACTION_SERVICE_URL` | `http://ai-interaction-service:8090` |
+| `GATEWAY_BASE_URL` | `http://api-gateway:8080` |
+| `GATEWAY_PUBLIC_BASE_URL` | `http://api-gateway:8080` |
+| `MCP_PUBLIC_BASE_URL` | `http://mcp-server:8084` |
+
 ## `.env`
 
-This repo no longer uses `.env` as a deployment input. Secrets are managed through Vault → External Secrets Operator → `sms/sms-secrets`.
+This repo no longer uses `.env` as a deployment input. Secrets are managed through Vault → External Secrets Operator → `Secret/sms-secrets`.

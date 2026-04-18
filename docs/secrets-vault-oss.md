@@ -1,52 +1,37 @@
-# Secrets: HashiCorp Vault OSS (local now, cloud later)
+# Secrets: HashiCorp Vault OSS (Vault → External Secrets Operator → `Secret/sms-secrets`)
 
 ## Goal
 
-Centralize secret values in Vault, and expose them to workloads only via the Kubernetes Secret `sms/sms-secrets`.
+Centralize all runtime keys/config in Vault, and expose them to workloads only via the Kubernetes Secret `sms-secrets` (namespace `sms`).
 
-Apps never read Vault directly in this setup.
+Apps never talk to Vault directly in this setup.
 
-## Key concepts
+## What this repo expects
 
-- **Key**: the name used by workloads, e.g. `POSTGRES_PASSWORD`.
-- **Value**: the secret string stored in Vault.
-- **Canonical key inventory**: `infra/secrets/day0keyvaultseed.yaml`.
-- **Kubernetes interface**: `Secret/sms-secrets` in namespace `sms`.
+- Vault KV v2 mount: `secret`
+- Vault paths (KV v2 UI paths):
+  - `secret/sms/platform` (all platform keys + internal URLs)
+  - `secret/sms/ghcr` (GHCR pull credentials)
+- Kubernetes Secret produced by External Secrets Operator:
+  - `Secret/sms-secrets` in namespace `sms`
+  - `Secret/ghcr-pull-secret` in namespace `sms`
 
-## Local kind (quick start)
+The Helm chart creates the SecretStore + ExternalSecret at install time:
+- `infra/helm/sms-platform/templates/secrets/external-secrets.yaml`
 
-1) Install External Secrets Operator:
+## Local (kind) dev flow
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\install-external-secrets.ps1
-```
+1) Run Vault in dev mode (example values file):
+- `infra/kubernetes/operations/vault/vault-values-local.yaml`
 
-2) Install Vault (dev mode):
+2) Seed Vault:
+- Windows: `infra/kubernetes/windows/seed-vault.ps1`
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\infra\kubernetes\windows\install-vault.ps1
-```
-
-3) Apply the Vault store + ExternalSecret:
-
-```powershell
-kubectl apply -f .\infra\kubernetes\operations\secrets\vault\vault-clustersecretstore.local-token.yaml
-kubectl apply -f .\infra\kubernetes\operations\secrets\vault\sms-externalsecret.vault-kv2.yaml
-```
-
-4) Put secret data into Vault under KV v2:
-
-- mount: `kv` (already configured in the local chart values)
-- secret path: `sms/sms-secrets`
-- add keys matching `infra/secrets/day0keyvaultseed.yaml`
-
-5) Confirm `sms-secrets` exists:
-
-```powershell
-kubectl -n sms get secret sms-secrets
-```
+3) Deploy the platform Helm chart (this will apply the ExternalSecret):
+- `infra/helm/sms-platform`
 
 ## Production note
 
-Local uses a static token for speed. For real environments, replace the local store with Vault Kubernetes auth or AppRole, and restrict policies by namespace/service account.
+The chart currently uses a **static token** (`Secret/vault-token`) for local simplicity.
 
+For real environments, replace this with Vault Kubernetes auth or AppRole and lock down policies by namespace/service account.
