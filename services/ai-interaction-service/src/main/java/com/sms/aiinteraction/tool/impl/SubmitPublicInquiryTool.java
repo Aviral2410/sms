@@ -71,7 +71,6 @@ public class SubmitPublicInquiryTool implements AiTool {
 
         gatewayApiClient.post(
             path,
-            Collections.emptyMap(),
             body,
             userContext.authorization()
         );
