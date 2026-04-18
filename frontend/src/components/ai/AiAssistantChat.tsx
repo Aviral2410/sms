@@ -1,8 +1,14 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Bot, CheckCheck, Globe, MessageCircle, Moon, Plus, Send, Sparkles, Trash2, UserCircle2, X } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Bot, CheckCheck, Globe, MessageCircle, Plus, Send,
+  Sparkles, Trash2, UserCircle2, X, ChevronRight, Cpu
+} from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { readSseStream, tryParseJson } from '../../lib/sse';
+
+// ─── Types ──────────────────────────────────────────────────────────────────
 
 type RenderedResponse = {
   type: 'chart' | 'table' | 'text' | 'action';
@@ -16,6 +22,7 @@ type ChatMessage = {
   text?: string;
   response?: RenderedResponse;
   ts?: number;
+  streaming?: boolean;
 };
 
 type StreamFinalPayload = {
@@ -36,7 +43,9 @@ type WorkspaceSummary = { workspaceId: string; name: string };
 type ChatSummary = { conversationId: string; title: string | null; updatedAt?: string; createdAt?: string };
 type StoredRect = { x: number; y: number; w: number; h: number };
 
-const RECT_STORAGE_KEY = 'aiAssistant:rect:v1';
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const RECT_STORAGE_KEY = 'aiAssistant:rect:v2';
 const MAX_INPUT_CHARS = 2000;
 const EXAMPLE_PROMPTS = [
   'Summarize the most important metrics for this workspace.',
@@ -45,6 +54,8 @@ const EXAMPLE_PROMPTS = [
   'List the next 5 onboarding steps to activate a new school.',
   'Where can I update pricing and public content?',
 ];
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function downloadText(filename: string, text: string, mime = 'text/plain;charset=utf-8') {
   const blob = new Blob([text], { type: mime });
@@ -62,50 +73,112 @@ function toCsv(rows: Record<string, unknown>[]) {
   const headers = Array.from(new Set(rows.flatMap((r) => Object.keys(r ?? {}))));
   const escape = (value: unknown) => {
     const s = value == null ? '' : String(value);
-    const needs = /[\",\n]/.test(s);
-    const escaped = s.replace(/\"/g, '""');
-    return needs ? `"${escaped}"` : escaped;
+    const needs = /[",\n]/.test(s);
+    return needs ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  return [
-    headers.map(escape).join(','),
-    ...rows.map((r) => headers.map((h) => escape((r as any)?.[h])).join(',')),
-  ].join('\n');
+  return [headers.map(escape).join(','), ...rows.map((r) => headers.map((h) => escape((r as any)?.[h])).join(','))].join('\n');
 }
 
 async function safeReadJson<T = unknown>(res: Response): Promise<T | null> {
   const text = await res.text().catch(() => '');
   if (!text) return null;
-  try {
-    return JSON.parse(text) as T;
-  } catch {
-    return null;
-  }
+  try { return JSON.parse(text) as T; } catch { return null; }
 }
+
+// ─── StreamingText — word-by-word animated render (Claude-style) ──────────────
+
+function renderMarkdownLite(text: string): React.ReactNode[] {
+  const lines = text.split('\n');
+  return lines.map((line, lineIdx) => {
+    // Bold: **text**
+    const parts = line.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+    const rendered = parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={i} style={{ color: '#a7f3d0', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code key={i} style={{
+            background: 'rgba(16,185,129,0.12)', color: '#6ee7b7',
+            padding: '1px 5px', borderRadius: 4, fontFamily: 'monospace', fontSize: '0.88em'
+          }}>
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+    return (
+      <React.Fragment key={lineIdx}>
+        {rendered}
+        {lineIdx < lines.length - 1 && <br />}
+      </React.Fragment>
+    );
+  });
+}
+
+const StreamingText: React.FC<{ text: string; streaming?: boolean }> = ({ text, streaming }) => {
+  const words = text.split(/(\s+)/);
+  return (
+    <motion.span style={{ display: 'inline' }}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={streaming ? { opacity: 0, y: 3 } : { opacity: 1, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15, delay: streaming ? Math.min(i * 0.018, 1.2) : 0 }}
+          style={{ display: 'inline' }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </motion.span>
+  );
+};
+
+// ─── ThinkingDots — 3-dot pulse ───────────────────────────────────────────────
+
+const ThinkingDots: React.FC = () => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
+    style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '10px 0' }}
+  >
+    {[0, 1, 2].map((i) => (
+      <motion.span
+        key={i}
+        animate={{ y: [0, -5, 0], opacity: [0.4, 1, 0.4] }}
+        transition={{ repeat: Infinity, duration: 1.2, delay: i * 0.18, ease: 'easeInOut' }}
+        style={{
+          display: 'block', width: 7, height: 7, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #10b981, #34d399)'
+        }}
+      />
+    ))}
+  </motion.div>
+);
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export const AiAssistantChat: React.FC = () => {
   const { session } = useStore();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'a-welcome',
-      role: 'assistant',
+  const [messages, setMessages] = useState<ChatMessage[]>([{
+    id: 'a-welcome', role: 'assistant',
+    text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
+    ts: Date.now(),
+  }]);
+
+  const resetThread = useCallback(() => {
+    setMessages([{
+      id: 'a-welcome', role: 'assistant',
       text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
       ts: Date.now(),
-    },
-  ]);
+    }]);
+  }, []);
 
-  const resetThread = () => {
-    setMessages([
-      {
-        id: 'a-welcome',
-        role: 'assistant',
-        text: 'Welcome. Ask for charts, tables, summaries, or next steps. Responses stream in real time.',
-        ts: Date.now(),
-      },
-    ]);
-  };
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
@@ -115,30 +188,12 @@ export const AiAssistantChat: React.FC = () => {
   const [toolsLoaded, setToolsLoaded] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [toolsError, setToolsError] = useState<string | null>(null);
-  
+  const [toolsLoading, setToolsLoading] = useState(false);
+
   const authHeaders = useMemo(() => {
     if (!session.token) return null;
     return { Authorization: `Bearer ${session.token}` };
   }, [session.token]);
-
-  const deleteChat = async (id: string) => {
-    if (!authHeaders) return;
-    try {
-      const res = await fetch(`/api/v1/ai-interaction/chats/${encodeURIComponent(id)}`, {
-        method: 'DELETE',
-        headers: authHeaders,
-      });
-      if (res.ok) {
-        setChats((prev) => prev.filter((c) => c.conversationId !== id));
-        if (conversationId === id) {
-          setConversationId(null);
-          resetThread();
-        }
-      }
-    } catch {
-      // ignore
-    }
-  };
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ active: boolean; dx: number; dy: number }>({ active: false, dx: 0, dy: 0 });
@@ -153,33 +208,27 @@ export const AiAssistantChat: React.FC = () => {
           return parsed as StoredRect;
         }
       }
-    } catch {
-      // ignore
-    }
-    const w = Math.min(460, Math.max(360, Math.floor(window.innerWidth * 0.34)));
-    const h = Math.min(720, Math.max(520, Math.floor(window.innerHeight * 0.72)));
+    } catch { /* ignore */ }
+    const w = Math.min(480, Math.max(380, Math.floor(window.innerWidth * 0.34)));
+    const h = Math.min(740, Math.max(540, Math.floor(window.innerHeight * 0.74)));
     return { x: Math.max(16, window.innerWidth - w - 24), y: Math.max(16, window.innerHeight - h - 24), w, h };
   });
 
   const canSend = useMemo(() => !!session.token && input.trim().length > 0 && !loading, [session.token, input, loading]);
 
-  const appendMessage = (msg: ChatMessage) => {
-    setMessages((prev) => [...prev, { ts: Date.now(), ...msg }]);
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 0);
-  };
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 0);
+  }, []);
 
-  const patchMessage = (id: string, patch: Partial<ChatMessage>) => {
+  const appendMessage = useCallback((msg: ChatMessage) => {
+    setMessages((prev) => [...prev, { ts: Date.now(), ...msg }]);
+    scrollToBottom();
+  }, [scrollToBottom]);
+
+  const patchMessage = useCallback((id: string, patch: Partial<ChatMessage>) => {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 0);
-  };
+    scrollToBottom();
+  }, [scrollToBottom]);
 
   const formatTime = (ts?: number) => {
     if (!ts) return '';
@@ -187,11 +236,9 @@ export const AiAssistantChat: React.FC = () => {
   };
 
   const clampRect = (next: StoredRect) => {
-    const minW = 360;
-    const minH = 460;
+    const minW = 380; const minH = 480;
     const maxW = Math.max(minW, window.innerWidth - 24);
     const maxH = Math.max(minH, window.innerHeight - 24);
-
     const w = Math.max(minW, Math.min(maxW, next.w));
     const h = Math.max(minH, Math.min(maxH, next.h));
     const x = Math.max(12, Math.min(window.innerWidth - w - 12, next.x));
@@ -200,34 +247,22 @@ export const AiAssistantChat: React.FC = () => {
   };
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(RECT_STORAGE_KEY, JSON.stringify(rect));
-    } catch {
-      // ignore
-    }
+    try { window.localStorage.setItem(RECT_STORAGE_KEY, JSON.stringify(rect)); } catch { /* ignore */ }
   }, [rect]);
 
   useEffect(() => {
     if (!open) return;
-
     const onMove = (e: PointerEvent) => {
       if (dragRef.current.active) {
-        const next = clampRect({ ...rect, x: e.clientX - dragRef.current.dx, y: e.clientY - dragRef.current.dy });
-        setRect(next);
+        setRect((r) => clampRect({ ...r, x: e.clientX - dragRef.current.dx, y: e.clientY - dragRef.current.dy }));
       }
       if (resizeRef.current.active) {
         const dw = e.clientX - resizeRef.current.startX;
         const dh = e.clientY - resizeRef.current.startY;
-        const next = clampRect({ ...rect, w: resizeRef.current.startW + dw, h: resizeRef.current.startH + dh });
-        setRect(next);
+        setRect((r) => clampRect({ ...r, w: resizeRef.current.startW + dw, h: resizeRef.current.startH + dh }));
       }
     };
-
-    const onUp = () => {
-      dragRef.current.active = false;
-      resizeRef.current.active = false;
-    };
-
+    const onUp = () => { dragRef.current.active = false; resizeRef.current.active = false; };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
     window.addEventListener('pointercancel', onUp);
@@ -236,29 +271,26 @@ export const AiAssistantChat: React.FC = () => {
       window.removeEventListener('pointerup', onUp);
       window.removeEventListener('pointercancel', onUp);
     };
-  }, [open, rect]);
+  }, [open]);
+
+  // ── Workspace / Chat management ─────────────────────────────────────────────
 
   const ensureWorkspace = async () => {
     if (!authHeaders) return null;
     let activeWorkspaceId = workspaceId;
-
     if (!activeWorkspaceId) {
       const wsListRes = await fetch('/api/v1/ai-interaction/workspaces', { headers: authHeaders });
       if (wsListRes.ok) {
         const existing = (await safeReadJson<Array<{ workspaceId: string; name: string }>>(wsListRes)) ?? [];
         setWorkspaces(existing.map((w) => ({ workspaceId: w.workspaceId, name: w.name })));
-        if (existing.length > 0) {
-          activeWorkspaceId = existing[0].workspaceId;
-        }
+        if (existing.length > 0) activeWorkspaceId = existing[0].workspaceId;
       } else if (wsListRes.status === 401 || wsListRes.status === 403) {
         appendMessage({ id: `a-${Date.now()}`, role: 'assistant', text: 'Please sign in again to use AI chat.' });
         return null;
       }
-
       if (!activeWorkspaceId) {
         const wsCreateRes = await fetch('/api/v1/ai-interaction/workspaces', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
           body: JSON.stringify({ name: 'Default Workspace' }),
         });
         if (wsCreateRes.ok) {
@@ -268,10 +300,8 @@ export const AiAssistantChat: React.FC = () => {
           setWorkspaces([{ workspaceId: created.workspaceId, name: created.name || 'Default Workspace' }]);
         }
       }
-
       if (activeWorkspaceId) setWorkspaceId(activeWorkspaceId);
     }
-
     return activeWorkspaceId;
   };
 
@@ -288,38 +318,27 @@ export const AiAssistantChat: React.FC = () => {
     const res = await fetch(`/api/v1/ai-interaction/chats/${encodeURIComponent(activeConversationId)}/messages?limit=100`, { headers: authHeaders });
     if (!res.ok) return;
     const data = (await safeReadJson<Array<{ role: string; content: string; payload?: any; messageId: string }>>(res)) ?? [];
-    setMessages(
-      data
-        .filter((m) => m.role === 'user' || m.role === 'assistant')
-        .map((m) => {
-          const payload = m.payload as any;
-          const hasRenderedShape = payload && typeof payload === 'object' && typeof payload.type === 'string' && payload.data && typeof payload.data === 'object';
-          return {
-            id: m.messageId,
-            role: m.role as 'user' | 'assistant',
-            text: hasRenderedShape ? undefined : m.content,
-            response: hasRenderedShape ? (payload as RenderedResponse) : undefined,
-          };
-        })
-    );
-    setTimeout(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }, 0);
+    setMessages(data.filter((m) => m.role === 'user' || m.role === 'assistant').map((m) => {
+      const payload = m.payload as any;
+      const hasRenderedShape = payload && typeof payload === 'object' && typeof payload.type === 'string' && payload.data && typeof payload.data === 'object';
+      return {
+        id: m.messageId, role: m.role as 'user' | 'assistant',
+        text: hasRenderedShape ? undefined : m.content,
+        response: hasRenderedShape ? (payload as RenderedResponse) : undefined,
+      };
+    }));
+    scrollToBottom();
   };
 
-  const createChatInDefaultWorkspace = async () => {
-    if (!authHeaders) return null;
-    const res = await fetch('/api/v1/ai-interaction/chats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders },
-      body: JSON.stringify({ title: null }),
-    });
-    if (!res.ok) return null;
-    const created =
-      (await safeReadJson<{ conversationId: string; workspaceId?: string; title?: string | null }>(res)) ?? null;
-    if (!created?.conversationId) return null;
-    if (created.workspaceId) setWorkspaceId(created.workspaceId);
-    return created.conversationId;
+  const deleteChat = async (id: string) => {
+    if (!authHeaders) return;
+    try {
+      const res = await fetch(`/api/v1/ai-interaction/chats/${encodeURIComponent(id)}`, { method: 'DELETE', headers: authHeaders });
+      if (res.ok) {
+        setChats((prev) => prev.filter((c) => c.conversationId !== id));
+        if (conversationId === id) { setConversationId(null); resetThread(); }
+      }
+    } catch { /* ignore */ }
   };
 
   const startNewChat = async () => {
@@ -328,71 +347,52 @@ export const AiAssistantChat: React.FC = () => {
     try {
       const ws = workspaceId ?? (await ensureWorkspace());
       if (!ws) return;
-      const newId = await createChatInDefaultWorkspace();
-      if (!newId) return;
-      setConversationId(newId);
+      const res = await fetch('/api/v1/ai-interaction/chats', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ title: null }),
+      });
+      if (!res.ok) return;
+      const created = (await safeReadJson<{ conversationId: string; workspaceId?: string }>(res)) ?? null;
+      if (!created?.conversationId) return;
+      if (created.workspaceId) setWorkspaceId(created.workspaceId);
+      setConversationId(created.conversationId);
       resetThread();
       await loadChats(ws);
       setToolsOpen(false);
-    } catch (err) {
-      console.error('Failed to start new chat:', err);
-    } finally {
-      setHistoryLoading(false);
-    }
-  };
-
-  const clearContext = () => {
-    resetThread();
-    setConversationId(null);
-    setToolsOpen(false);
+    } catch (err) { console.error('Failed to start new chat:', err); }
+    finally { setHistoryLoading(false); }
   };
 
   useEffect(() => {
     if (!open || !authHeaders) return;
     setHistoryLoading(true);
     (async () => {
-      try {
-        const ws = await ensureWorkspace();
-        if (!ws) return;
-        await loadChats(ws);
-      } finally {
-        setHistoryLoading(false);
-      }
+      try { const ws = await ensureWorkspace(); if (ws) await loadChats(ws); }
+      finally { setHistoryLoading(false); }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, authHeaders]);
+
+  // ── Send message ────────────────────────────────────────────────────────────
 
   const sendMessage = async (override?: string) => {
     if (!session.token) return;
     const message = (override ?? input).trim();
     if (!message || loading) return;
-
     setInput('');
     appendMessage({ id: `u-${Date.now()}`, role: 'user', text: message });
     setLoading(true);
     const assistantId = `a-${Date.now()}`;
-    appendMessage({ id: assistantId, role: 'assistant', text: '' });
+    appendMessage({ id: assistantId, role: 'assistant', text: '', streaming: true });
 
     try {
-      const activeConversationId = conversationId;
-
       const response = await fetch('/api/v1/ai-interaction/chat/stream', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...authHeaders,
-        },
-        body: JSON.stringify({
-          workspaceId: workspaceId,
-          conversationId: activeConversationId,
-          message,
-          context: { route: window.location.pathname },
-        }),
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ workspaceId, conversationId, message, context: { route: window.location.pathname } }),
       });
 
-      if (!response.ok || !response.body) {
-        throw new Error('Unable to stream AI response.');
-      }
+      if (!response.ok || !response.body) throw new Error('Unable to stream AI response.');
 
       let finalPayload: StreamFinalPayload | null = null;
       let streamingText = '';
@@ -402,27 +402,21 @@ export const AiAssistantChat: React.FC = () => {
         onEvent: ({ event, data }) => {
           gotAny = true;
           if (data === '[DONE]') return;
-
           if (event === 'final') {
             const parsed = tryParseJson<StreamFinalPayload>(data);
             if (parsed.ok) finalPayload = parsed.value;
             return;
           }
-
           if (event === 'status') {
             const parsed = tryParseJson<any>(data);
             const statusText = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text : data;
-            patchMessage(assistantId, { text: statusText });
+            patchMessage(assistantId, { text: statusText, streaming: true });
             return;
           }
-
           const parsed = tryParseJson<any>(data);
           const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text as string : data;
           if (event === 'token' || event === 'delta' || event === 'chunk' || event === 'message') {
-            if (chunk) {
-              streamingText += chunk;
-              patchMessage(assistantId, { text: streamingText });
-            }
+            if (chunk) { streamingText += chunk; patchMessage(assistantId, { text: streamingText, streaming: true }); }
           }
         },
       });
@@ -431,59 +425,35 @@ export const AiAssistantChat: React.FC = () => {
       if (payload?.response) {
         setConversationId(payload.conversationId);
         if (payload.workspaceId) setWorkspaceId(payload.workspaceId);
-        
         const responseText = payload.response.type === 'text' ? (payload.response.data?.text as string) : undefined;
-        
-        patchMessage(assistantId, { 
-          response: payload.response, 
-          text: streamingText || responseText 
-        });
+        patchMessage(assistantId, { response: payload.response, text: streamingText || responseText, streaming: false });
       } else if (!gotAny) {
-        patchMessage(assistantId, { text: 'No response from AI service. Check if backend is running.' });
+        patchMessage(assistantId, { text: 'No response from AI service. Check if Ollama is running.', streaming: false });
       } else {
-        patchMessage(assistantId, { text: streamingText || 'Received an empty or invalid response structure.' });
+        patchMessage(assistantId, { text: streamingText || 'Received an empty response.', streaming: false });
       }
     } catch (error) {
-      patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.' });
-    } finally {
-      setLoading(false);
-    }
+      patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.', streaming: false });
+    } finally { setLoading(false); }
   };
 
   const send = async () => {
     if (!canSend) return;
-    if (!conversationId && !loading) {
-       await startNewChat();
-    }
+    if (!conversationId && !loading) await startNewChat();
     await sendMessage();
   };
 
-  const [toolsLoading, setToolsLoading] = useState(false);
   const loadTools = async () => {
     if (!session.token || toolsLoading) return;
-    setToolsLoading(true);
-    setToolsError(null);
+    setToolsLoading(true); setToolsError(null);
     try {
-      const res = await fetch('/api/v1/ai-interaction/tools', {
-        headers: authHeaders ?? { Authorization: `Bearer ${session.token}` },
-      });
-      if (!res.ok) {
-        setToolsError(`Tools endpoint returned ${res.status}: ${res.statusText}`);
-        return;
-      }
+      const res = await fetch('/api/v1/ai-interaction/tools', { headers: authHeaders ?? { Authorization: `Bearer ${session.token}` } });
+      if (!res.ok) { setToolsError(`Tools endpoint returned ${res.status}`); return; }
       const data = (await safeReadJson<ToolCatalogItem[]>(res)) ?? [];
-      if (!Array.isArray(data)) {
-        setToolsError('Invalid response format from tools API.');
-        return;
-      }
-      setTools(data);
-      setToolsLoaded(true);
-    } catch (err) {
-      setToolsError('Network error while loading tools.');
-      console.error('Tools load error:', err);
-    } finally {
-      setToolsLoading(false);
-    }
+      if (!Array.isArray(data)) { setToolsError('Invalid response format from tools API.'); return; }
+      setTools(data); setToolsLoaded(true);
+    } catch { setToolsError('Network error while loading tools.'); }
+    finally { setToolsLoading(false); }
   };
 
   const confirmAction = async (token: string) => {
@@ -491,202 +461,71 @@ export const AiAssistantChat: React.FC = () => {
     setLoading(true);
     try {
       const res = await fetch('/api/v1/ai-interaction/actions/confirm', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.token}`,
-        },
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.token}` },
         body: JSON.stringify({ confirmationToken: token }),
       });
-      if (!res.ok) {
-        throw new Error('Failed to confirm action.');
-      }
+      if (!res.ok) throw new Error('Failed to confirm action.');
       const result = (await res.json()) as StreamFinalPayload;
-      appendMessage({
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        response: result.response,
-      });
+      appendMessage({ id: `a-${Date.now()}`, role: 'assistant', response: result.response });
     } catch (error) {
-      appendMessage({
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        text: error instanceof Error ? error.message : 'Failed to confirm action.',
-      });
-    } finally {
-      setLoading(false);
-    }
+      appendMessage({ id: `a-${Date.now()}`, role: 'assistant', text: error instanceof Error ? error.message : 'Failed to confirm action.' });
+    } finally { setLoading(false); }
   };
+
+  // ── Render helpers ──────────────────────────────────────────────────────────
 
   const renderChart = (response: RenderedResponse) => {
     const chart = response.data?.chart as { xKey?: string; yKey?: string; points?: Record<string, unknown>[] } | undefined;
     const points = Array.isArray(chart?.points) ? chart.points : [];
-    const xKey = chart?.xKey || 'x';
-    const yKey = chart?.yKey || 'y';
-
-    if (points.length === 0) {
-      return (
-        <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
-          {JSON.stringify(response.data, null, 2)}
-        </pre>
-      );
-    }
-
+    const xKey = chart?.xKey || 'x'; const yKey = chart?.yKey || 'y';
+    if (points.length === 0) return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
     return (
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer width="100%" height="100%">
-          {points.length > 7 ? (
-            <LineChart data={points}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey={yKey} stroke="#38bdf8" strokeWidth={2} dot={false} />
-            </LineChart>
-          ) : (
-            <BarChart data={points}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey={yKey} fill="#22d3ee" />
-            </BarChart>
-          )}
+          {points.length > 7
+            ? <LineChart data={points}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
+                <XAxis dataKey={xKey} stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <YAxis stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <Tooltip contentStyle={{ background: 'rgba(2,12,27,0.95)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10 }} />
+                <Line type="monotone" dataKey={yKey} stroke="#10b981" strokeWidth={2} dot={false} />
+              </LineChart>
+            : <BarChart data={points}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
+                <XAxis dataKey={xKey} stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <YAxis stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <Tooltip contentStyle={{ background: 'rgba(2,12,27,0.95)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10 }} />
+                <Bar dataKey={yKey} fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+          }
         </ResponsiveContainer>
       </div>
     );
   };
 
-  const renderWidgets = (widgets: any[]) => {
-    if (!Array.isArray(widgets) || widgets.length === 0) return null;
+  const renderAssistantContent = (msg: ChatMessage) => {
+    const { response, text, streaming } = msg;
 
-    return (
-      <div style={{ display: 'grid', gap: 12 }}>
-        {widgets.slice(0, 3).map((widget, idx) => {
-          const type = typeof widget?.type === 'string' ? widget.type : '';
-          const title = typeof widget?.title === 'string' ? widget.title : '';
-
-          if (type === 'cards' && Array.isArray(widget?.items)) {
-            return (
-              <div
-                key={`w-${idx}`}
-                style={{
-                  border: '1px solid rgba(148,163,184,0.14)',
-                  background: 'rgba(15,23,42,0.22)',
-                  borderRadius: 14,
-                  padding: 12,
-                  display: 'grid',
-                  gap: 10,
-                }}
-              >
-                {title ? <div style={{ fontSize: 12, fontWeight: 900 }}>{title}</div> : null}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
-                  {widget.items.slice(0, 6).map((item: any, i: number) => (
-                    <div
-                      key={i}
-                      style={{
-                        border: '1px solid rgba(148,163,184,0.12)',
-                        background: 'rgba(2,6,23,0.28)',
-                        borderRadius: 12,
-                        padding: 10,
-                        display: 'grid',
-                        gap: 4,
-                      }}
-                    >
-                      <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>{String(item?.label ?? '')}</div>
-                      <div style={{ fontSize: 16, fontWeight: 950, color: 'var(--text-strong)' }}>{String(item?.value ?? '')}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
+    if (!response && text !== undefined) {
+      return (
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
+          {streaming && text
+            ? <StreamingText text={text} streaming />
+            : renderMarkdownLite(text || '')
           }
-
-          if ((type === 'chart' || widget?.chartType) && Array.isArray(widget?.points)) {
-            const points = widget.points as Record<string, unknown>[];
-            const xKey = typeof widget?.xKey === 'string' ? widget.xKey : 'x';
-            const yKey = typeof widget?.yKey === 'string' ? widget.yKey : 'y';
-            const chartType = widget?.chartType === 'bar' ? 'bar' : 'line';
-
-            return (
-              <div
-                key={`w-${idx}`}
-                style={{
-                  border: '1px solid rgba(148,163,184,0.14)',
-                  background: 'rgba(15,23,42,0.22)',
-                  borderRadius: 14,
-                  padding: 12,
-                  display: 'grid',
-                  gap: 10,
-                }}
-              >
-                {title ? <div style={{ fontSize: 12, fontWeight: 900 }}>{title}</div> : null}
-                <div style={{ width: '100%', height: 220 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    {chartType === 'bar' ? (
-                      <BarChart data={points}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={xKey} />
-                        <YAxis />
-                        <Tooltip />
-                        <Bar dataKey={yKey} fill="#22d3ee" />
-                      </BarChart>
-                    ) : (
-                      <LineChart data={points}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey={xKey} />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey={yKey} stroke="#38bdf8" strokeWidth={2} dot={false} />
-                      </LineChart>
-                    )}
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            );
-          }
-
-          if (type === 'table' && Array.isArray(widget?.rows)) {
-            const rows = widget.rows as Record<string, unknown>[];
-            return (
-              <div
-                key={`w-${idx}`}
-                style={{
-                  border: '1px solid rgba(148,163,184,0.14)',
-                  background: 'rgba(15,23,42,0.22)',
-                  borderRadius: 14,
-                  padding: 12,
-                  display: 'grid',
-                  gap: 10,
-                }}
-              >
-                {title ? <div style={{ fontSize: 12, fontWeight: 900 }}>{title}</div> : null}
-                <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
-                  {JSON.stringify(rows.slice(0, 10), null, 2)}
-                </pre>
-              </div>
-            );
-          }
-
-          return null;
-        })}
-      </div>
-    );
-  };
-
-  const renderAssistantResponse = (response?: RenderedResponse, fallback?: string) => {
-    if (!response) {
-      return <p style={{ margin: 0, fontSize: 13 }}>{fallback || 'No response.'}</p>;
+        </p>
+      );
     }
 
-    const widgets = Array.isArray((response.data as any)?.widgets) ? ((response.data as any).widgets as any[]) : [];
+    if (!response) return null;
 
     if (response.type === 'text') {
-      const text = typeof response.data?.text === 'string' ? response.data.text : JSON.stringify(response.data);
+      const t = typeof response.data?.text === 'string' ? response.data.text : JSON.stringify(response.data);
       return (
         <div style={{ display: 'grid', gap: 10 }}>
-          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{text}</p>
-          {renderWidgets(widgets)}
+          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
+            {renderMarkdownLite(t)}
+          </p>
         </div>
       );
     }
@@ -695,64 +534,29 @@ export const AiAssistantChat: React.FC = () => {
       const rows = Array.isArray(response.data?.rows) ? (response.data.rows as Record<string, unknown>[]) : [];
       return (
         <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700 }}>Rows: {rows.length}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>Rows: {rows.length}</div>
           {rows.length > 0 && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv;charset=utf-8')}
-                style={{
-                  justifySelf: 'start',
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: 'rgba(15,23,42,0.25)',
-                  color: 'var(--text-soft)',
-                  padding: '6px 10px',
-                  borderRadius: 10,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                }}
-              >
-                Export CSV
-              </button>
-            </div>
+            <button type="button" onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv')} style={actionBtnStyle}>
+              Export CSV
+            </button>
           )}
-          <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
-            {JSON.stringify(rows.slice(0, 10), null, 2)}
-          </pre>
+          <pre style={preStyle}>{JSON.stringify(rows.slice(0, 10), null, 2)}</pre>
         </div>
       );
     }
 
     if (response.type === 'chart') {
-      const chart = response.data?.chart as { xKey?: string; yKey?: string; points?: Record<string, unknown>[] } | undefined;
-      const points = Array.isArray(chart?.points) ? chart.points : [];
-      const text = typeof response.data?.text === 'string' ? response.data.text : '';
-      
+      const points = Array.isArray((response.data?.chart as any)?.points) ? (response.data.chart as any).points : [];
+      const t = typeof response.data?.text === 'string' ? response.data.text : '';
       return (
         <div style={{ display: 'grid', gap: 10 }}>
-          {text && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>{text}</p>}
-          {renderWidgets(widgets)}
+          {t && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>{renderMarkdownLite(t)}</p>}
+          {renderChart(response)}
           {points.length > 0 && (
-            <button
-              type="button"
-              onClick={() => downloadText(`ai-chart-${Date.now()}.csv`, toCsv(points), 'text/csv;charset=utf-8')}
-              style={{
-                justifySelf: 'start',
-                border: '1px solid rgba(148,163,184,0.18)',
-                background: 'rgba(15,23,42,0.25)',
-                color: 'var(--text-soft)',
-                padding: '6px 10px',
-                borderRadius: 10,
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
+            <button type="button" onClick={() => downloadText(`ai-chart-${Date.now()}.csv`, toCsv(points), 'text/csv')} style={actionBtnStyle}>
               Export CSV
             </button>
           )}
-          {renderChart(response)}
         </div>
       );
     }
@@ -760,507 +564,423 @@ export const AiAssistantChat: React.FC = () => {
     if (response.type === 'action') {
       const status = typeof response.data?.status === 'string' ? response.data.status : '';
       const token = typeof response.data?.confirmationToken === 'string' ? response.data.confirmationToken : '';
-      const msg = typeof response.data?.message === 'string' ? response.data.message : '';
+      const msgText = typeof response.data?.message === 'string' ? response.data.message : '';
       return (
         <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>{status || 'Action'}</div>
-          {msg && <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{msg}</div>}
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#6ee7b7' }}>{status || 'Action'}</div>
+          {msgText && <div style={{ fontSize: 12, color: 'rgba(167,243,208,0.7)' }}>{msgText}</div>}
           {status === 'CONFIRMATION_REQUIRED' && token && (
-            <button
-              type="button"
-              onClick={() => void confirmAction(token)}
-              style={{
-                justifySelf: 'start',
-                border: '1px solid var(--surface-accent-border)',
-                background: 'var(--surface-accent-soft)',
-                color: 'var(--text-strong)',
-                padding: '7px 10px',
-                borderRadius: 8,
-                fontSize: 12,
-                fontWeight: 700,
-                cursor: 'pointer',
-              }}
-            >
+            <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => void confirmAction(token)} style={confirmBtnStyle}>
               Confirm Action
-            </button>
+            </motion.button>
           )}
-          <pre style={{ margin: 0, maxHeight: 160, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
-            {JSON.stringify(response.data, null, 2)}
-          </pre>
+          <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>
         </div>
       );
     }
 
-    return (
-      <pre style={{ margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11, background: 'rgba(15,23,42,0.35)', padding: 8, borderRadius: 8 }}>
-        {JSON.stringify(response.data, null, 2)}
-      </pre>
-    );
+    return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
   };
 
-  return (
-    <>
-      {!open && (
-        <button
+  // ─── Launcher FAB ──────────────────────────────────────────────────────────
+
+  if (!open) {
+    return (
+      <AnimatePresence>
+        <motion.button
+          key="launcher"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          whileHover={{ scale: 1.12, boxShadow: '0 0 30px rgba(16,185,129,0.6)' }}
+          whileTap={{ scale: 0.92 }}
           type="button"
           onClick={() => setOpen(true)}
-          style={{
-            position: 'fixed',
-            right: 24,
-            bottom: 24,
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            border: '1px solid var(--surface-accent-border)',
-            background: 'var(--surface-accent-soft)',
-            color: 'var(--text-strong)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 130,
-            cursor: 'pointer',
-            boxShadow: '0 12px 28px rgba(15,23,42,0.35)',
-          }}
+          style={fabStyle}
           title="Open AI Assistant"
         >
-          <MessageCircle size={22} />
-        </button>
-      )}
+          <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 4 }}>
+            <Bot size={24} />
+          </motion.div>
+          <motion.div
+            animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+            transition={{ repeat: Infinity, duration: 2 }}
+            style={fabPulseStyle}
+          />
+        </motion.button>
+      </AnimatePresence>
+    );
+  }
 
-      {open && (
-        <section
-          className="ai-assistant"
-          style={{
-            position: 'fixed',
-            left: rect.x,
-            top: rect.y,
-            width: rect.w,
-            height: rect.h,
-            background:
-              'radial-gradient(1200px 500px at 25% 0%, rgba(56,189,248,0.10), transparent 40%), radial-gradient(900px 520px at 90% 30%, rgba(168,85,247,0.10), transparent 45%), var(--bg-dropdown)',
-            border: '1px solid rgba(148,163,184,0.22)',
-            borderRadius: 18,
-            zIndex: 130,
-            boxShadow: '0 24px 48px rgba(2,6,23,0.4)',
-            display: 'grid',
-            gridTemplateColumns: 'minmax(180px, 240px) 1fr',
-            gridTemplateRows: '54px 1fr auto',
-            overflow: 'hidden',
-          }}
-        >
-          <header
-            onPointerDown={(e) => {
-              const target = e.target as HTMLElement | null;
-              if (!target) return;
-              if (target.closest('button')) return;
-              dragRef.current.active = true;
-              dragRef.current.dx = e.clientX - rect.x;
-              dragRef.current.dy = e.clientY - rect.y;
-              (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
-            }}
-            style={{
-              gridColumn: '1 / span 2',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0 10px 0 12px',
-              borderBottom: '1px solid rgba(148,163,184,0.16)',
-              cursor: 'grab',
-              userSelect: 'none',
-              background: 'rgba(15,23,42,0.15)',
-            }}
+  // ─── Chat Window ────────────────────────────────────────────────────────────
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.92, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.92, y: 20 }}
+      transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+      style={{ ...chatWindowStyle, left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
+    >
+      {/* Header */}
+      <div
+        style={headerStyle}
+        onPointerDown={(e) => {
+          dragRef.current = { active: true, dx: e.clientX - rect.x, dy: e.clientY - rect.y };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <motion.div
+            animate={{ rotate: [0, 360] }}
+            transition={{ repeat: Infinity, duration: 8, ease: 'linear' }}
+            style={headerIconStyle}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 900, color: 'var(--text-strong)' }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: 'rgba(15,23,42,0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Bot size={18} />
-              </div>
-              <div style={{ display: 'grid', lineHeight: 1.1 }}>
-                <span style={{ fontSize: 13, letterSpacing: '0.01em' }}>AI Assistant</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-dim)' }}>{historyLoading ? 'Syncing…' : 'Ready'}</span>
-              </div>
+            <Cpu size={16} />
+          </motion.div>
+          <div>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: '#ecfdf5', letterSpacing: '-0.01em' }}>
+              AI Assistant
             </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                type="button"
-                onClick={() => void startNewChat()}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: 'rgba(15,23,42,0.25)',
-                  color: 'var(--text-soft)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                title="New chat"
-              >
-                <Plus size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => clearContext()}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: 'rgba(15,23,42,0.25)',
-                  color: 'var(--text-soft)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                title="Clear context"
-              >
-                <Trash2 size={16} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 10,
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: 'rgba(15,23,42,0.25)',
-                  color: 'var(--text-soft)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-                title="Close"
-              >
-                <X size={16} />
-              </button>
+            <div style={{ fontSize: 10.5, color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <motion.div
+                animate={{ opacity: [0.5, 1, 0.5] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981' }}
+              />
+              Powered by Ollama · Streams live
             </div>
-          </header>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <motion.button whileHover={{ scale: 1.1, background: 'rgba(16,185,129,0.15)' }} type="button"
+            onClick={() => void startNewChat()} style={headerBtnStyle} title="New chat">
+            <Plus size={15} />
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.1, background: 'rgba(16,185,129,0.15)' }} type="button"
+            onClick={() => { if (!toolsOpen && !toolsLoaded) void loadTools(); setToolsOpen((v) => !v); }} style={headerBtnStyle} title="AI tools">
+            <Globe size={15} />
+          </motion.button>
+          <motion.button whileHover={{ scale: 1.1, background: 'rgba(239,68,68,0.15)' }} type="button"
+            onClick={() => setOpen(false)} style={headerBtnStyle} title="Close">
+            <X size={15} />
+          </motion.button>
+        </div>
+      </div>
 
-          <aside
-            style={{
-              gridRow: '2 / span 2',
-              borderRight: '1px solid rgba(148,163,184,0.16)',
-              background: 'rgba(2,6,23,0.20)',
-              padding: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-              overflow: 'hidden',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => void startNewChat()}
-              style={{
-                border: '1px solid rgba(148,163,184,0.18)',
-                background: 'linear-gradient(135deg, rgba(99,102,241,0.92), rgba(168,85,247,0.72))',
-                color: 'white',
-                padding: '8px 10px',
-                borderRadius: 10,
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-              }}
-              title="New chat"
+      {/* Body */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Sidebar — chat history */}
+        <AnimatePresence>
+          {toolsOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 200, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              style={sidebarStyle}
             >
-              <Plus size={14} /> New chat
-            </button>
-
-            <div style={{ flex: 1, overflow: 'auto', display: 'grid', gap: 6, paddingRight: 4 }}>
-              {chats.length === 0 ? (
-                <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: 10, textAlign: 'center' }}>No chats yet.</div>
-              ) : (
-                chats.map((c) => {
-                  const active = c.conversationId === conversationId;
-                  return (
-                    <button
-                      key={c.conversationId}
-                      type="button"
-                      onClick={() => {
-                        setConversationId(c.conversationId);
-                        void loadMessages(c.conversationId);
-                      }}
-                      style={{
-                        textAlign: 'left',
-                        border: '1px solid rgba(148,163,184,0.16)',
-                        background: active ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.20)',
-                        color: 'var(--text-soft)',
-                        borderRadius: 10,
-                        padding: '8px 10px',
-                        cursor: 'pointer',
-                        display: 'grid',
-                        gap: 2,
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 4 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
-                          {c.title || 'Untitled'}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void deleteChat(c.conversationId);
-                          }}
-                          style={{ color: 'var(--text-dim)', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6 }}
-                          title="Delete chat"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                      <div style={{ fontSize: 9, color: 'var(--text-dim)', opacity: 0.7 }}>{c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : 'Just now'}</div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </aside>
-
-          <main style={{ gridColumn: 2, gridRow: 2, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ borderBottom: '1px solid rgba(148,163,184,0.16)', padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(2,6,23,0.1)' }}>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', fontWeight: 800 }}>
-                {workspaces.length > 0 ? workspaces[0].name : 'Default Workspace'}
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 12px 8px' }}>
+                Chats
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setToolsOpen((v) => !v);
-                    void loadTools();
-                  }}
+              {historyLoading && <div style={{ padding: '8px 12px', fontSize: 11, color: 'rgba(167,243,208,0.5)' }}>Loading...</div>}
+              {chats.map((chat) => (
+                <motion.div
+                  key={chat.conversationId}
+                  whileHover={{ background: 'rgba(16,185,129,0.08)' }}
                   style={{
-                    border: '1px solid rgba(148,163,184,0.18)',
-                    background: toolsOpen ? 'rgba(56,189,248,0.14)' : 'rgba(15,23,42,0.20)',
-                    color: 'var(--text-soft)',
-                    padding: '4px 10px',
-                    borderRadius: 10,
-                    fontSize: 11,
-                    fontWeight: 800,
-                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
+                    cursor: 'pointer', borderRadius: 8, margin: '1px 4px',
+                    background: chat.conversationId === conversationId ? 'rgba(16,185,129,0.12)' : 'transparent',
+                    borderLeft: chat.conversationId === conversationId ? '2px solid #10b981' : '2px solid transparent',
+                  }}
+                  onClick={() => { setConversationId(chat.conversationId); void loadMessages(chat.conversationId); setToolsOpen(false); }}
+                >
+                  <MessageCircle size={11} style={{ color: '#6ee7b7', flexShrink: 0 }} />
+                  <span style={{ fontSize: 11.5, color: 'rgba(209,250,229,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {chat.title || 'Untitled chat'}
+                  </span>
+                  <motion.button whileHover={{ color: '#f87171' }} type="button"
+                    onClick={(e) => { e.stopPropagation(); void deleteChat(chat.conversationId); }}
+                    style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(167,243,208,0.3)', padding: 2 }}>
+                    <Trash2 size={10} />
+                  </motion.button>
+                </motion.div>
+              ))}
+
+              {toolsLoaded && tools.length > 0 && (
+                <>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 12px 8px', marginTop: 8, borderTop: '1px solid rgba(16,185,129,0.1)' }}>
+                    Tools ({tools.length})
+                  </div>
+                  {tools.map((tool) => (
+                    <div key={tool.name} style={{ padding: '6px 12px' }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: '#a7f3d0' }}>{tool.name}</div>
+                      <div style={{ fontSize: 10.5, color: 'rgba(167,243,208,0.55)', marginTop: 2 }}>{tool.description}</div>
+                    </div>
+                  ))}
+                  {toolsError && <div style={{ padding: '6px 12px', fontSize: 11, color: '#f87171' }}>{toolsError}</div>}
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Thread */}
+        <div ref={scrollRef} style={threadStyle}>
+          {/* Example prompts */}
+          <AnimatePresence>
+            {messages.length <= 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ padding: '12px 16px 4px' }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6ee7b7', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                  Try asking
+                </div>
+                <div style={{ display: 'grid', gap: 5 }}>
+                  {EXAMPLE_PROMPTS.map((prompt, idx) => (
+                    <motion.button
+                      key={prompt}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.06 * idx }}
+                      whileHover={{ x: 4, background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.4)' }}
+                      type="button"
+                      onClick={() => void sendMessage(prompt)}
+                      style={examplePromptStyle}
+                    >
+                      <ChevronRight size={11} style={{ color: '#10b981', flexShrink: 0 }} />
+                      <span>{prompt}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Messages */}
+          <div style={{ padding: '8px 0' }}>
+            <AnimatePresence initial={false}>
+              {messages.map((msg) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', damping: 22, stiffness: 280 }}
+                  style={{
+                    display: 'flex',
+                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    padding: '4px 14px',
                   }}
                 >
-                  {toolsOpen ? 'Close Tools' : 'Explore Tools'}
-                </button>
-                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 900, color: 'white' }}>
-                  {(session.fullName || 'A').charAt(0).toUpperCase()}
-                </div>
-              </div>
-            </div>
-
-            {toolsOpen && (
-              <div style={{ borderBottom: '1px solid rgba(148,163,184,0.16)', padding: 12, background: 'rgba(15,23,42,0.3)', maxHeight: '40%', overflowY: 'auto' }}>
-                <div style={{ display: 'grid', gap: 10 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Available Capabilities</div>
-                    {toolsLoading && <div style={{ fontSize: 10, color: '#38bdf8', animation: 'pulse 1s infinite' }}>Fetching latest...</div>}
-                  </div>
-                  {toolsError && <div style={{ fontSize: 12, color: '#fb7185' }}>{toolsError}</div>}
-                  {tools.length === 0 && !toolsLoading && !toolsError && (
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '10px 0' }}>No specific AI tools authorized for your role yet.</div>
+                  {msg.role === 'assistant' && (
+                    <motion.div
+                      animate={msg.streaming ? { opacity: [0.7, 1, 0.7] } : { opacity: 1 }}
+                      transition={msg.streaming ? { repeat: Infinity, duration: 1.5 } : {}}
+                      style={botAvatarStyle}
+                    >
+                      <Bot size={12} />
+                    </motion.div>
                   )}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-                    {tools.map((tool) => (
-                      <div key={tool.name} style={{ background: 'rgba(2,6,23,0.4)', borderRadius: 12, padding: 10, border: '1px solid rgba(148,163,184,0.1)' }}>
-                        <div style={{ fontSize: 12, fontWeight: 900, color: 'var(--text-strong)' }}>{tool.name}</div>
-                        <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2, lineHeight: 1.3 }}>{tool.description}</div>
-                        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {(tool.examplePrompts || []).slice(0, 2).map((p) => (
-                            <button key={p} type="button" onClick={() => setInput(p)} style={{ fontSize: 9, background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.2)', color: '#38bdf8', borderRadius: 6, padding: '2px 6px', cursor: 'pointer' }}>
-                              Try: {p}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                  <div style={msg.role === 'user' ? userBubbleStyle : assistantBubbleStyle}>
+                    {msg.role === 'assistant' && msg.text === '' && loading
+                      ? <ThinkingDots />
+                      : renderAssistantContent(msg)
+                    }
+                    {msg.role === 'user' && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6 }}>{msg.text}</p>}
+                    <div style={tsStyle}>{formatTime(msg.ts)}</div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            <div
-              ref={scrollRef}
-              className="ai-assistant__thread"
-              style={{
-                flex: 1,
-                overflow: 'auto',
-                padding: 16,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                background: 'linear-gradient(180deg, rgba(2,6,23,0.1) 0%, rgba(2,6,23,0) 100%)',
-              }}
-            >
-              <div className="ai-assistant__greeting">
-                <div className="ai-assistant__hello">Hello {session.fullName?.split(' ')[0] || 'Admin'}</div>
-                <div className="ai-assistant__sub">How can I help you today?</div>
-              </div>
-              <div className="ai-assistant__daypill">Today</div>
-              {messages.length <= 1 && (
-                <div style={{ border: '1px dashed rgba(148,163,184,0.18)', borderRadius: 16, padding: 12, background: 'rgba(15,23,42,0.28)', display: 'grid', gap: 10 }}>
-                  <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 900, color: 'var(--text-dim)' }}>Try one</div>
-                  <div style={{ display: 'grid', gap: 8 }}>
-                    {EXAMPLE_PROMPTS.map((prompt) => (
-                      <button key={prompt} type="button" disabled={loading} onClick={() => void sendMessage(prompt)} style={{ textAlign: 'left', borderRadius: 14, border: '1px solid rgba(148,163,184,0.16)', background: 'rgba(2,6,23,0.45)', color: 'var(--text-main)', padding: '10px 10px', fontSize: 12, lineHeight: 1.4, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {messages.map((msg) => (
-                <article key={msg.id} className={`ai-assistant__message${msg.role === 'user' ? ' is-user' : ' is-assistant'}`}>
-                  {msg.role === 'user' ? (
-                    <div className="ai-assistant__user-msg">
-                      <div className="ai-assistant__user-bubble">
-                        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.45 }}>{msg.text}</p>
-                      </div>
-                      <div className="ai-assistant__stamp">
-                        <span>{formatTime(msg.ts)}</span>
-                        <CheckCheck size={14} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="ai-assistant__assistant-row">
-                        <div className="ai-assistant__assistant-avatar"><Bot size={16} /></div>
-                        <div className="ai-assistant__assistant-bubble">
-                          {renderAssistantResponse(msg.response, msg.text)}
-                        </div>
-                      </div>
-                      <div className="ai-assistant__stamp is-assistant">{formatTime(msg.ts)}</div>
+                  {msg.role === 'user' && (
+                    <div style={userAvatarStyle}>
+                      <UserCircle2 size={12} />
                     </div>
                   )}
-                </article>
+                </motion.div>
               ))}
-              {loading && <div style={{ fontSize: 12, color: 'var(--text-dim)', paddingLeft: 40 }}>Thinking...</div>}
-            </div>
-          </main>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
 
-          <footer
-            className="ai-assistant__composer"
-            style={{
-              gridColumn: 2,
-              gridRow: 3,
-              borderTop: '1px solid rgba(148,163,184,0.16)',
-              padding: 12,
-              display: 'grid',
-              gridTemplateColumns: 'auto 1fr auto',
-              gap: 12,
-              background: 'rgba(2,6,23,0.35)',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setToolsOpen((v) => !v)}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: 16,
-                border: '1px solid rgba(148,163,184,0.16)',
-                background: 'rgba(15,23,42,0.30)',
-                color: 'var(--text-soft)',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              title="Tools"
-            >
-              <Globe size={18} />
-            </button>
-            <div style={{ display: 'grid', gap: 6 }}>
-              <input
-                value={input}
-                maxLength={MAX_INPUT_CHARS}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    void send();
-                  }
-                }}
-                placeholder="Ask anything about your schools..."
-                style={{
-                  width: '100%',
-                  borderRadius: 18,
-                  border: '1px solid rgba(148,163,184,0.18)',
-                  background: 'rgba(15,23,42,0.35)',
-                  color: 'var(--text-main)',
-                  padding: '12px 14px',
-                  fontSize: 13,
-                  outline: 'none',
-                }}
-              />
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-dim)', padding: '0 4px' }}>
-                <span>Enter to send • Shift+Enter for newline</span>
-                <span>{Math.min(MAX_INPUT_CHARS, input.length)}/{MAX_INPUT_CHARS}</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              disabled={!canSend}
-              onClick={() => void send()}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 999,
-                border: '1px solid rgba(99,102,241,0.40)',
-                background: canSend ? 'linear-gradient(135deg, rgba(99,102,241,0.95), rgba(168,85,247,0.85))' : 'rgba(15,23,42,0.25)',
-                color: 'white',
-                cursor: canSend ? 'pointer' : 'not-allowed',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              title="Send"
-            >
-              <Send size={16} />
-            </button>
-          </footer>
-
-          <div
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              resizeRef.current.active = true;
-              resizeRef.current.startX = e.clientX;
-              resizeRef.current.startY = e.clientY;
-              resizeRef.current.startW = rect.w;
-              resizeRef.current.startH = rect.h;
-              (e.currentTarget as HTMLDivElement).setPointerCapture?.(e.pointerId);
-            }}
-            style={{
-              position: 'absolute',
-              right: 2,
-              bottom: 2,
-              width: 12,
-              height: 12,
-              cursor: 'nwse-resize',
-              zIndex: 10,
-            }}
+      {/* Composer */}
+      <div style={composerStyle}>
+        <div style={inputWrapperStyle}>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value.slice(0, MAX_INPUT_CHARS))}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
+            placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
+            rows={1}
+            style={textareaStyle}
           />
-        </section>
-      )}
-    </>
+          <motion.button
+            whileHover={canSend ? { scale: 1.08, boxShadow: '0 0 16px rgba(16,185,129,0.5)' } : {}}
+            whileTap={canSend ? { scale: 0.94 } : {}}
+            type="button"
+            disabled={!canSend}
+            onClick={() => void send()}
+            style={{ ...sendBtnStyle, opacity: canSend ? 1 : 0.4 }}
+          >
+            {loading
+              ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}>
+                  <Sparkles size={16} />
+                </motion.div>
+              : <Send size={16} />
+            }
+          </motion.button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+          <span style={{ fontSize: 10.5, color: 'rgba(167,243,208,0.35)' }}>
+            {input.length > 0 ? `${input.length}/${MAX_INPUT_CHARS}` : 'Ollama · llama3.2:3b'}
+          </span>
+          {!session.token && (
+            <span style={{ fontSize: 10.5, color: '#f87171' }}>Sign in to use AI chat</span>
+          )}
+        </div>
+      </div>
+
+      {/* Resize handle */}
+      <div
+        style={resizeHandleStyle}
+        onPointerDown={(e) => {
+          resizeRef.current = { active: true, startX: e.clientX, startY: e.clientY, startW: rect.w, startH: rect.h };
+          e.currentTarget.setPointerCapture(e.pointerId);
+        }}
+      />
+    </motion.div>
   );
+};
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const fabStyle: React.CSSProperties = {
+  position: 'fixed', bottom: 28, right: 28, zIndex: 9999,
+  width: 56, height: 56, borderRadius: '50%', border: 'none', cursor: 'pointer',
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  color: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  boxShadow: '0 4px 24px rgba(16,185,129,0.4), 0 0 0 1px rgba(16,185,129,0.2)',
+};
+const fabPulseStyle: React.CSSProperties = {
+  position: 'absolute', width: '100%', height: '100%', borderRadius: '50%',
+  background: 'rgba(16,185,129,0.3)', pointerEvents: 'none',
+};
+const chatWindowStyle: React.CSSProperties = {
+  position: 'fixed', zIndex: 9998,
+  display: 'flex', flexDirection: 'column',
+  background: 'rgba(2, 12, 27, 0.92)',
+  backdropFilter: 'blur(24px)',
+  border: '1px solid rgba(16,185,129,0.2)',
+  borderRadius: 18,
+  boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(16,185,129,0.08), inset 0 1px 0 rgba(255,255,255,0.04)',
+  overflow: 'hidden',
+};
+const headerStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  padding: '13px 16px',
+  background: 'linear-gradient(135deg, rgba(6,95,70,0.4), rgba(2,44,34,0.6))',
+  borderBottom: '1px solid rgba(16,185,129,0.15)',
+  cursor: 'grab', userSelect: 'none', flexShrink: 0,
+};
+const headerIconStyle: React.CSSProperties = {
+  width: 32, height: 32, borderRadius: 10,
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ecfdf5',
+  boxShadow: '0 0 14px rgba(16,185,129,0.4)',
+};
+const headerBtnStyle: React.CSSProperties = {
+  width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)',
+  background: 'rgba(16,185,129,0.06)', color: 'rgba(167,243,208,0.7)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+};
+const sidebarStyle: React.CSSProperties = {
+  flexShrink: 0, overflow: 'hidden auto',
+  background: 'rgba(6,95,70,0.06)',
+  borderRight: '1px solid rgba(16,185,129,0.1)',
+};
+const threadStyle: React.CSSProperties = {
+  flex: 1, overflow: 'hidden auto',
+  display: 'flex', flexDirection: 'column',
+};
+const botAvatarStyle: React.CSSProperties = {
+  width: 24, height: 24, borderRadius: 8, flexShrink: 0, marginRight: 8, marginTop: 2,
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ecfdf5',
+};
+const userAvatarStyle: React.CSSProperties = {
+  width: 24, height: 24, borderRadius: 8, flexShrink: 0, marginLeft: 8, marginTop: 2,
+  background: 'rgba(16,185,129,0.15)', border: '1px solid rgba(16,185,129,0.3)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6ee7b7',
+};
+const assistantBubbleStyle: React.CSSProperties = {
+  maxWidth: '85%', padding: '11px 14px',
+  background: 'rgba(6,95,70,0.12)',
+  border: '1px solid rgba(16,185,129,0.15)',
+  borderLeft: '3px solid rgba(16,185,129,0.5)',
+  borderRadius: '0 14px 14px 14px',
+};
+const userBubbleStyle: React.CSSProperties = {
+  maxWidth: '80%', padding: '11px 14px',
+  background: 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(4,120,87,0.3))',
+  border: '1px solid rgba(16,185,129,0.3)',
+  borderRadius: '14px 14px 0 14px',
+  color: '#ecfdf5',
+};
+const tsStyle: React.CSSProperties = {
+  fontSize: 10, color: 'rgba(167,243,208,0.3)', marginTop: 5, textAlign: 'right',
+};
+const composerStyle: React.CSSProperties = {
+  padding: '10px 14px 14px',
+  borderTop: '1px solid rgba(16,185,129,0.12)',
+  background: 'rgba(2,12,27,0.6)',
+  flexShrink: 0,
+};
+const inputWrapperStyle: React.CSSProperties = {
+  display: 'flex', gap: 8, alignItems: 'flex-end',
+};
+const textareaStyle: React.CSSProperties = {
+  flex: 1, padding: '10px 12px',
+  background: 'rgba(6,95,70,0.1)',
+  border: '1px solid rgba(16,185,129,0.2)',
+  borderRadius: 12,
+  color: '#d1fae5', fontSize: 13.5,
+  resize: 'none', outline: 'none',
+  fontFamily: 'inherit', lineHeight: 1.5,
+};
+const sendBtnStyle: React.CSSProperties = {
+  width: 38, height: 38, borderRadius: 10, border: 'none', cursor: 'pointer',
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  color: '#ecfdf5',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  flexShrink: 0,
+  boxShadow: '0 2px 12px rgba(16,185,129,0.3)',
+};
+const examplePromptStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 7,
+  padding: '7px 10px', background: 'rgba(16,185,129,0.06)',
+  border: '1px solid rgba(16,185,129,0.15)', borderRadius: 8,
+  color: 'rgba(167,243,208,0.75)', fontSize: 12, cursor: 'pointer', textAlign: 'left',
+};
+const preStyle: React.CSSProperties = {
+  margin: 0, maxHeight: 180, overflow: 'auto', fontSize: 11,
+  background: 'rgba(2,12,27,0.6)', padding: 10, borderRadius: 8,
+  color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.1)',
+};
+const actionBtnStyle: React.CSSProperties = {
+  border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.08)',
+  color: '#6ee7b7', padding: '5px 10px', borderRadius: 8,
+  fontSize: 11.5, fontWeight: 700, cursor: 'pointer', justifySelf: 'start',
+};
+const confirmBtnStyle: React.CSSProperties = {
+  border: '1px solid rgba(16,185,129,0.4)', background: 'rgba(16,185,129,0.15)',
+  color: '#a7f3d0', padding: '7px 14px', borderRadius: 8,
+  fontSize: 12.5, fontWeight: 700, cursor: 'pointer', justifySelf: 'start',
+};
+const resizeHandleStyle: React.CSSProperties = {
+  position: 'absolute', bottom: 0, right: 0,
+  width: 16, height: 16, cursor: 'nwse-resize',
+  background: 'linear-gradient(135deg, transparent 50%, rgba(16,185,129,0.3) 50%)',
+  borderRadius: '0 0 18px 0',
 };
