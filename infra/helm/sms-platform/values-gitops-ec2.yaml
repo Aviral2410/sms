@@ -16,7 +16,7 @@ networking:
   ingress:
     enabled: true
     # For k3s default, use `traefik`. If you install ingress-nginx, use `nginx`.
-    className: nginx
+    className: traefik
     frontendHost: sms.example.com
     frontendWildcardHost: "*.sms.example.com"
     apiHost: api.sms.example.com
@@ -26,7 +26,14 @@ networking:
       secretName: sms-platform-tls
 
 services:
+  # Single-node EC2 defaults (override if you add nodes)
+  ollama:
+    enabled: false
+
   authService:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d
@@ -37,6 +44,9 @@ services:
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d
       pullPolicy: Always
   schoolOperationsService:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d
@@ -57,6 +67,9 @@ services:
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d
       pullPolicy: Always
   apiGateway:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d
@@ -72,6 +85,9 @@ services:
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d
       pullPolicy: Always
   frontend:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-frontend
       tag: ecdbe1d0d59ad38a9d66b305ace179e3aa658c7d

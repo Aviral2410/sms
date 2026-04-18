@@ -37,6 +37,8 @@ data:
 {{ .Files.Get "files/postgres-init/14-onboarding-selected-plan.sql" | indent 4 }}
   15-platform-config-hardening.sql: |-
 {{ .Files.Get "files/postgres-init/15-platform-config-hardening.sql" | indent 4 }}
+  16-public-site.sql: |-
+{{ .Files.Get "files/postgres-init/16-public-site.sql" | indent 4 }}
 ---
 apiVersion: v1
 kind: ConfigMap

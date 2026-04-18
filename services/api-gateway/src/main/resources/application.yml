@@ -56,7 +56,7 @@ spring:
         - id: ai-chat-compat
           uri: ${AI_INTERACTION_SERVICE_URL:http://localhost:8090}
           predicates:
-            - Path=/api/chat,/api/health,/api/clear/**,/api/conversations/**/clear
+            - Path=/api/chat,/api/health,/api/clear/**,/api/conversations/{conversationId}/clear
         - id: subscription-service
           uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
           predicates:
