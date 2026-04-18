@@ -24,9 +24,118 @@ const EXAMPLE_QUESTIONS = [
   'Which modules cover attendance and transport?',
   'How do we raise support with rollout context?',
   'Can you summarize the platform vision?',
+  'Can you summarize technical overview of the platform?',
 ];
 
-// ─── StreamingText — word-by-word animated render ─────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const fabStyle: React.CSSProperties = {
+  position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+  width: 52, height: 52, borderRadius: '50%', border: 'none', cursor: 'pointer',
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  color: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center',
+  boxShadow: '0 4px 20px rgba(16,185,129,0.4), 0 0 0 1px rgba(16,185,129,0.2)',
+};
+const fabPulseStyle: React.CSSProperties = {
+  position: 'absolute', inset: 0, borderRadius: '50%',
+  background: 'rgba(16,185,129,0.3)', pointerEvents: 'none',
+};
+const chatWindowStyle: React.CSSProperties = {
+  position: 'fixed', zIndex: 9998,
+  display: 'flex', flexDirection: 'column',
+  background: 'rgba(2, 12, 27, 0.94)',
+  backdropFilter: 'blur(32px)',
+  border: '1px solid rgba(16,185,129,0.25)',
+  borderRadius: 20,
+  boxShadow: '0 32px 96px rgba(0,0,0,0.8), 0 0 0 1px rgba(16,185,129,0.08)',
+  overflow: 'hidden',
+  userSelect: 'none',
+};
+const headerStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+  padding: '14px 16px',
+  background: 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(2,44,34,0.7))',
+  borderBottom: '1px solid rgba(16,185,129,0.2)',
+  flexShrink: 0,
+  cursor: 'grab',
+};
+const headerIconStyle: React.CSSProperties = {
+  width: 32, height: 32, borderRadius: 10,
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  color: '#ecfdf5', boxShadow: '0 0 14px rgba(16,185,129,0.5)',
+};
+const closeBtnStyle: React.CSSProperties = {
+  width: 30, height: 30, borderRadius: 9, border: '1px solid rgba(16,185,129,0.2)',
+  background: 'rgba(16,185,129,0.08)', color: 'rgba(167,243,208,0.8)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+};
+const threadStyle: React.CSSProperties = {
+  flex: 1, overflowY: 'auto',
+  display: 'flex', flexDirection: 'column',
+  paddingBottom: 20,
+  userSelect: 'text',
+};
+const botAvatarStyle: React.CSSProperties = {
+  width: 24, height: 24, borderRadius: 8, flexShrink: 0, marginRight: 8, marginTop: 2,
+  background: 'linear-gradient(135deg, #065f46, #10b981)',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ecfdf5',
+};
+const assistantBubbleStyle: React.CSSProperties = {
+  maxWidth: '86%', padding: '12px 14px',
+  background: 'rgba(6,95,70,0.14)',
+  border: '1px solid rgba(16,185,129,0.2)',
+  borderLeft: '4px solid rgba(16,185,129,0.6)',
+  borderRadius: '0 14px 14px 14px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+};
+const userBubbleStyle: React.CSSProperties = {
+  maxWidth: '82%', padding: '12px 14px',
+  background: 'linear-gradient(135deg, rgba(6,95,70,0.6), rgba(4,120,87,0.4))',
+  border: '1px solid rgba(16,185,129,0.4)',
+  borderRadius: '14px 14px 0 14px',
+  color: '#ecfdf5',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+};
+const composerStyle: React.CSSProperties = {
+  padding: '12px 16px 16px',
+  borderTop: '1px solid rgba(16,185,129,0.2)',
+  background: 'rgba(2,12,27,0.7)',
+  flexShrink: 0,
+  position: 'relative',
+};
+const resizeGrabberStyle: React.CSSProperties = {
+  position: 'absolute', bottom: 0, right: 0, width: 16, height: 16,
+  cursor: 'nwse-resize',
+  background: 'linear-gradient(135deg, transparent 50%, rgba(16,185,129,0.4) 50%)',
+};
+const exampleBtnStyle: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 6,
+  padding: '6px 9px', background: 'rgba(16,185,129,0.06)',
+  border: '1px solid rgba(16,185,129,0.14)', borderRadius: 7,
+  color: 'rgba(167,243,208,0.75)', fontSize: 11.5, cursor: 'pointer', textAlign: 'left',
+};
+const preStyle: React.CSSProperties = {
+  margin: 0, maxHeight: 160, overflow: 'auto', fontSize: 11,
+  background: 'rgba(2,12,27,0.6)', padding: 8, borderRadius: 7,
+  color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.1)',
+};
+const msgTextStyle: React.CSSProperties = {
+  margin: 0, fontSize: 13, lineHeight: 1.65, color: '#d1fae5',
+};
+const inputStyle: React.CSSProperties = {
+  flex: 1, padding: '9px 12px',
+  background: 'rgba(6,95,70,0.1)', border: '1px solid rgba(16,185,129,0.2)',
+  borderRadius: 10, color: '#d1fae5', fontSize: 13, outline: 'none', fontFamily: 'inherit',
+};
+const sendBtnStyle: React.CSSProperties = {
+  width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
+  background: 'linear-gradient(135deg, #065f46, #10b981)', color: '#ecfdf5',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  boxShadow: '0 2px 10px rgba(16,185,129,0.3)',
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function renderMarkdownLite(text: string): React.ReactNode[] {
   const lines = text.split('\n');
@@ -440,100 +549,3 @@ export function PublicAiAssistantChat() {
     </>
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const fabStyle: React.CSSProperties = {
-  position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-  width: 52, height: 52, borderRadius: '50%', border: 'none', cursor: 'pointer',
-  background: 'linear-gradient(135deg, #065f46, #10b981)',
-  color: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center',
-  boxShadow: '0 4px 20px rgba(16,185,129,0.4), 0 0 0 1px rgba(16,185,129,0.2)',
-};
-const fabPulseStyle: React.CSSProperties = {
-  position: 'absolute', inset: 0, borderRadius: '50%',
-  background: 'rgba(16,185,129,0.3)', pointerEvents: 'none',
-};
-const chatWindowStyle: React.CSSProperties = {
-  position: 'fixed', zIndex: 9998,
-  display: 'flex', flexDirection: 'column',
-  background: 'rgba(2, 12, 27, 0.94)',
-  backdropFilter: 'blur(32px)',
-  border: '1px solid rgba(16,185,129,0.25)',
-  borderRadius: 20,
-  boxShadow: '0 32px 96px rgba(0,0,0,0.8), 0 0 0 1px rgba(16,185,129,0.08)',
-  overflow: 'hidden',
-  userSelect: 'none',
-};
-const headerStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '14px 16px',
-  background: 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(2,44,34,0.7))',
-  borderBottom: '1px solid rgba(16,185,129,0.2)',
-  flexShrink: 0,
-  cursor: 'grab',
-};
-const headerIconStyle: React.CSSProperties = {
-  width: 32, height: 32, borderRadius: 10,
-  background: 'linear-gradient(135deg, #065f46, #10b981)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-  color: '#ecfdf5', boxShadow: '0 0 14px rgba(16,185,129,0.5)',
-};
-const closeBtnStyle: React.CSSProperties = {
-  width: 30, height: 30, borderRadius: 9, border: '1px solid rgba(16,185,129,0.2)',
-  background: 'rgba(16,185,129,0.08)', color: 'rgba(167,243,208,0.8)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-};
-const threadStyle: React.CSSProperties = {
-  flex: 1, overflowY: 'auto',
-  display: 'flex', flexDirection: 'column',
-  paddingBottom: 20,
-  userSelect: 'text',
-};
-const botAvatarStyle: React.CSSProperties = {
-  width: 24, height: 24, borderRadius: 8, flexShrink: 0, marginRight: 8, marginTop: 2,
-  background: 'linear-gradient(135deg, #065f46, #10b981)',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ecfdf5',
-};
-const assistantBubbleStyle: React.CSSProperties = {
-  maxWidth: '86%', padding: '12px 14px',
-  background: 'rgba(6,95,70,0.14)',
-  border: '1px solid rgba(16,185,129,0.2)',
-  borderLeft: '4px solid rgba(16,185,129,0.6)',
-  borderRadius: '0 14px 14px 14px',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-};
-const userBubbleStyle: React.CSSProperties = {
-  maxWidth: '82%', padding: '12px 14px',
-  background: 'linear-gradient(135deg, rgba(6,95,70,0.6), rgba(4,120,87,0.4))',
-  border: '1px solid rgba(16,185,129,0.4)',
-  borderRadius: '14px 14px 0 14px',
-  color: '#ecfdf5',
-  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-};
-const composerStyle: React.CSSProperties = {
-  padding: '12px 16px 16px',
-  borderTop: '1px solid rgba(16,185,129,0.2)',
-  background: 'rgba(2,12,27,0.7)',
-  flexShrink: 0,
-  position: 'relative',
-};
-const resizeGrabberStyle: React.CSSProperties = {
-  position: 'absolute', bottom: 0, right: 0, width: 16, height: 16,
-  cursor: 'nwse-resize',
-  background: 'linear-gradient(135deg, transparent 50%, rgba(16,185,129,0.4) 50%)',
-};
-const exampleBtnStyle: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 6,
-  padding: '6px 9px', background: 'rgba(16,185,129,0.06)',
-  border: '1px solid rgba(16,185,129,0.14)', borderRadius: 7,
-  color: 'rgba(167,243,208,0.75)', fontSize: 11.5, cursor: 'pointer', textAlign: 'left',
-};
-const preStyle: React.CSSProperties = {
-  margin: 0, maxHeight: 160, overflow: 'auto', fontSize: 11,
-  background: 'rgba(2,12,27,0.6)', padding: 8, borderRadius: 7,
-  color: '#6ee7b7', border: '1px solid rgba(16,185,129,0.1)',
-};
-const msgTextStyle: React.CSSProperties = {
-  margin: 0, fontSize: 13, lineHeight: 1.65, color: '#d1fae5',
-};
