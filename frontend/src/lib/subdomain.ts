@@ -17,6 +17,7 @@ export interface SchoolContext {
 const RESERVED_PLATFORM_LABELS = new Set([
   'www',
   'app',
+  'sms',
   'api',
   'admin',
   'portal',

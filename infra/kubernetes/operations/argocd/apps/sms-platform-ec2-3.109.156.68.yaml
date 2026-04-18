@@ -1,13 +1,8 @@
-# Argo CD Application (EC2 cluster)
+# Argo CD Application (EC2 cluster - 3.109.156.68)
 #
-# 1) Edit `spec.source.repoURL` to your Git repo URL.
-# 2) Set `spec.source.targetRevision` to the branch ArgoCD should track (typically `develop`).
-# 3) Set the Ingress hosts (or remove `helm.parameters` if you prefer to hardcode them in a values file).
-# 4) Apply: kubectl apply -f infra/kubernetes/operations/argocd/apps/sms-platform-ec2.yaml
+# Apply:
+#   sudo k3s kubectl apply -f infra/kubernetes/operations/argocd/apps/sms-platform-ec2-3.109.156.68.yaml
 #
-# This app deploys the Helm chart using:
-# - infra/helm/sms-platform/values.yaml
-# - infra/helm/sms-platform/values-gitops-ec2.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -19,7 +14,7 @@ spec:
     server: https://kubernetes.default.svc
     namespace: sms
   source:
-    repoURL: REPLACE_ME_REPO_URL
+    repoURL: https://github.com/Aviral2410/sms.git
     targetRevision: develop
     path: infra/helm/sms-platform
     helm:
@@ -29,16 +24,17 @@ spec:
         - values-gitops-ec2.yaml
       parameters:
         - name: networking.ingress.frontendHost
-          value: REPLACE_ME_FRONTEND_HOST
+          value: sms.3.109.156.68.sslip.io
         - name: networking.ingress.frontendWildcardHost
-          value: REPLACE_ME_FRONTEND_WILDCARD_HOST
+          value: "*.sms.3.109.156.68.sslip.io"
         - name: networking.ingress.apiHost
-          value: REPLACE_ME_API_HOST
+          value: api.3.109.156.68.sslip.io
         - name: networking.ingress.mcpHost
-          value: REPLACE_ME_MCP_HOST
+          value: mcp.3.109.156.68.sslip.io
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true
+

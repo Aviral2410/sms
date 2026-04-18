@@ -14,14 +14,18 @@ This repo is designed to run on Kubernetes (kind locally, or k3s/microk8s/self-m
 
 ## What you must edit (one-time)
 
-1) Helm values for your public DNS:
-- `infra/helm/sms-platform/values-gitops-ec2.yaml` (`networking.ingress.*`)
+1) Argo CD app manifest:
+- Copy `infra/kubernetes/operations/argocd/apps/sms-platform-ec2.yaml` and fill:
+  - `spec.source.repoURL`
+  - `spec.source.targetRevision`
+  - `spec.source.helm.parameters[*]` (Ingress hosts)
+- Example for the current EC2: `infra/kubernetes/operations/argocd/apps/sms-platform-ec2-3.109.156.68.yaml`
 
-2) Argo CD app manifest:
-- `infra/kubernetes/operations/argocd/apps/sms-platform-ec2.yaml` (`spec.source.repoURL`, optionally `targetRevision`)
-
-3) Vault keys (change anytime, centralized):
+2) Vault keys (change anytime, centralized):
 - `secret/sms/platform` (see `docs/keys-and-urls.md`)
+
+3) (Optional) If you don’t want to use `helm.parameters`:
+- Hardcode Ingress hosts in `infra/helm/sms-platform/values-gitops-ec2.yaml` (`networking.ingress.*`)
 
 ## High-level bootstrap steps (EC2)
 
@@ -32,7 +36,7 @@ This repo is designed to run on Kubernetes (kind locally, or k3s/microk8s/self-m
 5) Seed Vault with `sms/platform` + `sms/ghcr`:
    - Example dev seeder: `infra/kubernetes/windows/seed-vault.ps1`
 6) Install Argo CD and apply:
-   - `infra/kubernetes/operations/argocd/apps/sms-platform-ec2.yaml`
+   - Your instance-specific app manifest (example: `infra/kubernetes/operations/argocd/apps/sms-platform-ec2-3.109.156.68.yaml`)
 
 ## Changing URLs tomorrow (Vault-only)
 
@@ -40,3 +44,26 @@ This repo is designed to run on Kubernetes (kind locally, or k3s/microk8s/self-m
 2) ESO refreshes `Secret/sms-secrets` (default refresh interval in chart: `1m`).
 3) Pods need a restart to pick up new env values:
    - Recommended: install **Stakater Reloader** and keep `reloader.stakater.com/auto: "true"` enabled in `values-gitops-ec2.yaml`.
+
+## URLs (current EC2)
+
+- Frontend (platform): `http://sms.3.109.156.68.sslip.io`
+- Frontend (schools): `http://<school>.sms.3.109.156.68.sslip.io`
+- API (direct): `http://api.3.109.156.68.sslip.io` (health: `/health`)
+- MCP: `http://mcp.3.109.156.68.sslip.io/health`
+- Argo CD: `http://argocd.3.109.156.68.sslip.io`
+
+## Bringing up a second EC2 instance
+
+1) Repeat the bootstrap steps (k3s + ingress + ESO + Vault + Argo CD).
+2) Pick a base host scheme:
+   - Platform: `sms.<EC2_PUBLIC_IP>.sslip.io`
+   - Schools: `*.sms.<EC2_PUBLIC_IP>.sslip.io`
+   - API: `api.<EC2_PUBLIC_IP>.sslip.io`
+   - MCP: `mcp.<EC2_PUBLIC_IP>.sslip.io`
+3) Copy `infra/kubernetes/operations/argocd/apps/sms-platform-ec2.yaml` → `sms-platform-ec2-<EC2_PUBLIC_IP>.yaml` and update:
+   - `repoURL`
+   - the 4 Ingress host parameters
+4) Seed Vault for that cluster (or point the cluster at your centralized Vault):
+   - `secret/sms/platform`
+   - `secret/sms/ghcr`

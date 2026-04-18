@@ -30,6 +30,8 @@ public class SecurityConfig {
             .authorizeExchange(exchanges -> exchanges
                 // Public endpoints
                 .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                .pathMatchers("/health").permitAll()
+                .pathMatchers("/actuator/health/**").permitAll()
                 .pathMatchers("/api/v1/auth/school/login").permitAll()
                 .pathMatchers("/api/v1/auth/admin/login").permitAll()
                 .pathMatchers("/api/v1/auth/school/activate").permitAll()
