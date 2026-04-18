@@ -37,8 +37,8 @@ services:
     replicaCount: 1
     resources:
       requests:
-        cpu: 200m
-        memory: 512Mi
+        cpu: 100m
+        memory: 1Gi
       limits:
         cpu: "1"
         memory: 3Gi
@@ -51,6 +51,10 @@ services:
 
   authService:
     replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     autoscaling:
       enabled: false
     image:
@@ -58,12 +62,21 @@ services:
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   schoolOnboardingService:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   schoolOperationsService:
     replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     autoscaling:
       enabled: false
     image:
@@ -71,22 +84,41 @@ services:
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   communicationService:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   financeService:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   subscriptionService:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   apiGateway:
     replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     autoscaling:
       enabled: false
     image:
@@ -94,6 +126,11 @@ services:
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   aiInteractionService:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 50m
+        memory: 256Mi
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
@@ -107,15 +144,25 @@ services:
       - name: OLLAMA_MODEL
         value: "llama3.2:3b"
   mcpServer:
+    replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
   frontend:
     replicaCount: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
     autoscaling:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-frontend
       tag: fd0ea6c0782f917cd763c1ff2e19882feb4fd250
       pullPolicy: Always
+
