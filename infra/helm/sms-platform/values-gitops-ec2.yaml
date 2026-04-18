@@ -65,6 +65,22 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     autoscaling:
       enabled: false
     image:
@@ -87,6 +103,22 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
       tag: 88c0285855d45e07469bae7568c8823ff265c2de
@@ -107,6 +139,22 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     autoscaling:
       enabled: false
     image:
@@ -129,6 +177,22 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
       tag: 88c0285855d45e07469bae7568c8823ff265c2de
@@ -149,6 +213,20 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
       tag: 88c0285855d45e07469bae7568c8823ff265c2de
@@ -169,6 +247,22 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: APP_MQTT_BROKER_URL
+        value: tcp://emqx:1883
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
       tag: 88c0285855d45e07469bae7568c8823ff265c2de
@@ -189,6 +283,20 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: SPRING_PROFILES_ACTIVE
+        value: docker
     autoscaling:
       enabled: false
     image:
