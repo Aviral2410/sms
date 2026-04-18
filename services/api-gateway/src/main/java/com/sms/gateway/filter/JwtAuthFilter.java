@@ -53,7 +53,8 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/public/password/verify-code",
             "/api/v1/auth/public/password/reset",
             "/api/v1/onboarding/schools/status",
-            "/api/v1/subscriptions/plans");
+            "/api/v1/subscriptions/plans",
+            "/api/v1/ai-interaction/chat/stream");
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {

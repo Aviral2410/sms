@@ -100,6 +100,39 @@ export function PublicAiAssistantChat() {
     text: 'Welcome. Ask about pricing, onboarding, features, or support. This chat is powered by Ollama and is not tied to an account.',
   }]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const dragRef = useRef<{ active: boolean; dx: number; dy: number }>({ active: false, dx: 0, dy: 0 });
+  const resizeRef = useRef<{ active: boolean; startX: number; startY: number; startW: number; startH: number }>({ active: false, startX: 0, startY: 0, startW: 0, startH: 0 });
+
+  const [rect, setRect] = useState<Record<'x' | 'y' | 'w' | 'h', number>>(() => {
+    const w = 420;
+    const h = Math.min(680, window.innerHeight - 120);
+    return { x: window.innerWidth - w - 24, y: window.innerHeight - h - 100, w, h };
+  });
+
+  const clampRect = (next: typeof rect) => {
+    const minW = 360; const minH = 400;
+    const w = Math.max(minW, Math.min(window.innerWidth - 24, next.w));
+    const h = Math.max(minH, Math.min(window.innerHeight - 24, next.h));
+    const x = Math.max(12, Math.min(window.innerWidth - w - 12, next.x));
+    const y = Math.max(12, Math.min(window.innerHeight - h - 12, next.y));
+    return { x, y, w, h };
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    const onMove = (e: PointerEvent) => {
+      if (dragRef.current.active) {
+        setRect((r) => clampRect({ ...r, x: e.clientX - dragRef.current.dx, y: e.clientY - dragRef.current.dy }));
+      }
+      if (resizeRef.current.active) {
+        setRect((r) => clampRect({ ...r, w: resizeRef.current.startW + (e.clientX - resizeRef.current.startX), h: resizeRef.current.startH + (e.clientY - resizeRef.current.startY) }));
+      }
+    };
+    const onUp = () => { dragRef.current.active = false; resizeRef.current.active = false; };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+  }, [open]);
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
@@ -267,10 +300,16 @@ export function PublicAiAssistantChat() {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.88, y: 40 }}
             transition={{ type: 'spring', damping: 26, stiffness: 300 }}
-            style={chatWindowStyle}
+            style={{ ...chatWindowStyle, left: rect.x, top: rect.y, width: rect.w, height: rect.h }}
           >
-            {/* Header */}
-            <header style={headerStyle}>
+            {/* Header / Grabber */}
+            <header
+              style={headerStyle}
+              onPointerDown={(e) => {
+                dragRef.current = { active: true, dx: e.clientX - rect.x, dy: e.clientY - rect.y };
+                e.currentTarget.setPointerCapture(e.pointerId);
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <motion.div
                   animate={{ rotate: [0, 360] }}
@@ -280,11 +319,11 @@ export function PublicAiAssistantChat() {
                   <Cpu size={15} />
                 </motion.div>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: '#ecfdf5' }}>AI Assistant</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#ecfdf5' }}>Assistant</div>
                   <div style={{ fontSize: 10, color: '#6ee7b7', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }}
                       style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981' }} />
-                    Ollama · Public Preview
+                    Live · Public
                   </div>
                 </div>
               </div>
@@ -385,8 +424,15 @@ export function PublicAiAssistantChat() {
                 </motion.button>
               </div>
               <div style={{ fontSize: 10, color: 'rgba(167,243,208,0.3)', marginTop: 5 }}>
-                Powered by Ollama · No account required
+                Powered by Ollama · Resizable Window
               </div>
+              <div
+                style={resizeGrabberStyle}
+                onPointerDown={(e) => {
+                  resizeRef.current = { active: true, startX: e.clientX, startY: e.clientY, startW: rect.w, startH: rect.h };
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                }}
+              />
             </footer>
           </motion.section>
         )}
@@ -409,73 +455,73 @@ const fabPulseStyle: React.CSSProperties = {
   background: 'rgba(16,185,129,0.3)', pointerEvents: 'none',
 };
 const chatWindowStyle: React.CSSProperties = {
-  position: 'fixed', bottom: 90, right: 20, zIndex: 9998,
-  width: 380, maxHeight: '70vh',
+  position: 'fixed', zIndex: 9998,
   display: 'flex', flexDirection: 'column',
   background: 'rgba(2, 12, 27, 0.94)',
-  backdropFilter: 'blur(24px)',
-  border: '1px solid rgba(16,185,129,0.2)',
-  borderRadius: 18,
-  boxShadow: '0 24px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(16,185,129,0.06)',
+  backdropFilter: 'blur(32px)',
+  border: '1px solid rgba(16,185,129,0.25)',
+  borderRadius: 20,
+  boxShadow: '0 32px 96px rgba(0,0,0,0.8), 0 0 0 1px rgba(16,185,129,0.08)',
   overflow: 'hidden',
+  userSelect: 'none',
 };
 const headerStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-  padding: '12px 14px',
-  background: 'linear-gradient(135deg, rgba(6,95,70,0.4), rgba(2,44,34,0.6))',
-  borderBottom: '1px solid rgba(16,185,129,0.15)',
+  padding: '14px 16px',
+  background: 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(2,44,34,0.7))',
+  borderBottom: '1px solid rgba(16,185,129,0.2)',
   flexShrink: 0,
+  cursor: 'grab',
 };
 const headerIconStyle: React.CSSProperties = {
-  width: 30, height: 30, borderRadius: 9,
+  width: 32, height: 32, borderRadius: 10,
   background: 'linear-gradient(135deg, #065f46, #10b981)',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
-  color: '#ecfdf5', boxShadow: '0 0 12px rgba(16,185,129,0.4)',
+  color: '#ecfdf5', boxShadow: '0 0 14px rgba(16,185,129,0.5)',
 };
 const closeBtnStyle: React.CSSProperties = {
-  width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(16,185,129,0.15)',
-  background: 'rgba(16,185,129,0.06)', color: 'rgba(167,243,208,0.7)',
+  width: 30, height: 30, borderRadius: 9, border: '1px solid rgba(16,185,129,0.2)',
+  background: 'rgba(16,185,129,0.08)', color: 'rgba(167,243,208,0.8)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
 };
 const threadStyle: React.CSSProperties = {
   flex: 1, overflowY: 'auto',
   display: 'flex', flexDirection: 'column',
+  paddingBottom: 20,
+  userSelect: 'text',
 };
 const botAvatarStyle: React.CSSProperties = {
-  width: 22, height: 22, borderRadius: 7, flexShrink: 0, marginRight: 7, marginTop: 2,
+  width: 24, height: 24, borderRadius: 8, flexShrink: 0, marginRight: 8, marginTop: 2,
   background: 'linear-gradient(135deg, #065f46, #10b981)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ecfdf5',
 };
 const assistantBubbleStyle: React.CSSProperties = {
-  maxWidth: '84%', padding: '10px 12px',
-  background: 'rgba(6,95,70,0.12)',
-  border: '1px solid rgba(16,185,129,0.15)',
-  borderLeft: '3px solid rgba(16,185,129,0.5)',
-  borderRadius: '0 12px 12px 12px',
+  maxWidth: '86%', padding: '12px 14px',
+  background: 'rgba(6,95,70,0.14)',
+  border: '1px solid rgba(16,185,129,0.2)',
+  borderLeft: '4px solid rgba(16,185,129,0.6)',
+  borderRadius: '0 14px 14px 14px',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
 };
 const userBubbleStyle: React.CSSProperties = {
-  maxWidth: '80%', padding: '10px 12px',
-  background: 'linear-gradient(135deg, rgba(6,95,70,0.5), rgba(4,120,87,0.3))',
-  border: '1px solid rgba(16,185,129,0.3)',
-  borderRadius: '12px 12px 0 12px',
+  maxWidth: '82%', padding: '12px 14px',
+  background: 'linear-gradient(135deg, rgba(6,95,70,0.6), rgba(4,120,87,0.4))',
+  border: '1px solid rgba(16,185,129,0.4)',
+  borderRadius: '14px 14px 0 14px',
   color: '#ecfdf5',
+  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
 };
 const composerStyle: React.CSSProperties = {
-  padding: '10px 12px 12px',
-  borderTop: '1px solid rgba(16,185,129,0.12)',
-  background: 'rgba(2,12,27,0.6)',
+  padding: '12px 16px 16px',
+  borderTop: '1px solid rgba(16,185,129,0.2)',
+  background: 'rgba(2,12,27,0.7)',
   flexShrink: 0,
+  position: 'relative',
 };
-const inputStyle: React.CSSProperties = {
-  flex: 1, padding: '9px 12px',
-  background: 'rgba(6,95,70,0.1)', border: '1px solid rgba(16,185,129,0.2)',
-  borderRadius: 10, color: '#d1fae5', fontSize: 13, outline: 'none', fontFamily: 'inherit',
-};
-const sendBtnStyle: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 10, border: 'none', cursor: 'pointer',
-  background: 'linear-gradient(135deg, #065f46, #10b981)', color: '#ecfdf5',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  boxShadow: '0 2px 10px rgba(16,185,129,0.3)',
+const resizeGrabberStyle: React.CSSProperties = {
+  position: 'absolute', bottom: 0, right: 0, width: 16, height: 16,
+  cursor: 'nwse-resize',
+  background: 'linear-gradient(135deg, transparent 50%, rgba(16,185,129,0.4) 50%)',
 };
 const exampleBtnStyle: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 6,
