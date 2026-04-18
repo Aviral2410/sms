@@ -36,12 +36,12 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   schoolOnboardingService:
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   schoolOperationsService:
     replicaCount: 1
@@ -49,22 +49,22 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   communicationService:
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   financeService:
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   subscriptionService:
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   apiGateway:
     replicaCount: 1
@@ -72,17 +72,17 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   aiInteractionService:
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   mcpServer:
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
   frontend:
     replicaCount: 1
@@ -90,5 +90,5 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-frontend
-      tag: 6e77ab3bd28887bc42de0ec6988577c4a41756d0
+      tag: 30aa88a6e807cf02605cef2256dcd1ac36274040
       pullPolicy: Always
