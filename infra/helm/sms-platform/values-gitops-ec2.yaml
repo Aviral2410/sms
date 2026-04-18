@@ -190,4 +190,3 @@ services:
       repository: ghcr.io/aviral2410/sms-frontend
       tag: e781ea7c25a048caade17b6de25fe31a877837f7
       pullPolicy: Always
-
