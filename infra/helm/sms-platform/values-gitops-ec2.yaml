@@ -59,7 +59,7 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   schoolOnboardingService:
     replicaCount: 1
@@ -69,7 +69,7 @@ services:
         memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   schoolOperationsService:
     replicaCount: 1
@@ -81,7 +81,7 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   communicationService:
     replicaCount: 1
@@ -91,7 +91,7 @@ services:
         memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   financeService:
     replicaCount: 1
@@ -101,7 +101,7 @@ services:
         memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   subscriptionService:
     replicaCount: 1
@@ -111,7 +111,7 @@ services:
         memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   apiGateway:
     replicaCount: 1
@@ -123,7 +123,7 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   aiInteractionService:
     replicaCount: 1
@@ -133,7 +133,7 @@ services:
         memory: 256Mi
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
     # Override LLM config directly — no Vault dependency for cluster-internal Ollama URL
     env:
@@ -176,7 +176,7 @@ services:
         memory: 128Mi
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
   frontend:
     replicaCount: 1
@@ -188,6 +188,6 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-frontend
-      tag: acbf137252fe8591c383570530b0406e810b8bf9
+      tag: ae2f614ea22d8bf26d3b3fc5691b31a8e377a190
       pullPolicy: Always
 
