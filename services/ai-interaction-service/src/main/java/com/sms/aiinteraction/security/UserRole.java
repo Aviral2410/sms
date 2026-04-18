@@ -22,6 +22,7 @@ public enum UserRole {
             case "PARENT" -> PARENT;
             case "STUDENT" -> STUDENT;
             case "STAFF", "DRIVER", "CONDUCTOR" -> STAFF;
+            case "PUBLIC_ANONYMOUS" -> PUBLIC_ANONYMOUS;
             default -> UNKNOWN;
         };
     }

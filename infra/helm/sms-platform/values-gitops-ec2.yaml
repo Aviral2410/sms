@@ -143,6 +143,31 @@ services:
         value: "http://ollama:11434"
       - name: OLLAMA_MODEL
         value: "llama3.2:3b"
+      - name: SERVER_PORT
+        value: "8090"
+      - name: GATEWAY_BASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: GATEWAY_BASE_URL
+      - name: REDIS_HOST
+        value: redis
+      - name: REDIS_PORT
+        value: "6379"
+      - name: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: SPRING_DATASOURCE_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: SPRING_DATASOURCE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
+      - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+        value: org.postgresql.Driver
   mcpServer:
     replicaCount: 1
     resources:

@@ -16,6 +16,15 @@ public class RbacPolicyService {
             return;
         }
 
+        // For demo/public site, allow anonymous users to access informational tools
+        if (user.role() == UserRole.PUBLIC_ANONYMOUS) {
+            // Block sensitive write actions for anonymous users
+            if ("sendNotification".equals(tool.name()) || "createAnnouncement".equals(tool.name())) {
+                throw new ForbiddenException("Public users cannot perform administrative actions.");
+            }
+            return;
+        }
+
         if (!tool.allowedRoles().contains(user.role())) {
             throw new ForbiddenException("You do not have permission to use this assistant action.");
         }
