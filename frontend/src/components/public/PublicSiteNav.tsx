@@ -12,6 +12,7 @@ const LINKS = [
   { to: '/', label: 'Platform' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/contact', label: 'Contact Us' },
+  { to: '/#demo-section', label: 'Live Demo' },
   { to: '/support', label: 'Raise Support' },
   { to: '/vision', label: 'Vision' },
 ];

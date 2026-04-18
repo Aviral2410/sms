@@ -9,6 +9,7 @@ public enum UserRole {
     PARENT,
     STUDENT,
     STAFF,
+    PUBLIC_ANONYMOUS,
     UNKNOWN;
 
     public static UserRole fromRaw(String value) {

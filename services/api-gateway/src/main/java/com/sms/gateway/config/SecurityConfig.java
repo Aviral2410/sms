@@ -47,6 +47,10 @@ public class SecurityConfig {
                 .pathMatchers(HttpMethod.POST, "/api/v1/onboarding/schools").permitAll()
                 // Public school profile
                 .pathMatchers("/api/v1/onboarding/schools/public/**").permitAll()
+                // Public AI Interaction
+                .pathMatchers("/api/v1/ai-interaction/chat/stream").permitAll()
+                .pathMatchers("/api/chat").permitAll()
+                .pathMatchers("/api/v1/ai-interaction/health-check").permitAll()
                 // All other requests require authentication
                 .anyExchange().authenticated()
             )

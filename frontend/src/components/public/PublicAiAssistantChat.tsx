@@ -1,5 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Bot, MessageCircle, Send, X } from 'lucide-react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { Bot, MessageCircle, Send, X, Sparkles, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { readSseStream, tryParseJson } from '../../lib/sse';
 
@@ -39,22 +40,18 @@ export function PublicAiAssistantChat() {
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages, loading]);
+
   const append = (msg: ChatMessage) => {
     setMessages((prev) => [...prev, msg]);
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 0);
   };
 
   const patchMessage = (id: string, patch: Partial<ChatMessage>) => {
     setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
-    setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      }
-    }, 0);
   };
 
   const renderChart = (response: RenderedResponse) => {
@@ -76,19 +73,25 @@ export function PublicAiAssistantChat() {
         <ResponsiveContainer width="100%" height="100%">
           {points.length > 7 ? (
             <LineChart data={points}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} />
-              <YAxis />
-              <Tooltip />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+              <XAxis dataKey={xKey} stroke="#ffffff60" fontSize={10} />
+              <YAxis stroke="#ffffff60" fontSize={10} />
+              <Tooltip 
+                contentStyle={{ background: 'rgba(23, 23, 23, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                itemStyle={{ color: '#38bdf8' }}
+              />
               <Line type="monotone" dataKey={yKey} stroke="#38bdf8" strokeWidth={2} dot={false} />
             </LineChart>
           ) : (
             <BarChart data={points}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey={xKey} />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey={yKey} fill="#22d3ee" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" />
+              <XAxis dataKey={xKey} stroke="#ffffff60" fontSize={10} />
+              <YAxis stroke="#ffffff60" fontSize={10} />
+              <Tooltip 
+                contentStyle={{ background: 'rgba(23, 23, 23, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                itemStyle={{ color: '#22d3ee' }}
+              />
+              <Bar dataKey={yKey} fill="#22d3ee" radius={[4, 4, 0, 0]} />
             </BarChart>
           )}
         </ResponsiveContainer>
@@ -109,7 +112,9 @@ export function PublicAiAssistantChat() {
       return (
         <div className="public-chat__rich">
           <div className="public-chat__meta">Rows: {rows.length}</div>
-          <pre className="public-chat__pre">{JSON.stringify(rows.slice(0, 12), null, 2)}</pre>
+          <div className="public-chat__table-scroll">
+            <pre className="public-chat__pre">{JSON.stringify(rows.slice(0, 12), null, 2)}</pre>
+          </div>
         </div>
       );
     }
@@ -206,93 +211,154 @@ export function PublicAiAssistantChat() {
 
   return (
     <>
-      {!open && (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="public-chat-launcher"
-          title="Chat with AI"
-          data-tour="public-chat-launcher"
-        >
-          <MessageCircle size={22} />
-        </button>
-      )}
+      <AnimatePresence>
+        {!open && (
+          <motion.button
+            key="launcher"
+            initial={{ scale: 0, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0, opacity: 0, y: 20 }}
+            whileHover={{ scale: 1.1, rotate: 5 }}
+            whileTap={{ scale: 0.9 }}
+            type="button"
+            onClick={() => setOpen(true)}
+            className="public-chat-launcher"
+            title="Chat with AI"
+            data-tour="public-chat-launcher"
+          >
+            <MessageCircle size={24} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
-      {open && (
-        <section
-          className="public-chat"
-        >
-          <header className="public-chat__header">
-            <div className="public-chat__title">
-              <span className="public-chat__mark"><Bot size={18} /></span>
-              <span>AI Assistant</span>
-              <span className="public-chat__scope">Public</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="public-chat__close"
-              title="Close"
-            >
-              <X size={18} />
-            </button>
-          </header>
+      <AnimatePresence>
+        {open && (
+          <motion.section
+            key="chat-window"
+            initial={{ opacity: 0, scale: 0.9, y: 40, x: 20, transformOrigin: 'bottom right' }}
+            animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 40, x: 20 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="public-chat"
+          >
+            <header className="public-chat__header">
+              <div className="public-chat__title">
+                <motion.span 
+                  className="public-chat__mark"
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ repeat: Infinity, duration: 4 }}
+                >
+                  <Bot size={18} />
+                </motion.span>
+                <div className="public-chat__title-group">
+                  <span className="public-chat__title-text">AI Assistant</span>
+                  <span className="public-chat__scope"><Sparkles size={8} /> Public Preview</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="public-chat__close"
+                title="Close"
+              >
+                <ChevronDown size={20} />
+              </button>
+            </header>
 
-          <div ref={scrollRef} className="public-chat__thread">
-            <div className="public-chat__examples">
-              <div className="public-chat__examples-title">Try one:</div>
-              <div className="public-chat__examples-grid">
-                {EXAMPLE_QUESTIONS.map((q) => (
-                  <button
-                    key={q}
-                    type="button"
-                    className="public-chat__example"
-                    onClick={() => {
-                      void sendText(q);
-                    }}
+            <div ref={scrollRef} className="public-chat__thread">
+              <AnimatePresence mode="popLayout">
+                {messages.length === 1 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="public-chat__examples"
                   >
-                    {q}
-                  </button>
+                    <div className="public-chat__examples-title">Suggested questions:</div>
+                    <div className="public-chat__examples-grid">
+                      {EXAMPLE_QUESTIONS.map((q, idx) => (
+                        <motion.button
+                          key={q}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: 0.1 + idx * 0.05 }}
+                          whileHover={{ x: 5, backgroundColor: 'rgba(255,255,255,0.05)' }}
+                          type="button"
+                          className="public-chat__example"
+                          onClick={() => {
+                            void sendText(q);
+                          }}
+                        >
+                          {q}
+                        </motion.button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="public-chat__messages">
+                {messages.map((msg, idx) => (
+                  <motion.article
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ type: 'spring', damping: 20, stiffness: 200 }}
+                    className={`public-chat__bubble${msg.role === 'user' ? ' is-user' : ' is-assistant'}`}
+                  >
+                    <div className="public-chat__bubble-inner">
+                      <p className="public-chat__text">{msg.text}</p>
+                      {msg.role === 'assistant' ? renderResponse(msg.response) : null}
+                    </div>
+                  </motion.article>
                 ))}
+                {loading && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="public-chat__thinking"
+                  >
+                    <motion.span
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      AI is thinking...
+                    </motion.span>
+                  </motion.div>
+                )}
               </div>
             </div>
-            {messages.map((msg) => (
-              <article
-                key={msg.id}
-                className={`public-chat__bubble${msg.role === 'user' ? ' is-user' : ' is-assistant'}`}
-              >
-                <p className="public-chat__text">{msg.text}</p>
-                {msg.role === 'assistant' ? renderResponse(msg.response) : null}
-              </article>
-            ))}
-            {loading && <div className="public-chat__thinking">Thinking...</div>}
-          </div>
 
-          <footer className="public-chat__composer">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  void send();
-                }
-              }}
-              placeholder="Ask about pricing, onboarding, support..."
-              className="public-chat__input"
-            />
-            <button
-              type="button"
-              disabled={!canSend}
-              onClick={() => void send()}
-              className="public-chat__send"
-              title="Send"
-            >
-              <Send size={16} />
-            </button>
-          </footer>
-        </section>
-      )}
+            <footer className="public-chat__composer">
+              <div className="public-chat__input-wrapper">
+                <input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      void send();
+                    }
+                  }}
+                  placeholder="Ask about pricing, onboarding, support..."
+                  className="public-chat__input"
+                />
+                <motion.button
+                  whileHover={canSend ? { scale: 1.1 } : {}}
+                  whileTap={canSend ? { scale: 0.9 } : {}}
+                  type="button"
+                  disabled={!canSend}
+                  onClick={() => void send()}
+                  className={`public-chat__send ${canSend ? 'is-active' : ''}`}
+                  title="Send"
+                >
+                  <Send size={18} />
+                </motion.button>
+              </div>
+            </footer>
+          </motion.section>
+        )}
+      </AnimatePresence>
     </>
   );
 }

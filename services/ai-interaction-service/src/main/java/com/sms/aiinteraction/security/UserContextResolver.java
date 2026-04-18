@@ -10,7 +10,22 @@ public class UserContextResolver {
     public UserContext resolve(HttpServletRequest request) {
         String authorization = request.getHeader("Authorization");
         if (authorization == null || authorization.isBlank()) {
-            throw new IllegalArgumentException("Missing Authorization header.");
+            // Handle public/anonymous requests
+            String requestId = request.getHeader("X-Request-ID");
+            if (requestId == null || requestId.isBlank()) {
+                requestId = java.util.UUID.randomUUID().toString();
+            }
+            java.util.UUID zero = new java.util.UUID(0L, 0L);
+            return new UserContext(
+                    zero, // userId
+                    zero, // tenantId
+                    zero, // schoolId
+                    "anonymous@public", // email
+                    "PUBLIC_ANONYMOUS", // rawRole
+                    UserRole.PUBLIC_ANONYMOUS,
+                    null, // authorization
+                    requestId
+            );
         }
 
         String rawRole = request.getHeader("X-User-Role");

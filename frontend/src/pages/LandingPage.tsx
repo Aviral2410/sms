@@ -630,7 +630,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="public-site-section">
+      <section className="public-site-section" id="demo-section">
         <div className="public-demo-grid">
           <HoverTiltCard className="public-demo-card public-panel--strong" accentColor="#22d3ee" as="article" maxTilt={12}>
             <div className="public-status-chip">Interactive demo</div>
