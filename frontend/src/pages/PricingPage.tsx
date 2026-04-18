@@ -72,12 +72,13 @@ export default function PricingPage() {
 
   return (
     <PublicSiteFrame content={content} activePath="/pricing" mode="ambient" density={1.12}>
-      <section className="public-page-intro public-page-intro--wide">
+      <section className="public-page-intro public-page-intro--focus">
         <PublicPretextHeading
           eyebrow="Pricing"
           pretext="Plans"
           title={content?.pricingHeadline || 'Commercial plans shaped around rollout depth and operational capacity.'}
           description={content?.pricingBody || 'Choose the pricing lane that matches launch speed, user volume, and how much institutional workflow you want connected from day one.'}
+          align="center"
         />
       </section>
 
@@ -122,17 +123,17 @@ export default function PricingPage() {
 
           <section className="public-site-section">
             <div className="public-feature-lattice public-panel" style={{ ['--plan-count' as any]: orderedPlans.length } as React.CSSProperties}>
-              <div className="public-feature-lattice__header">
+              <div className="public-feature-lattice__header" style={{ padding: '24px 32px' }}>
                 <div>
-                  <div className="public-feature-lattice__eyebrow">Feature matrix</div>
-                  <h3>What each subscription unlocks</h3>
-                  <p>Every lane below comes directly from the subscription service, so commercial packaging and feature visibility stay aligned.</p>
+                  <div className="public-feature-lattice__eyebrow" style={{ color: '#10b981' }}>Feature matrix</div>
+                  <h3 style={{ fontSize: '1.8rem', marginBottom: 8 }}>What each subscription unlocks</h3>
+                  <p className="public-muted" style={{ maxWidth: 500 }}>Every lane below comes directly from the subscription service, so commercial packaging and feature visibility stay aligned.</p>
                 </div>
                 <div className="public-feature-lattice__legend">
                   {orderedPlans.map((plan, index) => (
-                    <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index) } as React.CSSProperties}>
-                      <span>{plan.planCode}</span>
-                      <strong>{formatCurrency(Number(plan.monthlyPrice))}</strong>
+                    <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index), minWidth: 120 } as React.CSSProperties}>
+                      <span style={{ fontSize: 10 }}>{plan.planCode}</span>
+                      <strong style={{ fontSize: 16 }}>{formatCurrency(Number(plan.monthlyPrice))}</strong>
                     </div>
                   ))}
                 </div>

@@ -305,8 +305,25 @@ export function WebGLHero() {
     rootObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', resize);
 
+    let isVisible = true;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        isVisible = entries.some((entry) => entry.isIntersecting);
+        if (isVisible && disposed === false && frameRef.current === null) {
+          frameRef.current = window.requestAnimationFrame(animate);
+        } else if (!isVisible && frameRef.current !== null) {
+          window.cancelAnimationFrame(frameRef.current);
+          frameRef.current = null;
+        }
+      },
+      { threshold: 0.05 },
+    );
+
+    observer.observe(canvas);
+
     const animate = (timestamp: number) => {
-      if (disposed) {
+      if (disposed || !isVisible) {
+        frameRef.current = null;
         return;
       }
 
@@ -343,6 +360,7 @@ export function WebGLHero() {
 
     return () => {
       disposed = true;
+      observer.disconnect();
       if (frameRef.current !== null) {
         window.cancelAnimationFrame(frameRef.current);
       }

@@ -211,6 +211,7 @@ export function PublicAiAssistantChat() {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ active: boolean; dx: number; dy: number }>({ active: false, dx: 0, dy: 0 });
   const resizeRef = useRef<{ active: boolean; startX: number; startY: number; startW: number; startH: number }>({ active: false, startX: 0, startY: 0, startW: 0, startH: 0 });
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [rect, setRect] = useState<Record<'x' | 'y' | 'w' | 'h', number>>(() => {
     const w = 420;
@@ -320,9 +321,20 @@ export function PublicAiAssistantChat() {
     return null;
   };
 
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
+
   const sendText = async (message: string) => {
     const trimmed = message.trim();
     if (!trimmed || loading) return;
+
+    cancelRequest();
+    abortControllerRef.current = new AbortController();
+
     setInput('');
     append({ id: `u-${Date.now()}`, role: 'user', text: trimmed });
     setLoading(true);
@@ -334,6 +346,7 @@ export function PublicAiAssistantChat() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: trimmed, context: { route: window.location.pathname, public: true } }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!res.ok || !res.body) throw new Error(`Chat endpoint returned ${res.status}.`);
@@ -366,8 +379,15 @@ export function PublicAiAssistantChat() {
 
       if (!gotAny || !currentText.trim()) patchMessage(assistantId, { text: 'No response.', streaming: false });
     } catch (error: any) {
-      patchMessage(assistantId, { text: `I could not complete that request: ${error?.message || 'service unavailable'}.`, streaming: false });
-    } finally { setLoading(false); }
+      if (error.name === 'AbortError') {
+        patchMessage(assistantId, { text: 'Response cancelled.', streaming: false });
+      } else {
+        patchMessage(assistantId, { text: `I could not complete that request: ${error?.message || 'service unavailable'}.`, streaming: false });
+      }
+    } finally {
+      setLoading(false);
+      abortControllerRef.current = null;
+    }
   };
 
   return (
@@ -458,9 +478,9 @@ export function PublicAiAssistantChat() {
                           key={q}
                           initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.07 * idx }}
-                          whileHover={{ x: 4, background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.35)' }}
-                          type="button" onClick={() => void sendText(q)}
-                          style={exampleBtnStyle}
+                          whileHover={loading ? {} : { x: 4, background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.35)' }}
+                          type="button" disabled={loading} onClick={() => void sendText(q)}
+                          style={{ ...exampleBtnStyle, opacity: loading ? 0.5 : 1, pointerEvents: loading ? 'none' : 'auto' }}
                         >
                           <ChevronRight size={10} style={{ color: '#10b981', flexShrink: 0 }} />
                           <span>{q}</span>
@@ -531,6 +551,24 @@ export function PublicAiAssistantChat() {
                     : <Send size={15} />
                   }
                 </motion.button>
+                {loading && (
+                  <motion.button
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    whileHover={{ scale: 1.1, background: 'rgba(239,68,68,0.2)' }}
+                    whileTap={{ scale: 0.9 }}
+                    type="button"
+                    onClick={cancelRequest}
+                    style={{
+                      width: 36, height: 36, borderRadius: 10, border: '1px solid rgba(239,68,68,0.2)',
+                      background: 'rgba(239,68,68,0.08)', color: '#f87171',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}
+                    title="Cancel request"
+                  >
+                    <X size={15} />
+                  </motion.button>
+                )}
               </div>
               <div style={{ fontSize: 10, color: 'rgba(167,243,208,0.3)', marginTop: 5 }}>
                 Powered by Ollama · Resizable Window
