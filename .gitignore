@@ -1,23 +1,37 @@
-.gradle/
-build/
-out/
+# Compiled class files
+*.class
+**/*.class
+
+# Log files
+*.log
+**/*.log
+
+# IDE specific files
 .idea/
 .vscode/
 *.iml
-.DS_Store
+*.iws
 
-node_modules/
-dist/
-
-.env
-*.log
-
-services/**/build/
-frontend/dist/
+# Build artifacts
+build/
+bin/
+target/
+out/
 .gradle/
 .gradle**
-.gradle-user/wrapper/dists
-.gradle-home
+.gradle-user/
 .gradle-home/
+.settings/
+.project
+.classpath
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Misc
+node_modules/
+dist/
+.env
 **/*.zip
 **/*.part
