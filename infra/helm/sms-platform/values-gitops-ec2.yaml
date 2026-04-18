@@ -60,6 +60,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     autoscaling:
       enabled: false
     image:
@@ -77,6 +82,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
       tag: fa7a2da6ae64e6d3508030d39a89c68a969743b3
@@ -92,6 +102,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     autoscaling:
       enabled: false
     image:
@@ -109,6 +124,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
       tag: fa7a2da6ae64e6d3508030d39a89c68a969743b3
@@ -124,6 +144,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
       tag: fa7a2da6ae64e6d3508030d39a89c68a969743b3
@@ -139,6 +164,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
       tag: fa7a2da6ae64e6d3508030d39a89c68a969743b3
@@ -154,6 +184,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx192m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
     autoscaling:
       enabled: false
     image:
@@ -176,6 +211,11 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx256m"
+      - name: APP_JWT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: JWT_SECRET_KEY
       - name: LLM_PROVIDER
         value: "OLLAMA"
       - name: OLLAMA_BASE_URL
