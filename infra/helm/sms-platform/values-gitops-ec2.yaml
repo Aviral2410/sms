@@ -1,0 +1,78 @@
+# GitOps values for an EC2-hosted Kubernetes cluster (k3s/microk8s/etc).
+# - Pulls app images from GHCR using immutable tags (commit SHA).
+# - Uses Ingress for external entrypoints (frontend/api/mcp).
+# - Uses Vault -> External Secrets Operator -> Secret `sms-secrets` for all URLs/keys.
+
+global:
+  imageRegistry: ""
+  imagePullSecrets:
+    - ghcr-pull-secret
+  # To auto-rollout pods when ExternalSecrets refreshes `sms-secrets`, install Stakater Reloader
+  # and keep this annotation enabled.
+  podAnnotations:
+    reloader.stakater.com/auto: "true"
+
+networking:
+  ingress:
+    enabled: true
+    # For k3s default, use `traefik`. If you install ingress-nginx, use `nginx`.
+    className: nginx
+    frontendHost: sms.example.com
+    frontendWildcardHost: "*.sms.example.com"
+    apiHost: api.sms.example.com
+    mcpHost: mcp.sms.example.com
+    tls:
+      enabled: false
+      secretName: sms-platform-tls
+
+services:
+  authService:
+    image:
+      repository: ghcr.io/aviral2410/sms-auth-service
+      tag: latest
+      pullPolicy: Always
+  schoolOnboardingService:
+    image:
+      repository: ghcr.io/aviral2410/sms-school-onboarding-service
+      tag: latest
+      pullPolicy: Always
+  schoolOperationsService:
+    image:
+      repository: ghcr.io/aviral2410/sms-school-operations-service
+      tag: latest
+      pullPolicy: Always
+  communicationService:
+    image:
+      repository: ghcr.io/aviral2410/sms-communication-service
+      tag: latest
+      pullPolicy: Always
+  financeService:
+    image:
+      repository: ghcr.io/aviral2410/sms-finance-service
+      tag: latest
+      pullPolicy: Always
+  subscriptionService:
+    image:
+      repository: ghcr.io/aviral2410/sms-subscription-service
+      tag: latest
+      pullPolicy: Always
+  apiGateway:
+    image:
+      repository: ghcr.io/aviral2410/sms-api-gateway
+      tag: latest
+      pullPolicy: Always
+  aiInteractionService:
+    image:
+      repository: ghcr.io/aviral2410/sms-ai-interaction-service
+      tag: latest
+      pullPolicy: Always
+  mcpServer:
+    image:
+      repository: ghcr.io/aviral2410/sms-mcp-server
+      tag: latest
+      pullPolicy: Always
+  frontend:
+    image:
+      repository: ghcr.io/aviral2410/sms-frontend
+      tag: latest
+      pullPolicy: Always

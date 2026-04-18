@@ -1,0 +1,33 @@
+# Argo CD Application (EC2 cluster)
+#
+# 1) Edit `spec.source.repoURL` to your Git repo URL.
+# 2) Set `spec.source.targetRevision` to the branch ArgoCD should track (typically `develop`).
+# 3) Apply: kubectl apply -f infra/kubernetes/operations/argocd/apps/sms-platform-ec2.yaml
+#
+# This app deploys the Helm chart using:
+# - infra/helm/sms-platform/values.yaml
+# - infra/helm/sms-platform/values-gitops-ec2.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: sms-platform
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: sms
+  source:
+    repoURL: REPLACE_ME_REPO_URL
+    targetRevision: develop
+    path: infra/helm/sms-platform
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-gitops-ec2.yaml
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
