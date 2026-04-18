@@ -56,7 +56,7 @@ services:
         cpu: 20m
         memory: 128Mi
       limits:
-        memory: 256Mi
+        memory: 320Mi
     env:
       - name: JAVA_OPTS
         value: "-Xmx160m"
@@ -94,7 +94,7 @@ services:
         cpu: 20m
         memory: 128Mi
       limits:
-        memory: 256Mi
+        memory: 384Mi
     env:
       - name: JAVA_OPTS
         value: "-Xmx160m"
@@ -130,7 +130,7 @@ services:
         cpu: 20m
         memory: 128Mi
       limits:
-        memory: 256Mi
+        memory: 384Mi
     env:
       - name: JAVA_OPTS
         value: "-Xmx160m"
@@ -204,7 +204,7 @@ services:
         cpu: 20m
         memory: 128Mi
       limits:
-        memory: 256Mi
+        memory: 320Mi
     env:
       - name: JAVA_OPTS
         value: "-Xmx160m"
@@ -238,7 +238,7 @@ services:
         cpu: 20m
         memory: 128Mi
       limits:
-        memory: 256Mi
+        memory: 320Mi
     env:
       - name: JAVA_OPTS
         value: "-Xmx160m"
@@ -274,7 +274,7 @@ services:
         cpu: 20m
         memory: 128Mi
       limits:
-        memory: 256Mi
+        memory: 320Mi
     env:
       - name: JAVA_OPTS
         value: "-Xmx160m"
@@ -326,7 +326,7 @@ services:
         cpu: 50m
         memory: 256Mi
       limits:
-        memory: 448Mi
+        memory: 512Mi
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
       tag: 93fa2bfd9e448cc59a77c94a4362e0807afe14d5
