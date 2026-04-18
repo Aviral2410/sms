@@ -43,7 +43,7 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
 
     @Override
     public Set<UserRole> allowedRoles() {
-        return Set.of(UserRole.PLATFORM_ADMIN);
+        return Set.of(UserRole.PLATFORM_ADMIN, UserRole.PUBLIC_ANONYMOUS);
     }
 
     @Override
@@ -100,7 +100,13 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
         data.put("text", "There are currently " + totalCount + " schools onboarded on the platform.");
         data.put("totalSchools", totalCount);
         data.set("chart", chartData);
-        data.set("schools", schoolsResponse != null ? schoolsResponse : objectMapper.createArrayNode());
+        
+        // Only provide the full school list to Admins
+        if (userContext.role() == UserRole.PLATFORM_ADMIN) {
+            data.set("schools", schoolsResponse != null ? schoolsResponse : objectMapper.createArrayNode());
+        } else {
+            data.set("schools", objectMapper.createArrayNode());
+        }
 
         ObjectNode meta = objectMapper.createObjectNode();
         meta.put("tool", name());

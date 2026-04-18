@@ -88,8 +88,42 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         if (containsAny(normalized, "school counts", "how many schools", "total schools", "onboarded schools", "school list")) {
             return Optional.of(new ToolCall("getPlatformSchoolsOverview", objectMapper.createObjectNode(), "rule_based:schools_overview"));
         }
+        if (containsAny(normalized, "plan", "subscription", "price", "pricing", "compare")) {
+            return Optional.of(new ToolCall("getSubscriptionPlans", objectMapper.createObjectNode(), "rule_based:subscriptions"));
+        }
+        if (containsAny(normalized, "roadmap", "upcoming", "future", "features", "2026")) {
+            return Optional.of(new ToolCall("getPlatformRoadmap", objectMapper.createObjectNode(), "rule_based:roadmap"));
+        }
+        if (containsAny(normalized, "vision", "about", "platform info", "what is", "elevatesmart")) {
+            return Optional.of(new ToolCall("getPublicPlatformInfo", objectMapper.createObjectNode(), "rule_based:platform_info"));
+        }
+        if (containsAny(normalized, "demo", "request demo", "contact", "support ticket", "raise ticket", "help")) {
+            return Optional.of(new ToolCall("submitPublicInquiry", inquiryArgs(message), "rule_based:inquiry"));
+        }
 
         return Optional.empty();
+    }
+
+    private ObjectNode inquiryArgs(String message) {
+        ObjectNode args = objectMapper.createObjectNode();
+        String lower = message.toLowerCase(Locale.ROOT);
+        
+        args.put("inquiryType", lower.contains("support") || lower.contains("ticket") ? "SUPPORT" : "CONTACT");
+        
+        // Simple heuristic for email
+        Matcher emailMatcher = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b").matcher(message);
+        if (emailMatcher.find()) {
+            args.put("email", emailMatcher.group());
+        } else {
+            args.put("email", "anonymous@guest.com");
+        }
+
+        // Simple heuristic for name (first capitalized words if no email found nearby, or just "Guest")
+        args.put("fullName", "Guest User");
+        args.put("subject", "Inquiry via AI Chat");
+        args.put("message", message);
+        
+        return args;
     }
 
     private ObjectNode trendArgs(String message) {

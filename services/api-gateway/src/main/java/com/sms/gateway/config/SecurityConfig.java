@@ -75,7 +75,10 @@ public class SecurityConfig {
         // Support local frontend access via Vite, NodePort, and direct gateway testing.
         config.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
-                "http://127.0.0.1:*"
+                "http://127.0.0.1:*",
+                "http://*.3.109.156.68.sslip.io",
+                "https://*.3.109.156.68.sslip.io",
+                "http://sms.3.109.156.68.sslip.io"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of(

@@ -214,11 +214,22 @@ export const AiAssistantChat: React.FC = () => {
     return { x: Math.max(16, window.innerWidth - w - 24), y: Math.max(16, window.innerHeight - h - 24), w, h };
   });
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const canSend = useMemo(() => !!session.token && input.trim().length > 0 && !loading, [session.token, input, loading]);
 
   const scrollToBottom = useCallback(() => {
-    setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 0);
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
   }, []);
+
+  useEffect(() => {
+    if (open) scrollToBottom();
+  }, [messages, loading, open, scrollToBottom]);
 
   const appendMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => [...prev, { ts: Date.now(), ...msg }]);
@@ -379,6 +390,10 @@ export const AiAssistantChat: React.FC = () => {
     if (!session.token) return;
     const message = (override ?? input).trim();
     if (!message || loading) return;
+
+    if (abortControllerRef.current) abortControllerRef.current.abort();
+    abortControllerRef.current = new AbortController();
+
     setInput('');
     appendMessage({ id: `u-${Date.now()}`, role: 'user', text: message });
     setLoading(true);
@@ -390,6 +405,7 @@ export const AiAssistantChat: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ workspaceId, conversationId, message, context: { route: window.location.pathname } }),
+        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok || !response.body) throw new Error('Unable to stream AI response.');
@@ -433,9 +449,23 @@ export const AiAssistantChat: React.FC = () => {
         patchMessage(assistantId, { text: streamingText || 'Received an empty response.', streaming: false });
       }
     } catch (error) {
-      patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.', streaming: false });
-    } finally { setLoading(false); }
+      if (error instanceof Error && error.name === 'AbortError') {
+        patchMessage(assistantId, { text: 'Request cancelled.', streaming: false });
+      } else {
+        patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.', streaming: false });
+      }
+    } finally {
+      setLoading(false);
+      abortControllerRef.current = null;
+    }
   };
+
+  const cancelRequest = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+  }, []);
 
   const send = async () => {
     if (!canSend) return;
@@ -654,14 +684,17 @@ export const AiAssistantChat: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(16,185,129,0.15)' }} type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => void startNewChat()} style={headerBtnStyle} title="New chat">
             <Plus size={15} />
           </motion.button>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(16,185,129,0.15)' }} type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => { if (!toolsOpen && !toolsLoaded) void loadTools(); setToolsOpen((v) => !v); }} style={headerBtnStyle} title="AI tools">
             <Globe size={15} />
           </motion.button>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(239,68,68,0.15)' }} type="button"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => setOpen(false)} style={headerBtnStyle} title="Close">
             <X size={15} />
           </motion.button>
@@ -786,11 +819,15 @@ export const AiAssistantChat: React.FC = () => {
                     </motion.div>
                   )}
                   <div style={msg.role === 'user' ? userBubbleStyle : assistantBubbleStyle}>
-                    {msg.role === 'assistant' && msg.text === '' && loading
-                      ? <ThinkingDots />
-                      : renderAssistantContent(msg)
-                    }
-                    {msg.role === 'user' && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6 }}>{msg.text}</p>}
+                    {msg.role === 'assistant' ? (
+                      msg.text === '' && loading ? (
+                        <ThinkingDots />
+                      ) : (
+                        renderAssistantContent(msg)
+                      )
+                    ) : (
+                      <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6 }}>{msg.text}</p>
+                    )}
                     <div style={tsStyle}>{formatTime(msg.ts)}</div>
                   </div>
                   {msg.role === 'user' && (

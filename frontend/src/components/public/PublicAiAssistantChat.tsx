@@ -19,12 +19,12 @@ type RenderedResponse = {
 };
 
 const EXAMPLE_QUESTIONS = [
-  'What is included in the Commercial plan?',
-  'How does onboarding work for a new school?',
-  'Which modules cover attendance and transport?',
-  'How do we raise support with rollout context?',
-  'Can you summarize the platform vision?',
-  'Can you summarize technical overview of the platform?',
+  'Compare our subscription plans.',
+  'Request a demo for my school.',
+  'What is included in the Academics module?',
+  'What is on the platform roadmap for 2026?',
+  'How many schools are already on ElevateSmart?',
+  'Tell me about the platform vision.',
 ];
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -246,9 +246,18 @@ export function PublicAiAssistantChat() {
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
+  const scrollToBottom = useCallback(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, loading]);
+    if (open) scrollToBottom();
+  }, [messages, loading, open, scrollToBottom]);
 
   const append = useCallback((msg: ChatMessage) => setMessages((prev) => [...prev, msg]), []);
 
@@ -369,6 +378,11 @@ export function PublicAiAssistantChat() {
             patchMessage(assistantId, { text: currentText || 'Done.', response, streaming: false });
             return;
           }
+          if (eventName === 'status') {
+            const statusText = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text : data;
+            patchMessage(assistantId, { text: statusText, streaming: true });
+            return;
+          }
           const tokenText = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text as string : '';
           const next = tokenText || (typeof data === 'string' ? data : '');
           if (eventName === 'token' || eventName === 'delta' || eventName === 'chunk' || eventName === 'message') {
@@ -457,6 +471,7 @@ export function PublicAiAssistantChat() {
                 </div>
               </div>
               <motion.button whileHover={{ scale: 1.1, background: 'rgba(239,68,68,0.15)' }}
+                onPointerDown={(e) => e.stopPropagation()}
                 type="button" onClick={() => setOpen(false)} style={closeBtnStyle}>
                 <X size={16} />
               </motion.button>
@@ -516,11 +531,15 @@ export function PublicAiAssistantChat() {
                         </motion.div>
                       )}
                       <div style={msg.role === 'user' ? userBubbleStyle : assistantBubbleStyle}>
-                        {msg.role === 'assistant' && msg.text === '' && loading
-                          ? <ThinkingDots />
-                          : renderResponse(msg)
-                        }
-                        {msg.role === 'user' && <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>{msg.text}</p>}
+                        {msg.role === 'assistant' ? (
+                          msg.text === '' && loading ? (
+                            <ThinkingDots />
+                          ) : (
+                            renderResponse(msg)
+                          )
+                        ) : (
+                          <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>{msg.text}</p>
+                        )}
                       </div>
                     </motion.article>
                   ))}

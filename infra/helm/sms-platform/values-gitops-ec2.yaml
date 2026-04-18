@@ -38,10 +38,10 @@ services:
     resources:
       requests:
         cpu: 100m
-        memory: 4Gi
+        memory: 1Gi
       limits:
         cpu: "1"
-        memory: 6Gi
+        memory: 2Gi
     persistence:
       enabled: true
       hostPath: /data/ollama
@@ -54,12 +54,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -92,12 +92,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -128,12 +128,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -166,12 +166,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -202,12 +202,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -236,12 +236,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -272,12 +272,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx192m"
+        value: "-Xmx160m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -295,6 +295,22 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: POSTGRES_PASSWORD
+      - name: ONBOARDING_SERVICE_URL
+        value: "http://school-onboarding-service:8081"
+      - name: AUTH_SERVICE_URL
+        value: "http://auth-service:8082"
+      - name: SCHOOL_OPERATIONS_SERVICE_URL
+        value: "http://school-operations-service:8083"
+      - name: AI_INTERACTION_SERVICE_URL
+        value: "http://ai-interaction-service:8090"
+      - name: MCP_SERVER_URL
+        value: "http://mcp-server:8084"
+      - name: FINANCE_SERVICE_URL
+        value: "http://finance-service:8085"
+      - name: COMMUNICATION_SERVICE_URL
+        value: "http://communication-service:8089"
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: "http://subscription-service:8086"
       - name: SPRING_PROFILES_ACTIVE
         value: docker
     autoscaling:
@@ -329,7 +345,7 @@ services:
       - name: OLLAMA_BASE_URL
         value: "http://ollama:11434"
       - name: OLLAMA_MODEL
-        value: "llama3.2:1b"
+        value: "llama3.2:3b"
       - name: SERVER_PORT
         value: "8090"
       - name: GATEWAY_BASE_URL
@@ -360,9 +376,9 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 192Mi
+        memory: 128Mi
       limits:
-        memory: 512Mi
+        memory: 256Mi
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
       tag: 88c0285855d45e07469bae7568c8823ff265c2de

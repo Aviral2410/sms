@@ -41,3 +41,5 @@ app:
   # Internal service-to-service URLs (used for public join + password reset dispatch).
   communication-service-url: ${COMMUNICATION_SERVICE_URL:http://localhost:8089}
   school-operations-service-url: ${SCHOOL_OPERATIONS_SERVICE_URL:http://localhost:8083}
+  jwt:
+    secret: ${APP_JWT_SECRET:d41d8cd98f00b204e9800998ecf8427e}

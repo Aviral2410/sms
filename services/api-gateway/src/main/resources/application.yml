@@ -26,47 +26,47 @@ spring:
             allowCredentials: true
       routes:
         - id: onboarding-service
-          uri: ${ONBOARDING_SERVICE_URL:http://localhost:8081}
+          uri: ${ONBOARDING_SERVICE_URL:http://school-onboarding-service:8081}
           predicates:
             - Path=/api/v1/onboarding/**
         - id: auth-service
-          uri: ${AUTH_SERVICE_URL:http://localhost:8082}
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8082}
           predicates:
             - Path=/api/v1/auth/**
         - id: school-operations-service
-          uri: ${SCHOOL_OPERATIONS_SERVICE_URL:http://localhost:8083}
+          uri: ${SCHOOL_OPERATIONS_SERVICE_URL:http://school-operations-service:8083}
           predicates:
             - Path=/api/v1/school-ops/**
         - id: mcp-server
-          uri: ${MCP_SERVER_URL:http://localhost:8084}
+          uri: ${MCP_SERVER_URL:http://mcp-server:8084}
           predicates:
             - Path=/api/v1/mcp/**
         - id: finance-service
-          uri: ${FINANCE_SERVICE_URL:http://localhost:8085}
+          uri: ${FINANCE_SERVICE_URL:http://finance-service:8085}
           predicates:
             - Path=/api/v1/finance/**
         - id: communication-service
-          uri: ${COMMUNICATION_SERVICE_URL:http://localhost:8089}
+          uri: ${COMMUNICATION_SERVICE_URL:http://communication-service:8089}
           predicates:
             - Path=/api/v1/communication/**
         - id: ai-interaction-service
-          uri: ${AI_INTERACTION_SERVICE_URL:http://localhost:8090}
+          uri: ${AI_INTERACTION_SERVICE_URL:http://ai-interaction-service:8090}
           predicates:
             - Path=/api/v1/ai-interaction/**
         - id: ai-chat-compat
-          uri: ${AI_INTERACTION_SERVICE_URL:http://localhost:8090}
+          uri: ${AI_INTERACTION_SERVICE_URL:http://ai-interaction-service:8090}
           predicates:
             - Path=/api/chat,/api/health,/api/clear/**,/api/conversations/{conversationId}/clear
         - id: subscription-service
-          uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
+          uri: ${SUBSCRIPTION_SERVICE_URL:http://subscription-service:8086}
           predicates:
             - Path=/api/v1/subscriptions/**
         - id: platform-settings
-          uri: ${ONBOARDING_SERVICE_URL:http://localhost:8081}
+          uri: ${ONBOARDING_SERVICE_URL:http://school-onboarding-service:8081}
           predicates:
             - Path=/api/v1/platform/**
         - id: public-site
-          uri: ${ONBOARDING_SERVICE_URL:http://localhost:8081}
+          uri: ${ONBOARDING_SERVICE_URL:http://school-onboarding-service:8081}
           predicates:
             - Path=/api/v1/public/**
         - id: tenant-resolution
