@@ -226,27 +226,27 @@ export default function LandingPage() {
         <ScrollReveal y={20} duration={0.82}>
           <div className="public-site-hero__copy">
             <PublicPretextHeading
-              eyebrow={content?.heroEyebrow || 'Loading platform story...'}
-              pretext="Campus OS"
-              title={content?.heroHeadline || 'Preparing the public experience...'}
-              description={content?.heroSubheadline || 'The platform story is loading.'}
+              eyebrow={content?.heroEyebrow || 'Future-Ready Education OS'}
+              pretext="Campus"
+              title={content?.heroHeadline || 'Institutional Intelligence for the Next Generation'}
+              description={content?.heroSubheadline || 'A connected, AI-native operating surface that unifies academics, operations, and finance.'}
               className="public-site-hero__pretext"
               effect="flow"
-              accentColor="#8ee7ff"
+              accentColor="#10b981"
             />
             <div className="public-site-hero__actions">
-              <Link to={content?.primaryCtaUrl || '/onboarding'} className="public-primary-button public-primary-button--hero">
-                {content?.primaryCtaLabel || 'Start school onboarding'}
+              <Link to={content?.primaryCtaUrl || '/onboarding'} className="public-primary-button public-primary-button--hero" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
+                {content?.primaryCtaLabel || 'Start Onboarding'}
                 <ArrowRight size={16} />
               </Link>
-              <Link to={visionUrl} className="public-secondary-button public-secondary-button--hero">
-                {content?.secondaryCtaLabel || 'See the vision'}
+              <Link to={visionUrl} className="public-secondary-button public-secondary-button--hero" style={{ borderColor: 'rgba(16,185,129,0.4)', color: '#6ee7b7' }}>
+                {content?.secondaryCtaLabel || 'See the Vision'}
               </Link>
             </div>
             <div className="public-site-hero__signal-row">
-              <span><ShieldCheck size={14} /> Multi-service institutional platform</span>
-              <span><Sparkles size={14} /> AI-assisted workflows</span>
-              <span><Building2 size={14} /> Operations, academics, finance, and support</span>
+              <span style={{ color: '#6ee7b7' }}><ShieldCheck size={14} /> Unified Modular Architecture</span>
+              <span style={{ color: '#10b981' }}><Sparkles size={14} /> Integrated Ollama Intelligence</span>
+              <span style={{ color: '#34d399' }}><Building2 size={14} /> Full Campus Lifecycle</span>
             </div>
           </div>
         </ScrollReveal>
@@ -259,21 +259,22 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
+              style={{ background: 'rgba(2, 44, 34, 0.4)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
             >
               <FallbackImage
                 src={resolveSectionMedia('hero', heroMedia?.imageUrl, heroMedia?.fallbackImageUrl)}
                 fallbackSrc="/operational-viewpoint.svg"
-                alt={heroMedia?.altText || 'Platform operational illustration'}
+                alt={heroMedia?.altText || 'System overview'}
                 className="public-site-hero__image"
               />
               <div>
-                <div className="public-site-hero__visual-label">Operational viewpoint</div>
+                <div className="public-site-hero__visual-label" style={{ color: '#10b981' }}>Core Intelligence</div>
                 <PublicPretextFlowText
                   as="p"
-                  text={heroMedia?.caption || 'A text-free platform illustration that mirrors the same connected operating model described beside it.'}
+                  text={heroMedia?.caption || 'The platform mirrors a connected operating model where data flows seamlessly between all campus services.'}
                   variant="body"
                   className="public-site-hero__visual-copy"
-                  accentColor="#b9f4ff"
+                  accentColor="#6ee7b7"
                   delayStep={0.05}
                   layoutKey="hero-visual-copy"
                 />
@@ -286,13 +287,13 @@ export default function LandingPage() {
       <section className="public-site-section">
         <div className="public-site-section__heading">
           <PublicPretextHeading
-            eyebrow="Growth Signals"
-            pretext="Growth"
-            title="Evidence of institutional momentum"
-            description="Live aggregate numbers only. If public data is unavailable, we leave this section honest instead of inventing traction."
+            eyebrow="System Signals"
+            pretext="Velocity"
+            title="Real-time Platform Momentum"
+            description="Live institutional metrics. The numbers below reflect our current network of active schools and learners."
             compact
             effect="flow"
-            accentColor="#9eeeff"
+            accentColor="#34d399"
           />
         </div>
         {overviewCards.length ? (
@@ -302,8 +303,8 @@ export default function LandingPage() {
                 const Icon = card.icon;
                 return (
                   <ScrollReveal key={card.label} delay={index * 0.06}>
-                    <HoverTiltCard className="public-site-stat-card public-panel public-site-stat-card--deep" accentColor={card.accent} as="article" maxTilt={12}>
-                      <div className="public-site-stat-card__icon" style={{ color: card.accent }}>
+                    <HoverTiltCard className="public-site-stat-card public-panel public-site-stat-card--deep" accentColor="#10b981" as="article" maxTilt={12} style={{ background: 'rgba(6, 78, 59, 0.1)' }}>
+                      <div className="public-site-stat-card__icon" style={{ color: '#10b981' }}>
                         <Icon size={24} />
                       </div>
                       <PublicPretextFlowText
@@ -311,7 +312,7 @@ export default function LandingPage() {
                         text={card.value}
                         variant="stat"
                         className="public-site-stat-card__value"
-                        accentColor={card.accent}
+                        accentColor="#ecfdf5"
                         delayStep={0.04}
                         layoutKey={`stat-${card.label}`}
                       />
@@ -320,7 +321,7 @@ export default function LandingPage() {
                         text={card.label}
                         variant="label"
                         className="public-site-stat-card__label"
-                        accentColor={card.accent}
+                        accentColor="#6ee7b7"
                         delayStep={0.04}
                         layoutKey={`stat-label-${card.label}`}
                       />
@@ -335,7 +336,7 @@ export default function LandingPage() {
           </>
         ) : (
           <div className="public-site-empty public-panel">
-            {dataError || 'Public overview data is currently unavailable.'}
+            {dataError || 'Fetching institutional metrics...'}
           </div>
         )}
       </section>
@@ -343,46 +344,46 @@ export default function LandingPage() {
       <section className="public-site-section public-site-story-grid">
         <div>
           <PublicPretextHeading
-            eyebrow={content?.visionTitle || 'Why we built this'}
-            pretext="Purpose"
-            title={content?.whyTitle || 'Built for real operational depth'}
-            description={content?.visionBody || error || 'Public site content is unavailable right now.'}
+            eyebrow={content?.visionTitle || 'Primary Vision'}
+            pretext="Future"
+            title={content?.whyTitle || 'Beyond Admin Tools'}
+            description={content?.visionBody || 'Developing a system that learns and evolves with your institution.'}
             compact
             effect="flow"
-            accentColor="#ffca87"
+            accentColor="#84cc16"
           />
-          <div className="public-site-story-copy public-panel">
+          <div className="public-site-story-copy public-panel" style={{ borderLeft: '4px solid #84cc16' }}>
             <PublicPretextFlowText
               as="h3"
-              text={content?.whyTitle || 'Built for institutional momentum'}
-              variant="immersive"
+              text={content?.whyTitle || 'Operational Depth'}
+              variant="heading"
               className="public-site-story-copy__title"
-              accentColor="#ffbf6b"
+              accentColor="#bef264"
               layoutKey="story-title"
             />
             <PublicPretextFlowText
               as="p"
-              text={content?.whyBody || 'We are loading the long-form platform story.'}
+              text={content?.whyBody || 'Our modular design ensures that academics, finance, and transport are always in sync.'}
               variant="body"
-              accentColor="#ffd8a8"
+              accentColor="#ecfdf5"
               delayStep={0.05}
               layoutKey="story-body"
             />
           </div>
         </div>
-        <HoverTiltCard className="public-site-story-media public-panel--strong" accentColor="#ffb663" as="article" maxTilt={12}>
+        <HoverTiltCard className="public-site-story-media public-panel--strong" accentColor="#84cc16" as="article" maxTilt={12} style={{ background: 'rgba(57, 88, 7, 0.1)' }}>
           <FallbackImage
             src={rotatingStoryImages[storyImageIndex] || '/classroom.png'}
             fallbackSrc="/institution-flow.svg"
-            alt={storyMedia?.altText || 'Institutional workflow illustration'}
+            alt="Campus lifecycle"
             className="public-site-story-media__image"
           />
           <PublicPretextFlowText
             as="div"
-            text={storyMedia?.caption || 'A modular SVG scene showing the same connected system across onboarding, academics, transport, communication, and finance.'}
+            text={storyMedia?.caption || 'A modular view of the campus OS lifecycle.'}
             variant="body"
             className="public-site-story-media__caption"
-            accentColor="#ffd39b"
+            accentColor="#d9f99d"
             delayStep={0.05}
             layoutKey="story-media-caption"
           />
@@ -392,39 +393,39 @@ export default function LandingPage() {
       <section className="public-site-section">
         <div className="public-site-section__heading">
           <PublicPretextHeading
-            eyebrow="Capabilities"
+            eyebrow="Core Engines"
             pretext="Modules"
-            title="A connected operating surface, not disconnected admin tools"
-            description="Each capability below moves one part of the institution forward without breaking context for the rest of the campus."
+            title="Integrated Operational Domains"
+            description="Unified services for every aspect of the modern institution."
             compact
             effect="flow"
-            accentColor="#9cecff"
+            accentColor="#10b981"
           />
         </div>
         <div className="public-grid-3 public-site-feature-grid">
           {(content?.featureCards || []).map((feature, index) => (
             <ScrollReveal key={feature.title} delay={index * 0.05}>
-              <HoverTiltCard className="public-site-feature-card public-panel--strong" accentColor={feature.accentColor} as="article" maxTilt={12}>
+              <HoverTiltCard className="public-site-feature-card public-panel--strong" accentColor="#10b981" as="article" maxTilt={12} style={{ background: 'rgba(2, 44, 34, 0.3)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
                 <FallbackImage src={resolveFeatureImage(feature)} fallbackSrc="/institution-flow.svg" alt={feature.title} className="public-site-feature-card__image" />
-                <div className="public-status-chip" style={{ borderColor: `${feature.accentColor}55`, color: feature.accentColor }}>{feature.category}</div>
+                <div className="public-status-chip" style={{ borderColor: '#10b98155', color: '#10b981', background: 'rgba(16, 185, 129, 0.05)' }}>{feature.category}</div>
                 <PublicPretextFlowText
                   as="h3"
                   text={feature.title}
                   variant="heading"
-                  accentColor={feature.accentColor}
+                  accentColor="#ecfdf5"
                   layoutKey={`feature-title-${index}`}
                 />
                 <PublicPretextFlowText
                   as="p"
                   text={feature.description}
                   variant="body"
-                  accentColor={feature.accentColor}
+                  accentColor="#6ee7b7"
                   delayStep={0.05}
                   layoutKey={`feature-description-${index}`}
                 />
-                <ul>
+                <ul style={{ color: '#d1fae5' }}>
                   {feature.bullets.map((bullet) => (
-                    <li key={bullet}><BadgeCheck size={14} color={feature.accentColor} /> {bullet}</li>
+                    <li key={bullet}><BadgeCheck size={14} color="#10b981" /> {bullet}</li>
                   ))}
                 </ul>
               </HoverTiltCard>
@@ -437,20 +438,20 @@ export default function LandingPage() {
         <section className="public-site-section">
           <div className="public-site-section__heading">
             <PublicPretextHeading
-              eyebrow="Testimonials"
+              eyebrow="Global Validation"
               pretext="Proof"
-              title="What institutions say after rollout momentum begins"
-              description="This thread is managed from the platform admin surface, so the public story can keep reflecting real voices instead of frozen launch copy."
+              title="Voices from the Network"
+              description="Trusted by institutional leaders worldwide."
               compact
               effect="flow"
-              accentColor="#f2d4ff"
+              accentColor="#34d399"
             />
           </div>
           <div className="public-testimonial-thread">
             {testimonialThread.map((testimonial, index) => (
               <ScrollReveal key={`${testimonial.authorName}-${testimonial.sortOrder || index}`} delay={index * 0.06}>
-                <HoverTiltCard className="public-testimonial-card public-panel" accentColor={testimonial.accentColor} as="article" maxTilt={10}>
-                  <div className="public-testimonial-card__quote-mark" style={{ color: testimonial.accentColor }}>
+                <HoverTiltCard className="public-testimonial-card public-panel" accentColor="#10b981" as="article" maxTilt={10} style={{ background: 'rgba(2, 44, 34, 0.3)' }}>
+                  <div className="public-testimonial-card__quote-mark" style={{ color: '#10b981' }}>
                     <Quote size={20} />
                   </div>
                   <PublicPretextFlowText
@@ -458,7 +459,7 @@ export default function LandingPage() {
                     text={testimonial.quote}
                     variant="quote"
                     className="public-testimonial-card__quote"
-                    accentColor={testimonial.accentColor}
+                    accentColor="#ecfdf5"
                     delayStep={0.05}
                     layoutKey={`testimonial-quote-${index}`}
                   />
@@ -468,6 +469,7 @@ export default function LandingPage() {
                       fallbackSrc="/hero.png"
                       alt={testimonial.authorName}
                       className="public-testimonial-card__avatar"
+                      style={{ border: '2px solid #10b981' }}
                     />
                     <div>
                       <PublicPretextFlowText
@@ -475,7 +477,7 @@ export default function LandingPage() {
                         text={testimonial.authorName}
                         variant="label"
                         className="public-testimonial-card__author-name"
-                        accentColor={testimonial.accentColor}
+                        accentColor="#10b981"
                         delayStep={0.04}
                         layoutKey={`testimonial-author-${index}`}
                       />
@@ -484,7 +486,7 @@ export default function LandingPage() {
                         text={`${testimonial.authorRole} - ${testimonial.organization}`}
                         variant="body"
                         className="public-testimonial-card__author-meta"
-                        accentColor={testimonial.accentColor}
+                        accentColor="#6ee7b7"
                         delayStep={0.04}
                         layoutKey={`testimonial-role-${index}`}
                       />
@@ -497,138 +499,86 @@ export default function LandingPage() {
         </section>
       ) : null}
 
-      <section className="public-site-section">
-        <div className="public-site-section__heading">
-          <PublicPretextHeading
-            eyebrow="Role Clarity"
-            pretext="Users"
-            title="What each user gets from the platform"
-            description="Value has to be obvious to the people doing the real work, not just the people configuring the system."
-            compact
-            effect="flow"
-            accentColor="#ffcb8f"
-          />
-        </div>
-        <div className="public-grid-3">
-          {visibleRoleBenefits.map((benefit: PublicRoleBenefit, index) => {
-            const Icon = ROLE_ICONS[benefit.roleKey] || Sparkles;
-            return (
-              <ScrollReveal key={benefit.roleKey} delay={index * 0.04}>
-                <HoverTiltCard className="public-site-role-card public-panel public-site-role-card--deep" accentColor={benefit.accentColor} as="article" maxTilt={14}>
-                  <div className="public-site-role-card__top">
-                    <div className="public-site-role-card__icon" style={{ color: benefit.accentColor }}>
-                      <Icon size={22} />
-                    </div>
-                    <div className="public-site-role-card__text">
-                      <div className="public-site-role-card__label">{benefit.roleLabel}</div>
-                      <PublicPretextFlowText
-                        as="h3"
-                        text={benefit.headline}
-                        variant="heading"
-                        className="public-site-role-card__title"
-                        accentColor={benefit.accentColor}
-                        layoutKey={`role-headline-${index}`}
-                      />
-                    </div>
-                  </div>
-                  <PublicPretextFlowText
-                    as="p"
-                    text={benefit.description}
-                    variant="body"
-                    className="public-site-role-card__description"
-                    accentColor={benefit.accentColor}
-                    delayStep={0.05}
-                    layoutKey={`role-description-${index}`}
-                  />
-                  <ul>
-                    {benefit.outcomes.map((outcome) => (
-                      <li key={outcome}>{outcome}</li>
-                    ))}
-                  </ul>
-                </HoverTiltCard>
-              </ScrollReveal>
-            );
-          })}
-        </div>
-      </section>
+      <div style={{ marginTop: 120, borderTop: '1px solid rgba(16, 185, 129, 0.1)', paddingTop: 120 }}>
+        <section className="public-site-section">
+          <div className="public-site-section__heading">
+            <PublicPretextHeading
+              eyebrow="Onboarding Flow"
+              pretext="Entry"
+              title="Next Steps for your Institution"
+              description="Join the connected campus ecosystem."
+              compact
+              effect="flow"
+              accentColor="#84cc16"
+            />
+          </div>
+          <div className="public-launch-grid">
+            <HoverTiltCard className="public-launch-card public-panel--strong" accentColor="#10b981" as="article" maxTilt={12} style={{ background: 'linear-gradient(135deg, rgba(6, 95, 70, 0.2), rgba(2, 44, 34, 0.4))' }}>
+              <div className="public-status-chip" style={{ color: '#10b981', borderColor: '#10b981' }}>New School</div>
+              <PublicPretextFlowText
+                as="h3"
+                text="Start Onboarding"
+                variant="heading"
+                accentColor="#ecfdf5"
+                layoutKey="launch-onboarding-title"
+              />
+              <PublicPretextFlowText
+                as="p"
+                text="Register your institution and begin the modular provisioning process today."
+                variant="body"
+                accentColor="#6ee7b7"
+                delayStep={0.05}
+                layoutKey="launch-onboarding-body"
+              />
+              <Link to="/onboarding" className="public-primary-button public-launch-card__button" style={{ background: '#10b981' }}>
+                Start Now
+                <ArrowRight size={16} />
+              </Link>
+            </HoverTiltCard>
 
-      <section className="public-site-section">
-        <div className="public-site-section__heading">
-          <PublicPretextHeading
-            eyebrow="Get Started"
-            pretext="Launch"
-            title="Choose the entry point that fits how you are arriving"
-            description="Whether you are evaluating the platform, joining an existing school, or signing in to manage rollout, the entry path should feel obvious."
-            compact
-            effect="flow"
-            accentColor="#97ecff"
-          />
-        </div>
-        <div className="public-launch-grid">
-          <HoverTiltCard className="public-launch-card public-panel--strong" accentColor="#ffb663" as="article" maxTilt={12}>
-            <div className="public-status-chip">Institution Setup</div>
-            <PublicPretextFlowText
-              as="h3"
-              text="Start school onboarding"
-              variant="heading"
-              accentColor="#ffb663"
-              layoutKey="launch-onboarding-title"
-            />
-            <PublicPretextFlowText
-              as="p"
-              text="Register a new institution, choose a plan, and move into provisioning without switching products."
-              variant="body"
-              accentColor="#ffb663"
-              delayStep={0.05}
-              layoutKey="launch-onboarding-body"
-            />
-            <Link to="/onboarding" className="public-primary-button public-launch-card__button">
-              Start onboarding
-              <ArrowRight size={16} />
-            </Link>
-          </HoverTiltCard>
+            <HoverTiltCard className="public-launch-card public-panel" accentColor="#34d399" as="article" maxTilt={12}>
+              <div className="public-status-chip">Member Portal</div>
+              <PublicPretextFlowText
+                as="h3"
+                text="Join with Code"
+                variant="heading"
+                accentColor="#34d399"
+                layoutKey="launch-join-title"
+              />
+              <PublicPretextFlowText
+                as="p"
+                text="Students and staff can access their school directly using their unique institution code."
+                variant="body"
+                accentColor="#6ee7b7"
+                delayStep={0.05}
+                layoutKey="launch-join-body"
+              />
+              <Link to="/join" className="public-secondary-button public-launch-card__button" style={{ color: '#34d399', borderColor: '#34d399' }}>Join Campus</Link>
+            </HoverTiltCard>
 
-          <HoverTiltCard className="public-launch-card public-panel" accentColor="#22d3ee" as="article" maxTilt={12}>
-            <div className="public-status-chip">Returning User</div>
-            <PublicPretextFlowText
-              as="h3"
-              text="Join with school code"
-              variant="heading"
-              accentColor="#22d3ee"
-              layoutKey="launch-join-title"
-            />
-            <PublicPretextFlowText
-              as="p"
-              text="Students, parents, staff, and teachers can enter through a clean route designed for activation and first access."
-              variant="body"
-              accentColor="#22d3ee"
-              delayStep={0.05}
-              layoutKey="launch-join-body"
-            />
-            <Link to="/join" className="public-secondary-button public-launch-card__button">Join with code</Link>
-          </HoverTiltCard>
+            <HoverTiltCard className="public-launch-card public-panel" accentColor="#10b981" as="article" maxTilt={12}>
+              <div className="public-status-chip">Operations</div>
+              <PublicPretextFlowText
+                as="h3"
+                text="Admin Console"
+                variant="heading"
+                accentColor="#10b981"
+                layoutKey="launch-admin-title"
+              />
+              <PublicPretextFlowText
+                as="p"
+                text="Institutional administrators can manage settings, users, and deployments."
+                variant="body"
+                accentColor="#6ee7b7"
+                delayStep={0.05}
+                layoutKey="launch-admin-body"
+              />
+              <Link to="/login/admin" className="public-secondary-button public-launch-card__button" style={{ color: '#10b981', borderColor: '#10b981' }}>Operator Login</Link>
+            </HoverTiltCard>
+          </div>
+        </section>
+      </div>
 
-          <HoverTiltCard className="public-launch-card public-panel" accentColor="#a78bfa" as="article" maxTilt={12}>
-            <div className="public-status-chip">Admin Access</div>
-            <PublicPretextFlowText
-              as="h3"
-              text="Platform admin login"
-              variant="heading"
-              accentColor="#a78bfa"
-              layoutKey="launch-admin-title"
-            />
-            <PublicPretextFlowText
-              as="p"
-              text="Use the admin surface to manage schools, public content, settings, runtime configuration, and rollout posture."
-              variant="body"
-              accentColor="#a78bfa"
-              delayStep={0.05}
-              layoutKey="launch-admin-body"
-            />
-            <Link to="/login/admin" className="public-secondary-button public-launch-card__button">Open admin login</Link>
-          </HoverTiltCard>
-        </div>
-      </section>
 
       <section className="public-site-section" id="demo-section">
         <div className="public-demo-grid">
