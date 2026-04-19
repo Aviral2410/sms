@@ -99,14 +99,65 @@ public class ConversationOrchestrator {
     ) {
         CompletableFuture.runAsync(() -> {
             try {
-                eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Planning tool call...")));
-                AiInteractionDtos.ChatResponse response = chat(userContext, request);
+                UUID requestedConversationId = request.conversationId() == null ? UUID.randomUUID() : request.conversationId();
+                ConversationMemoryService.ChatRecord chat = conversationMemoryService.ensureChat(
+                        userContext,
+                        requestedConversationId,
+                        request.workspaceId(),
+                        request.message()
+                );
+                UUID conversationId = chat.conversationId();
+                conversationMemoryService.addUserMessage(userContext, conversationId, request.message());
+                auditEventService.requestReceived(userContext, request.message(), conversationId.toString());
+
+                eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Analyzing context...")));
+                Thread.sleep(400);
+
+                List<ToolDescriptor> descriptors = toolRegistry.all().stream()
+                        .map(AiTool::descriptor)
+                        .toList();
+
+                List<String> history = conversationMemoryService.getRecentTextHistory(userContext, conversationId);
+                
+                eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Planning agent actions...")));
+                Optional<ToolCall> plan = toolPlanningService.plan(request.message(), userContext, descriptors, history);
+
+                AiInteractionDtos.RenderedResponse rendered;
+                if (plan.isEmpty()) {
+                    auditEventService.noPlan(userContext, conversationId.toString());
+                    String msg = "I'm not exactly sure how to help with that. Could you try asking about subscriptions, roadmap, or platform info? Or tell me if you'd like to reach support.";
+                    eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Thinking...")));
+                    simulateTyping(msg, eventConsumer);
+                    rendered = responseRenderer.clarificationResponse(msg);
+                } else {
+                    eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Executing " + plan.get().toolName() + "...")));
+                    rendered = executePlannedCall(userContext, plan.get(), request.message(), conversationId, false);
+                }
+
+                conversationMemoryService.addAssistantResponse(
+                        userContext,
+                        conversationId,
+                        summarizeAssistantResponse(rendered),
+                        toStoredPayload(rendered)
+                );
+
+                AiInteractionDtos.ChatResponse response = new AiInteractionDtos.ChatResponse(chat.workspaceId(), conversationId, rendered);
                 eventConsumer.accept(new AiInteractionDtos.StreamEvent("final", objectMapper.valueToTree(response)));
                 onComplete.run();
             } catch (Exception ex) {
                 errorConsumer.accept(ex);
             }
         });
+    }
+
+    private void simulateTyping(String text, Consumer<AiInteractionDtos.StreamEvent> eventConsumer) {
+        String[] words = text.split(" ");
+        for (String word : words) {
+            ObjectNode payload = objectMapper.createObjectNode();
+            payload.put("text", word + " ");
+            eventConsumer.accept(new AiInteractionDtos.StreamEvent("delta", payload));
+            try { Thread.sleep(50); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        }
     }
 
     public AiInteractionDtos.ChatResponse confirmAction(UserContext userContext, String confirmationToken) {

@@ -397,7 +397,10 @@ export function PublicAiAssistantChat() {
             const response = payload?.response as RenderedResponse | undefined;
             const text = typeof payload?.text === 'string' ? payload.text
               : typeof payload?.response?.data?.text === 'string' ? payload.response.data.text : '';
-            if (text) currentText = text;
+            
+            // Fix: ensure we use the backend text if no chunks were received
+            if (text && !currentText) currentText = text;
+            
             patchMessage(assistantId, { text: currentText || 'Done.', response, streaming: false });
             return;
           }

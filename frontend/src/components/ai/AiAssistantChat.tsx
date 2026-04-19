@@ -441,11 +441,18 @@ export const AiAssistantChat: React.FC = () => {
             return;
           }
           const parsed = tryParseJson<any>(data);
-          const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text as string : data;
+          const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : data;
           if (event === 'token' || event === 'delta' || event === 'chunk' || event === 'message') {
-            if (chunk) { streamingText += chunk; patchMessage(assistantId, { text: streamingText, streaming: true }); }
+            if (chunk) {
+              streamingText += chunk;
+              patchMessage(assistantId, { text: streamingText, streaming: true });
+            }
           }
         },
+        onError: (err) => {
+          console.error('SSE Error:', err);
+          patchMessage(assistantId, { text: 'I encountered an issue connecting to the AI service. Please try again.', streaming: false });
+        }
       });
 
       const payload = finalPayload as StreamFinalPayload | null;
