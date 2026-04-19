@@ -218,18 +218,29 @@ export const AiAssistantChat: React.FC = () => {
 
   const canSend = useMemo(() => !!session.token && input.trim().length > 0 && !loading, [session.token, input, loading]);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((instant = false) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
+        behavior: instant ? 'auto' : 'smooth',
       });
     }
   }, []);
 
   useEffect(() => {
-    if (open) scrollToBottom();
+    if (open) {
+      requestAnimationFrame(() => scrollToBottom(loading));
+    }
   }, [messages, loading, open, scrollToBottom]);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const obs = new ResizeObserver(() => {
+      if (loading) scrollToBottom(true);
+    });
+    obs.observe(scrollRef.current);
+    return () => obs.disconnect();
+  }, [loading, scrollToBottom]);
 
   const appendMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => [...prev, { ts: Date.now(), ...msg }]);
@@ -561,16 +572,24 @@ export const AiAssistantChat: React.FC = () => {
     }
 
     if (response.type === 'table') {
-      const rows = Array.isArray(response.data?.rows) ? (response.data.rows as Record<string, unknown>[]) : [];
+      const d = response.data || {};
+      const rows = Array.isArray(d.rows) ? d.rows 
+                 : Array.isArray(d.plans) ? d.plans
+                 : Array.isArray(d.roadmapItems) ? d.roadmapItems
+                 : Array.isArray(d.schools) ? d.schools
+                 : (Object.values(d).find(v => Array.isArray(v)) as any[]) || [];
+      
       return (
         <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>Rows: {rows.length}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>Data Results ({rows.length})</div>
           {rows.length > 0 && (
             <button type="button" onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv')} style={actionBtnStyle}>
               Export CSV
             </button>
           )}
-          <pre style={preStyle}>{JSON.stringify(rows.slice(0, 10), null, 2)}</pre>
+          <pre style={{ ...preStyle, maxHeight: 300, overflow: 'auto' }}>
+            {JSON.stringify(rows, null, 2)}
+          </pre>
         </div>
       );
     }

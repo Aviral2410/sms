@@ -246,18 +246,31 @@ export function PublicAiAssistantChat() {
 
   const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
-  const scrollToBottom = useCallback(() => {
+  const scrollToBottom = useCallback((instant = false) => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
-        behavior: 'smooth',
+        behavior: instant ? 'auto' : 'smooth',
       });
     }
   }, []);
 
   useEffect(() => {
-    if (open) scrollToBottom();
+    if (open) {
+      // Use requestAnimationFrame to ensure DOM is updated (especially for tables/charts)
+      requestAnimationFrame(() => scrollToBottom(loading));
+    }
   }, [messages, loading, open, scrollToBottom]);
+
+  // Handle dynamic content resizing (like images or tables loading)
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    const obs = new ResizeObserver(() => {
+      if (loading) scrollToBottom(true);
+    });
+    obs.observe(scrollRef.current);
+    return () => obs.disconnect();
+  }, [loading, scrollToBottom]);
 
   const append = useCallback((msg: ChatMessage) => setMessages((prev) => [...prev, msg]), []);
 
@@ -308,11 +321,21 @@ export function PublicAiAssistantChat() {
       return <p style={msgTextStyle}>{renderMarkdownLite(t)}</p>;
     }
     if (response.type === 'table') {
-      const rows = Array.isArray(response.data?.rows) ? (response.data.rows as Record<string, unknown>[]) : [];
+      const d = response.data || {};
+      const rows = Array.isArray(d.rows) ? d.rows 
+                 : Array.isArray(d.plans) ? d.plans
+                 : Array.isArray(d.roadmapItems) ? d.roadmapItems
+                 : Array.isArray(d.schools) ? d.schools
+                 : (Object.values(d).find(v => Array.isArray(v)) as any[]) || [];
+      
       return (
         <div style={{ display: 'grid', gap: 6 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#6ee7b7' }}>Rows: {rows.length}</div>
-          <pre style={preStyle}>{JSON.stringify(rows.slice(0, 12), null, 2)}</pre>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Data Results ({rows.length})
+          </div>
+          <pre style={{ ...preStyle, maxHeight: 300, overflow: 'auto' }}>
+            {JSON.stringify(rows, null, 2)}
+          </pre>
         </div>
       );
     }

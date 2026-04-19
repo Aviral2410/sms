@@ -88,16 +88,16 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         if (containsAny(normalized, "school counts", "how many schools", "total schools", "onboarded schools", "school list")) {
             return Optional.of(new ToolCall("getPlatformSchoolsOverview", objectMapper.createObjectNode(), "rule_based:schools_overview"));
         }
-        if (containsAny(normalized, "plan", "subscription", "price", "pricing", "compare")) {
+        if (containsAny(normalized, "plan", "subscription", "price", "pricing", "compare", "tier", "package", "cost", "feature comparison")) {
             return Optional.of(new ToolCall("getSubscriptionPlans", objectMapper.createObjectNode(), "rule_based:subscriptions"));
         }
-        if (containsAny(normalized, "roadmap", "upcoming", "future", "features", "2026")) {
+        if (containsAny(normalized, "roadmap", "upcoming", "future", "features", "2026", "whats next", "product roadmap", "milestones")) {
             return Optional.of(new ToolCall("getPlatformRoadmap", objectMapper.createObjectNode(), "rule_based:roadmap"));
         }
-        if (containsAny(normalized, "vision", "about", "platform info", "what is", "elevatesmart")) {
+        if (containsAny(normalized, "vision", "about", "platform info", "what is", "elevatesmart", "company information", "platform overview")) {
             return Optional.of(new ToolCall("getPublicPlatformInfo", objectMapper.createObjectNode(), "rule_based:platform_info"));
         }
-        if (containsAny(normalized, "demo", "request demo", "contact", "support ticket", "raise ticket", "help")) {
+        if (containsAny(normalized, "demo", "request demo", "contact", "support ticket", "raise ticket", "help", "book demo", "inquiry", "get in touch")) {
             return Optional.of(new ToolCall("submitPublicInquiry", inquiryArgs(message), "rule_based:inquiry"));
         }
 
