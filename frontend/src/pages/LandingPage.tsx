@@ -13,6 +13,8 @@ import {
   UserCog,
   Users,
   Wallet,
+  Plus,
+  Send
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { HoverTiltCard } from '../components/public/HoverTiltCard';
@@ -578,6 +580,84 @@ export default function LandingPage() {
           </div>
         </section>
       </div>
+
+      <section className="public-site-section">
+        <div className="public-panel--strong overflow-hidden relative" style={{ background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(2, 44, 34, 0.6))', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 32 }}>
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] -mr-48 -mt-48" />
+          <div className="p-12 relative z-10 grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-6 font-mono">
+                <Sparkles size={12} /> Intelligent Assistance
+              </div>
+              <h2 className="text-4xl font-black tracking-tighter text-white mb-6 leading-tight">
+                Guided Institutional Intelligence
+              </h2>
+              <p className="text-emerald-50/60 text-lg font-medium leading-relaxed mb-8">
+                Experience a stateful, AI-driven support and onboarding layer. 
+                Our assistant remembers your context, helps with missing fields, 
+                and provides intelligent answers to your platform queries.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Link to="/ai-assistant" className="public-primary-button" style={{ background: '#10b981', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)' }}>
+                  Launch AI Assistant
+                  <Cpu size={18} />
+                </Link>
+                <div className="flex items-center gap-6 mt-4 md:mt-0 px-4">
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-sm">Guest Support</span>
+                    <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">No Login Required</span>
+                  </div>
+                  <div className="h-8 w-px bg-white/10" />
+                  <div className="flex flex-col">
+                    <span className="text-white font-bold text-sm">Stateful Hub</span>
+                    <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">Always Persistent</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="relative group">
+              <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl opacity-20 group-hover:opacity-40 transition duration-1000" />
+              <div className="relative aspect-square md:aspect-video rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl p-6 shadow-2xl overflow-hidden flex flex-col">
+                 <div className="flex items-center justify-between mb-8">
+                    <div className="flex gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/40" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/40" />
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
+                    </div>
+                    <div className="text-[10px] font-black uppercase tracking-widest opacity-30 text-emerald-100">AI Terminal v2.0</div>
+                 </div>
+                 <div className="flex-1 space-y-4">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                        <Cpu size={14} className="text-emerald-400" />
+                      </div>
+                      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 text-xs text-emerald-50/70 max-w-[80%]">
+                        How can I assist you with your school onboarding today? I've noticed you still need to provide the contact details.
+                      </div>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                      <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white max-w-[80%]">
+                        Help me fill the contact phone and email for my institution.
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                        <Users size={14} className="text-white/40" />
+                      </div>
+                    </div>
+                 </div>
+                 <div className="mt-8 pt-4 border-t border-white/5 flex items-center gap-4">
+                    <div className="flex-1 h-10 bg-white/5 rounded-full border border-white/10 px-4 flex items-center gap-2">
+                       <Plus size={14} className="opacity-30" />
+                       <div className="text-[10px] opacity-20 font-medium">Type your query...</div>
+                    </div>
+                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                       <Send size={14} className="text-black" />
+                    </div>
+                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
 
       <section className="public-site-section" id="demo-section">

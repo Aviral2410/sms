@@ -16,7 +16,9 @@ public class ToolArgumentValidationService {
             case "getFeeDefaulters", "getAnnouncements", "getHomeworkSummary", "getExamResultsSummary", "getTransportOverview",
             "getSchoolDashboard", "getLibraryResources", "getMessageThreads", "getMyLeaveRequests", "getPlatformSchoolsOverview",
             "getSubscriptionPlans", "getPlatformRoadmap", "getPublicPlatformInfo", "submitPublicInquiry", "getOnboardingInfo",
-            "getAuthHelp", "getSchoolJoiningInfo", "getSupportInfo", "getPlatformVision", "getAdminHelp", "getPlatformFaq" -> {
+            "getAuthHelp", "getSchoolJoiningInfo", "getSupportInfo", "getPlatformVision", "getAdminHelp", "getPlatformFaq",
+            "getOnboardingFormStatus", "submitSchoolOnboarding", "submitSupportTicket", "validateSchoolJoiningCode",
+            "submitCreateWorkspace", "getPlatformSecurityInfo" -> {
                 // No required arguments for now.
             }
             case "getForumLeaderboard" -> validateForumLeaderboard(args);

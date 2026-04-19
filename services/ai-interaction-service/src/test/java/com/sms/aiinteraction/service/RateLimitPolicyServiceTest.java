@@ -47,7 +47,8 @@ class RateLimitPolicyServiceTest {
                 role.name(),
                 role,
                 "Bearer fake",
-                "req-policy"
+                "req-policy",
+                null
         );
     }
 }

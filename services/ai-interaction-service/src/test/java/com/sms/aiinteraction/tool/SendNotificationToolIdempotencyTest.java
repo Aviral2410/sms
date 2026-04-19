@@ -51,7 +51,8 @@ class SendNotificationToolIdempotencyTest {
                 "TEACHER",
                 UserRole.TEACHER,
                 "Bearer fake",
-                "req-2"
+                "req-2",
+                null
         );
     }
 }

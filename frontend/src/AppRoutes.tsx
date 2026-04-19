@@ -22,6 +22,7 @@ import SignupChoicePage from './pages/SignupChoicePage';
 import RegistrationWizardPage from './pages/RegistrationWizardPage';
 import JoinSchoolPage from './pages/JoinSchoolPage';
 import ActivationJourneyPage from './pages/ActivationJourneyPage';
+import AiAssistantPage from './pages/AiAssistantPage';
 
 // Protected pages (lazy)
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -140,6 +141,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/join" element={!isAuthenticated ? <JoinSchoolPage /> : <Navigate to="/dashboard" />} />
         <Route path="/activate" element={<ActivationJourneyPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/ai-assistant" element={<AiAssistantPage />} />
 
         {/* ── Protected (Base) ── */}
         <Route element={isAuthenticated ? (

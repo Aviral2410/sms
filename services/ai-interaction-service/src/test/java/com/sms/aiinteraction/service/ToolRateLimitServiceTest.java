@@ -28,7 +28,8 @@ class ToolRateLimitServiceTest {
                 "SCHOOL_ADMIN",
                 UserRole.SCHOOL_ADMIN,
                 "Bearer x",
-                "req-rl"
+                "req-rl",
+                null
         );
 
         assertTrue(service.allow(user, "getAttendanceReport", 2));

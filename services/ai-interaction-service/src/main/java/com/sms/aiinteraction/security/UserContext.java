@@ -10,5 +10,6 @@ public record UserContext(
         String rawRole,
         UserRole role,
         String authorization,
-        String requestId
+        String requestId,
+        String guestId
 ) {}

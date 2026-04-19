@@ -18,23 +18,29 @@ public class GatewayApiClient {
 
     public JsonNode get(String path, Map<String, ?> queryParams, String authorization) {
         String uri = buildUri(path, queryParams);
-        return restClient.get()
+        var spec = restClient.get()
                 .uri(uri)
-                .header(HttpHeaders.AUTHORIZATION, authorization)
-                .header("X-Request-ID", UUID.randomUUID().toString())
-                .retrieve()
-                .body(JsonNode.class);
+                .header("X-Request-ID", UUID.randomUUID().toString());
+        
+        if (authorization != null && !authorization.isBlank()) {
+            spec.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+        
+        return spec.retrieve().body(JsonNode.class);
     }
 
     public JsonNode post(String path, Object body, String authorization) {
-        return restClient.post()
+        var spec = restClient.post()
                 .uri(path)
-                .header(HttpHeaders.AUTHORIZATION, authorization)
                 .header("X-Request-ID", UUID.randomUUID().toString())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .body(JsonNode.class);
+                .body(body);
+        
+        if (authorization != null && !authorization.isBlank()) {
+            spec.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+        
+        return spec.retrieve().body(JsonNode.class);
     }
 
     private String buildUri(String path, Map<String, ?> queryParams) {

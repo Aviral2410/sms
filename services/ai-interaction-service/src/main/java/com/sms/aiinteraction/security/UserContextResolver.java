@@ -15,6 +15,7 @@ public class UserContextResolver {
             if (requestId == null || requestId.isBlank()) {
                 requestId = java.util.UUID.randomUUID().toString();
             }
+            String guestId = request.getHeader("X-Guest-ID");
             java.util.UUID zero = new java.util.UUID(0L, 0L);
             return new UserContext(
                     zero, // userId
@@ -24,7 +25,8 @@ public class UserContextResolver {
                     "PUBLIC_ANONYMOUS", // rawRole
                     UserRole.PUBLIC_ANONYMOUS,
                     null, // authorization
-                    requestId
+                    requestId,
+                    guestId != null ? guestId : "guest-" + requestId
             );
         }
 
@@ -80,7 +82,8 @@ public class UserContextResolver {
                 rawRole,
                 role,
                 authorization,
-                requestId
+                requestId,
+                null // Logged-in users don't need a guestId
         );
     }
 

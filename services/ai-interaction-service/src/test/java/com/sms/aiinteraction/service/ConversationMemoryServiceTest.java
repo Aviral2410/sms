@@ -45,7 +45,8 @@ class ConversationMemoryServiceTest {
                 role.name(),
                 role,
                 "Bearer fake",
-                "req-mem"
+                "req-mem",
+                null
         );
     }
 }

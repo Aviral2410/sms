@@ -31,11 +31,19 @@ public class ConversationMemoryService {
         this.redisTemplate = redisTemplateProvider.getIfAvailable();
     }
 
+    private UUID getEffectiveUserId(UserContext user) {
+        if (user.guestId() != null && (user.userId() == null || user.userId().equals(new UUID(0L, 0L)))) {
+            // Derive a stable UUID from the guestId for anonymous storage
+            return UUID.nameUUIDFromBytes(user.guestId().getBytes());
+        }
+        return user.userId();
+    }
+
     public WorkspaceRecord createWorkspace(UserContext user, String name) {
         Instant now = Instant.now();
         WorkspaceRecord workspace = new WorkspaceRecord(
                 UUID.randomUUID(),
-                user.userId(),
+                getEffectiveUserId(user),
                 user.tenantId(),
                 user.schoolId(),
                 sanitizeName(name, "My Workspace"),
@@ -50,12 +58,13 @@ public class ConversationMemoryService {
     }
 
     public List<WorkspaceRecord> listWorkspaces(UserContext user) {
-        List<WorkspaceRecord> fromRedis = loadUserWorkspacesRedis(user.userId());
+        UUID effectiveUserId = getEffectiveUserId(user);
+        List<WorkspaceRecord> fromRedis = loadUserWorkspacesRedis(effectiveUserId);
         if (!fromRedis.isEmpty()) {
             return fromRedis;
         }
         return workspacesFallback.values().stream()
-                .filter(ws -> ws.userId().equals(user.userId()))
+                .filter(ws -> ws.userId().equals(effectiveUserId))
                 .sorted(Comparator.comparing(WorkspaceRecord::updatedAt).reversed())
                 .toList();
     }
@@ -74,7 +83,7 @@ public class ConversationMemoryService {
         ChatRecord chat = new ChatRecord(
                 UUID.randomUUID(),
                 workspace.workspaceId(),
-                user.userId(),
+                getEffectiveUserId(user),
                 sanitizeName(title, "New Chat"),
                 now,
                 now
@@ -98,12 +107,13 @@ public class ConversationMemoryService {
 
     public List<ChatRecord> listChats(UserContext user, UUID workspaceId) {
         WorkspaceRecord workspace = requireWorkspaceOwnedByUser(user, workspaceId);
-        List<ChatRecord> fromRedis = loadWorkspaceChatsRedis(workspace.workspaceId(), user.userId());
+        UUID effectiveUserId = getEffectiveUserId(user);
+        List<ChatRecord> fromRedis = loadWorkspaceChatsRedis(workspace.workspaceId(), effectiveUserId);
         if (!fromRedis.isEmpty()) {
             return fromRedis;
         }
         return chatsFallback.values().stream()
-                .filter(chat -> chat.userId().equals(user.userId()) && chat.workspaceId().equals(workspace.workspaceId()))
+                .filter(chat -> chat.userId().equals(effectiveUserId) && chat.workspaceId().equals(workspace.workspaceId()))
                 .sorted(Comparator.comparing(ChatRecord::updatedAt).reversed())
                 .toList();
     }
@@ -180,11 +190,12 @@ public class ConversationMemoryService {
 
     private WorkspaceRecord findWorkspaceOwnedByUser(UserContext user, UUID workspaceId) {
         WorkspaceRecord redis = loadWorkspaceRedis(workspaceId);
-        if (redis != null && redis.userId().equals(user.userId())) {
+        UUID effectiveUserId = getEffectiveUserId(user);
+        if (redis != null && redis.userId().equals(effectiveUserId)) {
             return redis;
         }
         WorkspaceRecord fallback = workspacesFallback.get(workspaceId);
-        if (fallback != null && fallback.userId().equals(user.userId())) {
+        if (fallback != null && fallback.userId().equals(effectiveUserId)) {
             return fallback;
         }
         return null;
@@ -200,11 +211,12 @@ public class ConversationMemoryService {
 
     private ChatRecord findChatOwnedByUser(UserContext user, UUID conversationId) {
         ChatRecord redis = loadChatRedis(conversationId);
-        if (redis != null && redis.userId().equals(user.userId())) {
+        UUID effectiveUserId = getEffectiveUserId(user);
+        if (redis != null && redis.userId().equals(effectiveUserId)) {
             return redis;
         }
         ChatRecord fallback = chatsFallback.get(conversationId);
-        if (fallback != null && fallback.userId().equals(user.userId())) {
+        if (fallback != null && fallback.userId().equals(effectiveUserId)) {
             return fallback;
         }
         return null;

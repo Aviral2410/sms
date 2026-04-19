@@ -52,7 +52,8 @@ class RbacPolicyServiceTest {
                 role.name(),
                 role,
                 "Bearer fake",
-                "req-1"
+                "req-1",
+                null
         );
     }
 

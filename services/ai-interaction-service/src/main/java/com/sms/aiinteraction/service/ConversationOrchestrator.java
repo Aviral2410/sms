@@ -146,7 +146,9 @@ public class ConversationOrchestrator {
                 onComplete.run();
             } catch (Exception ex) {
                 try {
-                    String msg = "I'm sorry, I encountered an issue: " + (ex.getMessage() != null ? ex.getMessage() : "Unknown error");
+                    String exType = ex.getClass().getSimpleName();
+                    String msg = "I encountered an issue (" + exType + "): " + (ex.getMessage() != null ? ex.getMessage() : "Unknown error");
+                    
                     AiInteractionDtos.RenderedResponse errorRendered = responseRenderer.clarificationResponse(msg);
                     AiInteractionDtos.ChatResponse errorResponse = new AiInteractionDtos.ChatResponse(null, null, errorRendered);
                     eventConsumer.accept(new AiInteractionDtos.StreamEvent("final", objectMapper.valueToTree(errorResponse)));
