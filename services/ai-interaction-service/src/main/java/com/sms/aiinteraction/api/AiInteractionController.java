@@ -158,6 +158,10 @@ public class AiInteractionController {
     @GetMapping("/workspaces")
     public ResponseEntity<List<AiInteractionDtos.WorkspaceResponse>> listWorkspaces(HttpServletRequest servletRequest) {
         UserContext user = userContextResolver.resolve(servletRequest);
+        
+        // Ensure at least one workspace exists for the user/guest
+        conversationMemoryService.ensureDefaultWorkspace(user);
+        
         return ResponseEntity.ok(conversationMemoryService.listWorkspaces(user).stream()
                 .map(this::toWorkspaceResponse)
                 .toList());

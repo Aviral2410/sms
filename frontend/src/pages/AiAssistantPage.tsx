@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 
 // --- Components ---
 
+import { SmartUiRenderer } from '../components/ai/SmartUiRenderer';
+
 const ChatBubble: React.FC<{ message: any; onAction?: (token: string) => void }> = ({ message, onAction }) => {
   const isBot = message.role === 'assistant';
   
@@ -22,39 +24,36 @@ const ChatBubble: React.FC<{ message: any; onAction?: (token: string) => void }>
       animate={{ opacity: 1, y: 0 }}
       className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-6`}
     >
-      <div className={`max-w-[85%] rounded-2xl p-4 ${
+      <div className={`max-w-[90%] rounded-2xl p-5 ${
         isBot 
-          ? 'bg-white/5 border border-white/10 text-emerald-50 shadow-lg shadow-black/20' 
-          : 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-50 shadow-lg shadow-emerald-900/10'
+          ? 'bg-[#0a1829] border border-white/10 text-emerald-50 shadow-2xl' 
+          : 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-50 shadow-lg'
       }`}>
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-4">
           {isBot ? (
-            <div className="w-5 h-5 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
-              <Cpu size={12} className="text-emerald-400" />
+            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30 shadow-inner">
+              <Cpu size={14} className="text-emerald-400" />
             </div>
           ) : (
-            <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-              <UserCircle2 size={12} className="text-black" />
+            <div className="w-6 h-6 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <UserCircle2 size={14} className="text-black" />
             </div>
           )}
-          <span className="text-[10px] font-bold uppercase tracking-wider opacity-50">
-            {isBot ? 'Elevate AI' : 'You'}
+          <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">
+            {isBot ? 'Elevate Neural Layer' : 'Administrative User'}
           </span>
         </div>
         
-        <div className="text-[13.5px] leading-relaxed whitespace-pre-wrap font-medium">
-          {message.text || message.content}
-        </div>
+        {/* If it's a legacy or simple text message */}
+        {message.content && !message.response && (
+            <div className="text-[14px] leading-relaxed whitespace-pre-wrap font-medium text-emerald-50/90">
+                {message.content}
+            </div>
+        )}
 
+        {/* Smart UI Rendering for structured responses */}
         {message.response && (
-          <div className="mt-4 p-3 bg-black/40 rounded-xl border border-white/5">
-             <div className="text-[10px] uppercase font-bold text-emerald-500/70 mb-2 flex items-center gap-2">
-               <Shield size={10} /> {message.response.type} Data Result
-             </div>
-             <pre className="text-[11px] overflow-auto max-h-40 custom-scrollbar opacity-80">
-               {JSON.stringify(message.response.data, null, 2)}
-             </pre>
-          </div>
+           <SmartUiRenderer response={message.response.data} />
         )}
       </div>
     </motion.div>
@@ -280,8 +279,16 @@ export const AiAssistantPage: React.FC = () => {
     setActiveConversationId(null);
   };
 
+  // Force guest session on mount
+  useEffect(() => {
+    const gid = ensureGuestId();
+    if (gid && workspaces.length === 0) {
+        fetchWorkspaces();
+    }
+  }, [ensureGuestId, workspaces.length, fetchWorkspaces]);
+
   return (
-    <div className="fixed inset-0 bg-[#020c1b] text-emerald-50 flex overflow-hidden font-sans">
+    <div className="fixed inset-0 w-screen h-screen bg-[#020c1b] text-emerald-50 flex overflow-hidden font-sans z-[9999]">
       <AnimatePresence>
         {showWorkspaceModal && (
           <motion.div 

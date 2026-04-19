@@ -36,6 +36,7 @@ public class ConversationOrchestrator {
     private final ToolRateLimitService toolRateLimitService;
     private final RateLimitPolicyService rateLimitPolicyService;
     private final AiInteractionProperties properties;
+    private final AdministrativeInferenceService inferenceService;
     private final ObjectMapper objectMapper;
 
     public ConversationOrchestrator(
@@ -51,6 +52,7 @@ public class ConversationOrchestrator {
             ToolRateLimitService toolRateLimitService,
             RateLimitPolicyService rateLimitPolicyService,
             AiInteractionProperties properties,
+            AdministrativeInferenceService inferenceService,
             ObjectMapper objectMapper
     ) {
         this.toolRegistry = toolRegistry;
@@ -65,6 +67,7 @@ public class ConversationOrchestrator {
         this.toolRateLimitService = toolRateLimitService;
         this.rateLimitPolicyService = rateLimitPolicyService;
         this.properties = properties;
+        this.inferenceService = inferenceService;
         this.objectMapper = objectMapper;
     }
 
@@ -267,9 +270,13 @@ public class ConversationOrchestrator {
 
         ToolResult result = tool.execute(toolCall.arguments(), userContext);
         auditEventService.toolExecuted(userContext, tool.name(), conversationId.toString(), System.currentTimeMillis() - startMs, false);
+
+        // --- NEW: Administrative Inference Pass ---
+        JsonNode smartUiData = inferenceService.infer(message, userContext, tool.name(), result.data());
+
         AiInteractionDtos.RenderedResponse rendered = responseRenderer.render(
-                result.outputType(),
-                result.data(),
+                "smart_ui",
+                smartUiData,
                 result.meta(),
                 false,
                 tool.name(),

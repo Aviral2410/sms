@@ -62,6 +62,7 @@ const AiBriefingPage = lazy(() => import('./pages/admin/AiBriefingPage'));
 const AiGovernancePage = lazy(() => import('./pages/admin/AiGovernancePage'));
 const PublicInquiryInboxPage = lazy(() => import('./pages/admin/PublicInquiryInboxPage'));
 const PricingControlPage = lazy(() => import('./pages/admin/PricingControlPage'));
+const AiAuditPage = lazy(() => import('./pages/admin/AiAuditPage'));
 
 // School Management (lazy)
 const ExamManagement = lazy(() => import('./pages/school/ExamManagement'));
@@ -205,6 +206,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/admin/ai-governance" element={<Wrap><AiGovernancePage /></Wrap>} />
             <Route path="/admin/inquiries" element={<Wrap><PublicInquiryInboxPage /></Wrap>} />
             <Route path="/admin/pricing" element={<Wrap><PricingControlPage /></Wrap>} />
+            <Route path="/admin/ai-audits" element={<Wrap><AiAuditPage /></Wrap>} />
           </Route>
 
           {/* School Management (Shared) */}

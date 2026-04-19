@@ -1,28 +1,47 @@
 package com.sms.aiinteraction.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.sms.aiinteraction.domain.AuditEvent;
+import com.sms.aiinteraction.repository.AuditEventRepository;
 import com.sms.aiinteraction.security.UserContext;
 import com.sms.aiinteraction.security.UserRole;
 import com.sms.common.exception.ForbiddenException;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuditTrailStore {
-    private static final int MAX_EVENTS = 5000;
-    private final Deque<ObjectNode> events = new ConcurrentLinkedDeque<>();
+    private final AuditEventRepository repository;
+    private final ObjectMapper objectMapper;
+
+    public AuditTrailStore(AuditEventRepository repository, ObjectMapper objectMapper) {
+        this.repository = repository;
+        this.objectMapper = objectMapper;
+    }
 
     public void append(ObjectNode event) {
-        event.put("timestamp", Instant.now().toString());
-        events.addFirst(event);
-        while (events.size() > MAX_EVENTS) {
-            events.pollLast();
-        }
+        String type = event.path("type").asText("GENERAL");
+        String uid = event.path("userId").asText("system");
+        String sidStr = event.path("schoolId").asText(null);
+        UUID schoolId = (sidStr != null && !sidStr.isEmpty()) ? UUID.fromString(sidStr) : null;
+        String status = event.path("status").asText("SUCCESS");
+
+        AuditEvent auditEvent = AuditEvent.builder()
+                .timestamp(Instant.now())
+                .eventType(type)
+                .userId(uid)
+                .schoolId(schoolId)
+                .payload(event.toString())
+                .status(status)
+                .build();
+        
+        repository.save(auditEvent);
     }
 
     public List<JsonNode> list(UserContext user, int limit) {
@@ -31,18 +50,21 @@ public class AuditTrailStore {
             throw new ForbiddenException("You do not have permission to view AI audit events.");
         }
 
-        List<JsonNode> out = new ArrayList<>(max);
-        for (ObjectNode event : events) {
-            if (out.size() >= max) break;
-            if (user.role() == UserRole.PLATFORM_ADMIN) {
-                out.add(event.deepCopy());
-                continue;
-            }
-            String eventSchoolId = event.path("schoolId").asText();
-            if (user.schoolId().toString().equals(eventSchoolId)) {
-                out.add(event.deepCopy());
-            }
+        List<AuditEvent> events;
+        if (user.role() == UserRole.PLATFORM_ADMIN) {
+            events = repository.findAllByOrderByTimestampDesc(PageRequest.of(0, max));
+        } else {
+            events = repository.findAllBySchoolIdOrderByTimestampDesc(user.schoolId(), PageRequest.of(0, max));
         }
-        return out;
+
+        return events.stream()
+                .map(e -> {
+                    try {
+                        return objectMapper.readTree(e.getPayload());
+                    } catch (JsonProcessingException ex) {
+                        return objectMapper.createObjectNode().put("error", "Serialization failed");
+                    }
+                })
+                .toList();
     }
 }
