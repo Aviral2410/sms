@@ -5,7 +5,8 @@ import {
   Sparkles, Trash2, UserCircle2, X, ChevronRight, Cpu
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useAiStore } from '../../store/useAiStore';
+import { SmartUiRenderer } from './SmartUiRenderer';
 import { readSseStream, tryParseJson } from '../../lib/sse';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -190,10 +191,16 @@ export const AiAssistantChat: React.FC = () => {
   const [toolsError, setToolsError] = useState<string | null>(null);
   const [toolsLoading, setToolsLoading] = useState(false);
 
+  const { guestId, ensureGuestId } = useAiStore();
+
   const authHeaders = useMemo(() => {
-    if (!session.token) return null;
-    return { Authorization: `Bearer ${session.token}` };
-  }, [session.token]);
+    const gid = ensureGuestId();
+    const headers: any = { 'X-Guest-ID': gid };
+    if (session.token) {
+      headers['Authorization'] = `Bearer ${session.token}`;
+    }
+    return headers;
+  }, [session.token, ensureGuestId]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ active: boolean; dx: number; dy: number }>({ active: false, dx: 0, dy: 0 });
@@ -216,7 +223,7 @@ export const AiAssistantChat: React.FC = () => {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const canSend = useMemo(() => !!session.token && input.trim().length > 0 && !loading, [session.token, input, loading]);
+  const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
 
   const scrollToBottom = useCallback((instant = false) => {
     if (scrollRef.current) {
@@ -522,120 +529,27 @@ export const AiAssistantChat: React.FC = () => {
 
   // ── Render helpers ──────────────────────────────────────────────────────────
 
-  const renderChart = (response: RenderedResponse) => {
-    const chart = response.data?.chart as { xKey?: string; yKey?: string; points?: Record<string, unknown>[] } | undefined;
-    const points = Array.isArray(chart?.points) ? chart.points : [];
-    const xKey = chart?.xKey || 'x'; const yKey = chart?.yKey || 'y';
-    if (points.length === 0) return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
-    return (
-      <div style={{ width: '100%', height: 220 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          {points.length > 7
-            ? <LineChart data={points}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
-                <XAxis dataKey={xKey} stroke="rgba(167,243,208,0.5)" fontSize={10} />
-                <YAxis stroke="rgba(167,243,208,0.5)" fontSize={10} />
-                <Tooltip contentStyle={{ background: 'rgba(2,12,27,0.95)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10 }} />
-                <Line type="monotone" dataKey={yKey} stroke="#10b981" strokeWidth={2} dot={false} />
-              </LineChart>
-            : <BarChart data={points}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
-                <XAxis dataKey={xKey} stroke="rgba(167,243,208,0.5)" fontSize={10} />
-                <YAxis stroke="rgba(167,243,208,0.5)" fontSize={10} />
-                <Tooltip contentStyle={{ background: 'rgba(2,12,27,0.95)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10 }} />
-                <Bar dataKey={yKey} fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-          }
-        </ResponsiveContainer>
-      </div>
-    );
-  };
-
   const renderAssistantContent = (msg: ChatMessage) => {
     const { response, text, streaming } = msg;
 
-    if (!response && text !== undefined) {
-      return (
-        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
-          {streaming && text
-            ? <StreamingText text={text} streaming />
-            : renderMarkdownLite(text || '')
-          }
-        </p>
-      );
-    }
-
-    if (!response) return null;
-
-    if (response.type === 'text') {
-      const t = typeof response.data?.text === 'string' ? response.data.text : JSON.stringify(response.data);
-      return (
-        <div style={{ display: 'grid', gap: 10 }}>
+    return (
+      <div className="space-y-4">
+        {text && (
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
-            {renderMarkdownLite(t)}
+            {streaming 
+              ? <StreamingText text={text} streaming />
+              : renderMarkdownLite(text)
+            }
           </p>
-        </div>
-      );
-    }
-
-    if (response.type === 'table') {
-      const d = response.data || {};
-      const rows = Array.isArray(d.rows) ? d.rows 
-                 : Array.isArray(d.plans) ? d.plans
-                 : Array.isArray(d.roadmapItems) ? d.roadmapItems
-                 : Array.isArray(d.schools) ? d.schools
-                 : (Object.values(d).find(v => Array.isArray(v)) as any[]) || [];
-      
-      return (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>Data Results ({rows.length})</div>
-          {rows.length > 0 && (
-            <button type="button" onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv')} style={actionBtnStyle}>
-              Export CSV
-            </button>
-          )}
-          <pre style={{ ...preStyle, maxHeight: 300, overflow: 'auto' }}>
-            {JSON.stringify(rows, null, 2)}
-          </pre>
-        </div>
-      );
-    }
-
-    if (response.type === 'chart') {
-      const points = Array.isArray((response.data?.chart as any)?.points) ? (response.data.chart as any).points : [];
-      const t = typeof response.data?.text === 'string' ? response.data.text : '';
-      return (
-        <div style={{ display: 'grid', gap: 10 }}>
-          {t && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>{renderMarkdownLite(t)}</p>}
-          {renderChart(response)}
-          {points.length > 0 && (
-            <button type="button" onClick={() => downloadText(`ai-chart-${Date.now()}.csv`, toCsv(points), 'text/csv')} style={actionBtnStyle}>
-              Export CSV
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    if (response.type === 'action') {
-      const status = typeof response.data?.status === 'string' ? response.data.status : '';
-      const token = typeof response.data?.confirmationToken === 'string' ? response.data.confirmationToken : '';
-      const msgText = typeof response.data?.message === 'string' ? response.data.message : '';
-      return (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#6ee7b7' }}>{status || 'Action'}</div>
-          {msgText && <div style={{ fontSize: 12, color: 'rgba(167,243,208,0.7)' }}>{msgText}</div>}
-          {status === 'CONFIRMATION_REQUIRED' && token && (
-            <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => void confirmAction(token)} style={confirmBtnStyle}>
-              Confirm Action
-            </motion.button>
-          )}
-          <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>
-        </div>
-      );
-    }
-
-    return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
+        )}
+        
+        {response && (
+          <div className="mt-4 pt-4 border-t border-emerald-500/10">
+             <SmartUiRenderer payload={response} />
+          </div>
+        )}
+      </div>
+    );
   };
 
   // ─── Launcher FAB ──────────────────────────────────────────────────────────
@@ -716,8 +630,8 @@ export const AiAssistantChat: React.FC = () => {
           </motion.button>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(16,185,129,0.15)' }} type="button"
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => { if (!toolsOpen && !toolsLoaded) void loadTools(); setToolsOpen((v) => !v); }} style={headerBtnStyle} title="AI tools">
-            <Globe size={15} />
+            onClick={() => { if (!toolsOpen && !toolsLoaded) void loadTools(); setToolsOpen((v) => !v); }} style={headerBtnStyle} title="Chat history & Tools">
+            <MessageCircle size={15} />
           </motion.button>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(239,68,68,0.15)' }} type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -900,7 +814,7 @@ export const AiAssistantChat: React.FC = () => {
             {input.length > 0 ? `${input.length}/${MAX_INPUT_CHARS}` : 'Ollama · llama3.2:3b'}
           </span>
           {!session.token && (
-            <span style={{ fontSize: 10.5, color: '#f87171' }}>Sign in to use AI chat</span>
+            <span style={{ fontSize: 10.5, color: '#10b981', opacity: 0.6 }}>Guest Session Active</span>
           )}
         </div>
       </div>
