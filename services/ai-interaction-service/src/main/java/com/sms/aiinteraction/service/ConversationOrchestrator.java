@@ -13,8 +13,11 @@ import com.sms.aiinteraction.tool.ToolResult;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.UUID;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.springframework.http.HttpStatus;
@@ -123,18 +126,26 @@ public class ConversationOrchestrator {
                 List<String> history = conversationMemoryService.getRecentTextHistory(userContext, conversationId);
                 
                 eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Planning agent actions...")));
-                Optional<ToolCall> plan = toolPlanningService.plan(request.message(), userContext, descriptors, history);
+                List<ToolCall> plan = toolPlanningService.plan(request.message(), userContext, descriptors, history);
 
                 AiInteractionDtos.RenderedResponse rendered;
                 if (plan.isEmpty()) {
                     auditEventService.noPlan(userContext, conversationId.toString());
-                    String msg = "I'm not exactly sure how to help with that. Could you try asking about subscriptions, roadmap, or platform info? Or tell me if you'd like to reach support.";
+                    String msg = "I'm not exactly sure how to help with that. Could you try asking about school performance, fees, or attendance?";
                     eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Thinking...")));
                     simulateTyping(msg, eventConsumer);
                     rendered = responseRenderer.clarificationResponse(msg);
                 } else {
-                    eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Executing " + plan.get().toolName() + "...")));
-                    rendered = executePlannedCall(userContext, plan.get(), request.message(), conversationId, false);
+                    ObjectNode allResults = objectMapper.createObjectNode();
+                    for (ToolCall tc : plan) {
+                        eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Retrieving " + tc.toolName() + "...")));
+                        JsonNode result = executeSingleTool(userContext, tc, request.message(), conversationId, false);
+                        allResults.set(tc.toolName(), result);
+                    }
+                    
+                    eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Synthesizing neural dashboard...")));
+                    JsonNode smartUiData = inferenceService.infer(request.message(), userContext, allResults);
+                    rendered = responseRenderer.render("smart_ui", smartUiData, objectMapper.createObjectNode(), false, "multi_tool_chain", "Combined intelligence");
                 }
 
                 conversationMemoryService.addAssistantResponse(
@@ -177,13 +188,23 @@ public class ConversationOrchestrator {
     public AiInteractionDtos.ChatResponse confirmAction(UserContext userContext, String confirmationToken) {
         UUID conversationId = UUID.randomUUID();
         PendingActionService.PendingAction pending = pendingActionService.resolveAndConsume(confirmationToken, userContext);
-        AiInteractionDtos.RenderedResponse rendered = executePlannedCall(
+        
+        // Confirming actions usually execute a single operation
+        JsonNode result = executeSingleTool(
                 userContext,
                 new ToolCall(pending.toolName(), pending.args(), pending.reasoning()),
                 "[confirmation]",
                 conversationId,
                 true
         );
+        
+        // Wrap for UI
+        ObjectNode allResults = objectMapper.createObjectNode();
+        allResults.set(pending.toolName(), result);
+        
+        JsonNode smartUiData = inferenceService.infer("[confirmed action]", userContext, allResults);
+        AiInteractionDtos.RenderedResponse rendered = responseRenderer.render("smart_ui", smartUiData, objectMapper.createObjectNode(), false, pending.toolName(), "Action confirmed");
+        
         return new AiInteractionDtos.ChatResponse(null, conversationId, rendered);
     }
 
@@ -193,19 +214,25 @@ public class ConversationOrchestrator {
                 .toList();
 
         List<String> history = conversationMemoryService.getRecentTextHistory(userContext, conversationId);
-        Optional<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);
+        List<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);
 
         if (plan.isEmpty()) {
             auditEventService.noPlan(userContext, conversationId.toString());
             return responseRenderer.clarificationResponse(
-                    "Please rephrase with a clear request such as attendance report, dashboard, announcements, homework summary, exam results, transport overview, fee defaulters, student performance, library summary, forum leaderboard, leave requests, message threads, or notification/announcement actions."
+                    "I'm here to help with attendance, fees, exams, and more. Please rephrase your request."
             );
         }
 
-        return executePlannedCall(userContext, plan.get(), message, conversationId, false);
+        ObjectNode allResults = objectMapper.createObjectNode();
+        for (ToolCall tc : plan) {
+            allResults.set(tc.toolName(), executeSingleTool(userContext, tc, message, conversationId, false));
+        }
+
+        JsonNode smartUiData = inferenceService.infer(message, userContext, allResults);
+        return responseRenderer.render("smart_ui", smartUiData, objectMapper.createObjectNode(), false, "multi_tool_chain", "Combined intelligence");
     }
 
-    private AiInteractionDtos.RenderedResponse executePlannedCall(
+    private JsonNode executeSingleTool(
             UserContext userContext,
             ToolCall toolCall,
             String message,
@@ -229,17 +256,11 @@ public class ConversationOrchestrator {
 
         if (tool.requiresConfirmation() && !confirmedExecution) {
             String token = pendingActionService.create(userContext, tool.name(), toolCall.arguments(), toolCall.reasoning());
-            ObjectNode data = objectMapper.createObjectNode();
-            data.put("status", "CONFIRMATION_REQUIRED");
-            data.put("tool", tool.name());
-            data.put("message", "Please confirm this action before execution.");
-            data.put("confirmationToken", token);
-            data.set("proposedArguments", toolCall.arguments());
-
-            ObjectNode meta = objectMapper.createObjectNode();
-            meta.put("tool", tool.name());
-            meta.put("requiresConfirmation", true);
-            return responseRenderer.render("action", data, meta, false, tool.name(), toolCall.reasoning());
+            ObjectNode confirmNode = objectMapper.createObjectNode();
+            confirmNode.put("__type", "CONFIRMATION_REQUIRED");
+            confirmNode.put("token", token);
+            confirmNode.put("tool", tool.name());
+            return confirmNode;
         }
 
         long startMs = System.currentTimeMillis();
@@ -257,45 +278,25 @@ public class ConversationOrchestrator {
                 JsonNode wrapper = cached.get();
                 auditEventService.cacheHit(userContext, tool.name(), conversationId.toString());
                 auditEventService.toolExecuted(userContext, tool.name(), conversationId.toString(), System.currentTimeMillis() - startMs, true);
-                return responseRenderer.render(
-                        wrapper.path("type").asText("text"),
-                        wrapper.path("data"),
-                        wrapper.path("meta"),
-                        true,
-                        tool.name(),
-                        toolCall.reasoning()
-                );
+                // Return cached raw data
+                return wrapper.path("data");
             }
         }
 
         ToolResult result = tool.execute(toolCall.arguments(), userContext);
         auditEventService.toolExecuted(userContext, tool.name(), conversationId.toString(), System.currentTimeMillis() - startMs, false);
 
-        // --- NEW: Administrative Inference Pass ---
-        JsonNode smartUiData = inferenceService.infer(message, userContext, tool.name(), result.data());
-
-        AiInteractionDtos.RenderedResponse rendered = responseRenderer.render(
-                "smart_ui",
-                smartUiData,
-                result.meta(),
-                false,
-                tool.name(),
-                toolCall.reasoning()
-        );
-
         if (tool.cacheable()) {
             ObjectNode wrapper = objectMapper.createObjectNode();
-            wrapper.put("type", rendered.type());
-            wrapper.set("data", rendered.data());
-            wrapper.set("meta", rendered.meta());
+            wrapper.put("type", "raw_data");
+            wrapper.set("data", result.data());
+            wrapper.set("meta", result.meta());
 
-            Duration ttl = "getAttendanceReport".equals(tool.name()) || "getFeeDefaulters".equals(tool.name())
-                    ? Duration.ofSeconds(properties.cache().reportTtlSeconds())
-                    : Duration.ofSeconds(properties.cache().promptTtlSeconds());
+            Duration ttl = Duration.ofSeconds(properties.cache().promptTtlSeconds());
             cacheService.put(cacheKey, wrapper, ttl);
         }
 
-        return rendered;
+        return result.data();
     }
 
     private JsonNode textPayload(String text) {

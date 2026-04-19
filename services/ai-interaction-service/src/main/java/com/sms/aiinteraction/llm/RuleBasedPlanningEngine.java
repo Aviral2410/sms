@@ -27,81 +27,81 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
+    public List<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
         String normalized = message == null ? "" : message.trim().toLowerCase(Locale.ROOT);
-        if (normalized.isBlank()) return Optional.empty();
+        if (normalized.isBlank()) return List.of();
 
         if (containsAny(normalized, "attendance", "absent", "present")) {
-            return Optional.of(new ToolCall("getAttendanceReport", attendanceArgs(normalized), "rule_based:attendance"));
+            return List.of(new ToolCall("getAttendanceReport", attendanceArgs(normalized), "rule_based:attendance"));
         }
         if (containsAny(normalized, "dashboard", "kpi", "school summary", "overall summary")) {
-            return Optional.of(new ToolCall("getSchoolDashboard", objectMapper.createObjectNode(), "rule_based:dashboard"));
+            return List.of(new ToolCall("getSchoolDashboard", objectMapper.createObjectNode(), "rule_based:dashboard"));
         }
         if (containsAny(normalized, "enrollment trend", "enrolment trend", "admission trend", "admissions trend", "student trend", "enrollment over time", "trend", "over time")) {
-            return Optional.of(new ToolCall("getEnrollmentTrend", trendArgs(normalized), "rule_based:enrollment_trend"));
+            return List.of(new ToolCall("getEnrollmentTrend", trendArgs(normalized), "rule_based:enrollment_trend"));
         }
         if (containsAny(normalized, "announcement", "announcements", "notice", "notices", "broadcast")) {
             if (containsAny(normalized, "create", "publish", "post")) {
-                return Optional.of(new ToolCall("createAnnouncement", announcementArgs(message), "rule_based:create_announcement"));
+                return List.of(new ToolCall("createAnnouncement", announcementArgs(message), "rule_based:create_announcement"));
             }
-            return Optional.of(new ToolCall("getAnnouncements", objectMapper.createObjectNode(), "rule_based:announcements"));
+            return List.of(new ToolCall("getAnnouncements", objectMapper.createObjectNode(), "rule_based:announcements"));
         }
         if (containsAny(normalized, "fee", "fees", "defaulter", "dues", "due")) {
-            return Optional.of(new ToolCall("getFeeDefaulters", objectMapper.createObjectNode(), "rule_based:finance"));
+            return List.of(new ToolCall("getFeeDefaulters", objectMapper.createObjectNode(), "rule_based:finance"));
         }
         if (containsAny(normalized, "library", "book", "resources")) {
-            return Optional.of(new ToolCall("getLibraryResources", objectMapper.createObjectNode(), "rule_based:library"));
+            return List.of(new ToolCall("getLibraryResources", objectMapper.createObjectNode(), "rule_based:library"));
         }
         if (containsAny(normalized, "homework", "assignment due", "assignments due")) {
-            return Optional.of(new ToolCall("getHomeworkSummary", objectMapper.createObjectNode(), "rule_based:homework"));
+            return List.of(new ToolCall("getHomeworkSummary", objectMapper.createObjectNode(), "rule_based:homework"));
         }
         if (containsAny(normalized, "exam", "result summary", "grade distribution")) {
-            return Optional.of(new ToolCall("getExamResultsSummary", objectMapper.createObjectNode(), "rule_based:results"));
+            return List.of(new ToolCall("getExamResultsSummary", objectMapper.createObjectNode(), "rule_based:results"));
         }
         if (containsAny(normalized, "transport", "bus", "route", "pickup", "drop")) {
-            return Optional.of(new ToolCall("getTransportOverview", objectMapper.createObjectNode(), "rule_based:transport"));
+            return List.of(new ToolCall("getTransportOverview", objectMapper.createObjectNode(), "rule_based:transport"));
         }
         if (containsAny(normalized, "performance", "result", "marks", "report card", "student")) {
-            return Optional.of(new ToolCall("getStudentPerformance", studentArgs(normalized), "rule_based:student_performance"));
+            return List.of(new ToolCall("getStudentPerformance", studentArgs(normalized), "rule_based:student_performance"));
         }
         if (containsAny(normalized, "notify", "notification", "announce", "announcement", "message parents")) {
-            return Optional.of(new ToolCall("sendNotification", notificationArgs(message), "rule_based:notification"));
+            return List.of(new ToolCall("sendNotification", notificationArgs(message), "rule_based:notification"));
         }
         if (containsAny(normalized, "leave", "time off", "vacation", "absence request")) {
             if (containsAny(normalized, "approve leave", "reject leave", "leave approval")) {
-                return Optional.of(new ToolCall("reviewLeaveRequest", leaveReviewArgs(message), "rule_based:leave_review"));
+                return List.of(new ToolCall("reviewLeaveRequest", leaveReviewArgs(message), "rule_based:leave_review"));
             }
             if (containsAny(normalized, "apply leave", "request leave", "create leave")) {
-                return Optional.of(new ToolCall("createLeaveRequest", leaveCreateArgs(normalized), "rule_based:leave_create"));
+                return List.of(new ToolCall("createLeaveRequest", leaveCreateArgs(normalized), "rule_based:leave_create"));
             }
             if (containsAny(normalized, "my leave", "my leaves")) {
-                return Optional.of(new ToolCall("getMyLeaveRequests", objectMapper.createObjectNode(), "rule_based:my_leaves"));
+                return List.of(new ToolCall("getMyLeaveRequests", objectMapper.createObjectNode(), "rule_based:my_leaves"));
             }
-            return Optional.of(new ToolCall("getLeaveRequests", leaveListArgs(normalized), "rule_based:leave_list"));
+            return List.of(new ToolCall("getLeaveRequests", leaveListArgs(normalized), "rule_based:leave_list"));
         }
         if (containsAny(normalized, "message threads", "threads", "inbox", "messages")) {
-            return Optional.of(new ToolCall("getMessageThreads", objectMapper.createObjectNode(), "rule_based:threads"));
+            return List.of(new ToolCall("getMessageThreads", objectMapper.createObjectNode(), "rule_based:threads"));
         }
         if (containsAny(normalized, "forum leaderboard", "leaderboard", "top contributors")) {
-            return Optional.of(new ToolCall("getForumLeaderboard", leaderboardArgs(normalized), "rule_based:forum_leaderboard"));
+            return List.of(new ToolCall("getForumLeaderboard", leaderboardArgs(normalized), "rule_based:forum_leaderboard"));
         }
         if (containsAny(normalized, "school counts", "how many schools", "total schools", "onboarded schools", "school list")) {
-            return Optional.of(new ToolCall("getPlatformSchoolsOverview", objectMapper.createObjectNode(), "rule_based:schools_overview"));
+            return List.of(new ToolCall("getPlatformSchoolsOverview", objectMapper.createObjectNode(), "rule_based:schools_overview"));
         }
         if (containsAny(normalized, "plan", "subscription", "price", "pricing", "compare", "tier", "package", "cost", "feature comparison")) {
-            return Optional.of(new ToolCall("getSubscriptionPlans", objectMapper.createObjectNode(), "rule_based:subscriptions"));
+            return List.of(new ToolCall("getSubscriptionPlans", objectMapper.createObjectNode(), "rule_based:subscriptions"));
         }
         if (containsAny(normalized, "roadmap", "upcoming", "future", "features", "2026", "whats next", "product roadmap", "milestones")) {
-            return Optional.of(new ToolCall("getPlatformRoadmap", objectMapper.createObjectNode(), "rule_based:roadmap"));
+            return List.of(new ToolCall("getPlatformRoadmap", objectMapper.createObjectNode(), "rule_based:roadmap"));
         }
         if (containsAny(normalized, "vision", "about", "platform info", "what is", "elevatesmart", "company information", "platform overview")) {
-            return Optional.of(new ToolCall("getPublicPlatformInfo", objectMapper.createObjectNode(), "rule_based:platform_info"));
+            return List.of(new ToolCall("getPublicPlatformInfo", objectMapper.createObjectNode(), "rule_based:platform_info"));
         }
         if (containsAny(normalized, "demo", "request demo", "contact", "support ticket", "raise ticket", "help", "book demo", "inquiry", "get in touch")) {
-            return Optional.of(new ToolCall("submitPublicInquiry", inquiryArgs(message), "rule_based:inquiry"));
+            return List.of(new ToolCall("submitPublicInquiry", inquiryArgs(message), "rule_based:inquiry"));
         }
 
-        return Optional.empty();
+        return List.of();
     }
 
     private ObjectNode inquiryArgs(String message) {

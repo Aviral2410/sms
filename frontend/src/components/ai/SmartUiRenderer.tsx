@@ -81,7 +81,10 @@ const AlertBanner: React.FC<{ message: string; severity: string }> = ({ message,
   </div>
 );
 
-import { ProfilePanel, Timeline, Kanban, BarChart } from './AiVisuals';
+import { ProfessionalBarChart, ProfessionalAreaChart, ProfessionalPieChart } from './ProfessionalCharts';
+import { FormReview } from './FormReview';
+import { ProfilePanel, Timeline, Kanban, Heatmap } from './AiVisuals';
+// Duplicate ArrowRight import removed
 
 // --- Components Registry ---
 
@@ -93,9 +96,11 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   profile_panel: ProfilePanel,
   timeline: Timeline,
   kanban: Kanban,
-  chart_bar: BarChart,
-  chart_line: BarChart, // Fallback to Bar for now
-  chart_pie: BarChart   // Fallback to Bar for now
+  chart_bar: ProfessionalBarChart,
+  chart_line: ProfessionalAreaChart,
+  chart_pie: ProfessionalPieChart,
+  heatmap: Heatmap,
+  form_prefill: FormReview
 };
 
 export const SmartUiRenderer: React.FC<{ response: any }> = ({ response }) => {
@@ -103,32 +108,58 @@ export const SmartUiRenderer: React.FC<{ response: any }> = ({ response }) => {
 
   const { title, view, components, insights, actions, summary } = response;
 
+  // Progressive rendering logic for streaming feel
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const item = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="space-y-4">
+    <motion.div 
+      variants={container}
+      initial="hidden"
+      animate="show"
+      className="space-y-4"
+    >
       {/* Header & Summary */}
-      <div className="mb-6">
-        {title && <h3 className="text-lg font-black tracking-tight text-white mb-2">{title}</h3>}
+      <motion.div variants={item} className="mb-6 border-b border-white/5 pb-4">
+        {title && <h3 className="text-xl font-black tracking-tight text-white mb-2">{title}</h3>}
         {summary && <p className="text-sm text-emerald-50/60 font-medium leading-relaxed">{summary}</p>}
-      </div>
+      </motion.div>
 
       {/* Grid for Components */}
       <div className={`grid gap-4 ${view === 'mixed_dashboard' ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {components?.map((comp: any, i: number) => {
           const Comp = ComponentRegistry[comp.type];
-          if (!Comp) return <div key={i} className="text-[10px] text-white/20">Component {comp.type} pending...</div>;
+          if (!Comp) return <div key={i} className="text-[10px] text-white/20">Knowledge Layer Syncing...</div>;
           
           return (
-            <div key={i} className={comp.type === 'table' || comp.type === 'chart_bar' ? 'col-span-2' : ''}>
+            <motion.div 
+              key={i} 
+              variants={item}
+              className={comp.type === 'table' || comp.type === 'chart_bar' || comp.type === 'chart_line' || comp.type === 'form_prefill' || comp.type === 'profile_panel' ? 'col-span-2' : ''}
+            >
               <Comp {...comp} />
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
       {/* Insights */}
       {insights && insights.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-white/5">
-          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-3">Expert Insights</div>
+        <motion.div variants={item} className="mt-6 pt-4 border-t border-white/5">
+          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60 mb-3">Expert Insights</div>
           <div className="space-y-3">
             {insights.map((insight: string, i: number) => (
               <div key={i} className="flex gap-3 text-xs text-white/70 font-medium">
@@ -137,23 +168,23 @@ export const SmartUiRenderer: React.FC<{ response: any }> = ({ response }) => {
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Suggested Actions */}
       {actions && actions.length > 0 && (
-        <div className="mt-8 flex flex-wrap gap-2">
-          {actions.map((btn: any, i: number) => (
+        <motion.div variants={item} className="mt-8 flex flex-wrap gap-2">
+          {actions.map((btn: any, j: number) => (
             <button 
-              key={i}
+              key={j}
               className="px-4 py-2.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-black uppercase tracking-wider hover:bg-emerald-500/20 transition-all flex items-center gap-2 group"
             >
               {btn.label}
               <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
             </button>
           ))}
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 };

@@ -72,6 +72,70 @@ export const Kanban: React.FC<{ columns: any[] }> = ({ columns }) => (
   </div>
 );
 
+// --- CSS Line Chart ---
+export const LineChart: React.FC<{ title: string; labels: string[]; series: number[] }> = ({ title, labels, series }) => {
+  const max = Math.max(...series, 1);
+  const points = series.map((val, i) => `${(i / (series.length - 1)) * 100},${100 - (val / max) * 100}`).join(' ');
+
+  return (
+    <div className="bg-black/40 border border-white/10 rounded-2xl p-4 my-4">
+      <div className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-6">{title}</div>
+      <div className="relative h-32 w-full pt-4">
+        <svg className="w-full h-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 100">
+          <polyline
+            fill="none"
+            stroke="url(#emerald-grad)"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            points={points}
+            className="drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+          />
+          <defs>
+            <linearGradient id="emerald-grad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="1" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div className="flex justify-between mt-4 px-1">
+        {labels.map((l, i) => (
+          <div key={i} className="text-[8px] font-bold text-white/20 uppercase truncate w-8 text-center">{l.substring(0, 3)}</div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// --- Heatmap (For Attendance/Engagement) ---
+export const Heatmap: React.FC<{ title: string; data: any[] }> = ({ title, data }) => (
+  <div className="bg-black/40 border border-white/10 rounded-2xl p-4 my-4">
+    <div className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4">{title}</div>
+    <div className="grid grid-cols-7 gap-1">
+      {Array.from({ length: 28 }).map((_, i) => {
+        const intensity = Math.random(); // Dummy intensity for visual demo
+        return (
+          <div 
+            key={i} 
+            className="aspect-square rounded-[2px] transition-colors hover:scale-110"
+            style={{ 
+              backgroundColor: intensity > 0.8 ? '#10b981' : 
+                               intensity > 0.5 ? '#059669' : 
+                               intensity > 0.3 ? '#065f46' : '#01211b' 
+            }}
+          />
+        );
+      })}
+    </div>
+    <div className="flex justify-between mt-3 text-[8px] font-bold text-white/20 uppercase tracking-widest">
+      <span>MON</span>
+      <span>FRI</span>
+      <span>SUN</span>
+    </div>
+  </div>
+);
+
 // --- CSS Bar Chart (Elite Visualization) ---
 export const BarChart: React.FC<{ title: string; labels: string[]; series: number[] }> = ({ title, labels, series }) => {
   const max = Math.max(...series, 1);

@@ -28,21 +28,21 @@ public class AdministrativeInferenceService {
         this.objectMapper = objectMapper;
     }
 
-    public JsonNode infer(String userQuery, UserContext userContext, String toolName, JsonNode toolData) {
+    public JsonNode infer(String userQuery, UserContext userContext, ObjectNode toolResults) {
         String provider = properties.llm().provider();
         if ("OLLAMA".equalsIgnoreCase(provider)) {
-            return inferWithOllama(userQuery, userContext, toolName, toolData);
+            return inferWithOllama(userQuery, userContext, toolResults);
         }
         // Fallback to a basic structured wrapper if LLM is unavailable
-        return basicStructuredResponse(toolName, toolData);
+        return basicStructuredResponse(toolResults);
     }
 
-    private JsonNode inferWithOllama(String userQuery, UserContext userContext, String toolName, JsonNode toolData) {
+    private JsonNode inferWithOllama(String userQuery, UserContext userContext, ObjectNode toolResults) {
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", properties.llm().ollamaModel());
             requestBody.put("stream", false);
-            requestBody.put("temperature", 0.0); // Exact schema adherence
+            requestBody.put("temperature", 0.0);
 
             ArrayNode messages = requestBody.putArray("messages");
             messages.addObject().put("role", "system").put("content", getSystemPrompt());
@@ -50,16 +50,15 @@ public class AdministrativeInferenceService {
             StringBuilder userPrompt = new StringBuilder();
             userPrompt.append("User Query: ").append(userQuery).append("\n");
             userPrompt.append("User Role: ").append(userContext.role().name()).append("\n");
-            userPrompt.append("Executed Tool: ").append(toolName).append("\n");
-            userPrompt.append("Tool Output Data: ").append(objectMapper.writeValueAsString(toolData)).append("\n");
-            userPrompt.append("\nReturn the REQUIRED JSON UI response now.");
+            userPrompt.append("Multi-Tool Outputs Context:\n").append(objectMapper.writeValueAsString(toolResults)).append("\n");
+            userPrompt.append("\nSynthesize all data sources. Return the REQUIRED JSON UI response now.");
 
             messages.addObject().put("role", "user").put("content", userPrompt.toString());
 
             String base = properties.llm().ollamaBaseUrl().replaceAll("/+$", "");
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(base + "/api/chat"))
-                    .timeout(Duration.ofSeconds(30))
+                    .timeout(Duration.ofSeconds(45))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody)))
                     .build();
@@ -71,34 +70,48 @@ public class AdministrativeInferenceService {
                 return tryParseJson(content);
             }
         } catch (Exception ex) {
-            // Log error in production
+            // Log error
         }
-        return basicStructuredResponse(toolName, toolData);
+        return basicStructuredResponse(toolResults);
     }
 
     private String getSystemPrompt() {
         return """
             You are the AI Operating Layer inside a modern Student Management System (SMS).
-            Role: Think like an intelligent school administrator, teacher assistant, student success coach, analyst, and product designer.
+            Role: School Administrator, Success Coach, Data Analyst, and Product Designer.
             
-            STRICT RULES:
-            1. Return ONLY valid JSON. No text before or after.
-            2. Use curated UI components: kpi_card, table, checklist, alert_banner, chart_bar, chart_line, chart_pie, timeline, kanban.
-            3. Never show raw tool JSON. Convert it into clear, beautiful UI components.
-            4. Merge data into a 'mixed_dashboard' view if multiple metrics are available.
+            STRICT PROTOCOL:
+            1. Return ONLY valid JSON.
+            2. Never use plain text when a rich component exists.
+            3. HIDE raw tool data; synthesize it into Elite UI nodes.
+            
+            SMART UI DECISION RULES:
+            - STUDENT LOOKUP: Use profile_panel, quick stats, attendance %.
+            - ATTENDANCE: Use table, heatmap, trend line, absentee alerts.
+            - FEES/FINANCE: Use kpi_card, due list table, overdue alerts.
+            - EXAMS/MARKS: Use rank table, subject comparison charts, topper cards.
+            - TIMETABLE: Use calendar, weekly grid, teacher slot cards.
+            - PLANNING: Use timeline, kanban, milestones.
+            - TRANSPORT: Use route cards, bus occupancy tables.
+            
+            UI COMPONENT LEXICON:
+            - kpi_card: { "type": "kpi_card", "title": "...", "value": "...", "subtitle": "..." }
+            - table: { "type": "table", "title": "...", "columns": [...], "rows": [...] }
+            - chart_bar / chart_line: { "type": "chart_bar", "title": "...", "labels": [...], "series": [...] }
+            - profile_panel: { "name": "...", "meta": {...}, "stats": [...] }
+            - timeline: { "items": [{ "date": "...", "title": "...", "description": "..." }] }
+            - kanban: { "columns": [{ "title": "...", "items": [...] }] }
+            - alert_banner: { "severity": "low|medium|high", "message": "..." }
             
             OUTPUT SCHEMA:
             {
               "intent": "string",
-              "title": "A Premium Title",
-              "view": "mixed_dashboard | profile | analytics | light",
-              "summary": "Concise high-level summary",
-              "components": [
-                { "type": "kpi_card", "title": "...", "value": "...", "subtitle": "..." },
-                { "type": "table", "title": "...", "columns": [...], "rows": [...] }
-              ],
-              "insights": ["Insight 1", "Insight 2"],
-              "actions": [ { "label": "Label", "action": "action_id" } ]
+              "title": "string",
+              "view": "mixed_dashboard | profile | analytics",
+              "summary": "high-level summary",
+              "components": [...],
+              "insights": [...],
+              "actions": [ { "label": "Text", "action": "id" } ]
             }
             """;
     }
@@ -116,17 +129,21 @@ public class AdministrativeInferenceService {
         }
     }
 
-    private JsonNode basicStructuredResponse(String toolName, JsonNode toolData) {
+    private JsonNode basicStructuredResponse(ObjectNode toolResults) {
         ObjectNode root = objectMapper.createObjectNode();
-        root.put("intent", "data_view");
-        root.put("title", "Service Result: " + toolName);
+        root.put("intent", "multi_data_view");
+        root.put("title", "Aggregated Service Results");
         root.put("view", "light");
-        root.put("summary", "Automated view generated for " + toolName);
+        root.put("summary", "Automated view generated for multiple data sources.");
         ArrayNode components = root.putArray("components");
-        ObjectNode table = components.addObject();
-        table.put("type", "table");
-        table.put("title", "Raw Data Output");
-        // Logic to extract columns/rows from generic toolData would go here
+        
+        toolResults.fields().forEachRemaining(entry -> {
+            ObjectNode table = components.addObject();
+            table.put("type", "table");
+            table.put("title", "Source: " + entry.getKey());
+            table.set("data", entry.getValue());
+        });
+        
         return root;
     }
 }

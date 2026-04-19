@@ -8,14 +8,12 @@ import com.sms.aiinteraction.config.AiInteractionProperties;
 import com.sms.aiinteraction.security.UserContext;
 import com.sms.aiinteraction.tool.ToolCall;
 import com.sms.aiinteraction.tool.ToolDescriptor;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -32,36 +30,30 @@ public class OllamaPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
+    public List<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
         if (!"OLLAMA".equalsIgnoreCase(properties.llm().provider())) {
-            return Optional.empty();
+            return List.of();
         }
         if (properties.llm().ollamaBaseUrl() == null || properties.llm().ollamaBaseUrl().isBlank()) {
-            return Optional.empty();
+            return List.of();
         }
         if (properties.llm().ollamaModel() == null || properties.llm().ollamaModel().isBlank()) {
-            return Optional.empty();
+            return List.of();
         }
 
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", properties.llm().ollamaModel());
             requestBody.put("stream", false);
-            requestBody.put("temperature", 0.1); // Slightly higher for better reasoning
+            requestBody.put("temperature", 0.1);
 
             ArrayNode messages = requestBody.putArray("messages");
             
-            // Context-Aware System Prompt
             StringBuilder systemPrompt = new StringBuilder();
-            systemPrompt.append("You are the ElevateSmart AI Assistant. You help users manage their education platform.\n");
-            systemPrompt.append("Goal: Choose exactly one tool to fulfill the user's intent. Use history to resolve context.\n");
-            systemPrompt.append("Guided Assistance Rules:\n");
-            systemPrompt.append("1. Onboarding: If history suggests onboarding, call 'getOnboardingFormStatus' with current 'data' in args. If 'isReady' is false, ASK for the 'nextFieldToAsk'. If 'isReady' is true, recommend 'submitSchoolOnboarding'.\n");
-            systemPrompt.append("2. Support: If user has an issue, collect fullName, email, phone, subject, message, and call 'submitSupportTicket'.\n");
-            systemPrompt.append("3. Anonymous Users: Use history to track their progress via Guest-ID. Persist their context.\n");
-            systemPrompt.append("4. Workspaces: If a logged-in user wants to organize chats, call 'submitCreateWorkspace' with the name.\n");
-            systemPrompt.append("5. Platforms/Security: Provide detailed platform info using 'getPlatformSecurityInfo' or 'getPublicPlatformInfo'.\n");
-            systemPrompt.append("Constraint: Output ONLY JSON: {\"tool\":\"<name>\",\"arguments\":{...}}.\n");
+            systemPrompt.append("You are the ElevateSmart AI Orchestrator.\n");
+            systemPrompt.append("Goal: Select ONE OR MORE tools to fulfill the user's request. Chaining is encouraged for complex queries.\n");
+            systemPrompt.append("Constraint: Output ONLY valid JSON array: [ {\"tool\":\"name\",\"arguments\":{...}} ].\n");
+            systemPrompt.append("If no tool is needed, return empty array [].\n");
 
             messages.addObject().put("role", "system").put("content", systemPrompt.toString());
 
@@ -73,54 +65,74 @@ public class OllamaPlanningEngine implements LlmPlanningEngine {
             }
 
             StringBuilder userPrompt = new StringBuilder();
-            if (history != null && !history.isEmpty()) {
-                userPrompt.append("CONVERSATION HISTORY:\n");
-                for (String h : history) {
-                    userPrompt.append("- ").append(h).append("\n");
-                }
-                userPrompt.append("\n");
-            }
-            userPrompt.append("CURRENT REQUEST: ").append(message).append("\n");
-            userPrompt.append("USER ROLE: ").append(userContext.role().name()).append("\n");
-            userPrompt.append("\nAVAILABLE TOOLS:\n").append(objectMapper.writeValueAsString(toolCatalog));
+            userPrompt.append("REQUEST: ").append(message).append("\n");
+            userPrompt.append("ROLE: ").append(userContext.role().name()).append("\n");
+            userPrompt.append("\nTOOLS:\n").append(objectMapper.writeValueAsString(toolCatalog));
 
             messages.addObject().put("role", "user").put("content", userPrompt.toString());
 
             String base = properties.llm().ollamaBaseUrl().replaceAll("/+$", "");
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(base + "/api/chat"))
-                    .timeout(Duration.ofSeconds(10))
+                    .timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody)))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                return Optional.empty();
+            if (response.statusCode() != 200) {
+                return List.of();
             }
 
             JsonNode root = objectMapper.readTree(response.body());
-            String content = root.path("message").path("content").asText("");
-            if (content == null || content.isBlank()) {
-                return Optional.empty();
-            }
+            String content = root.path("message").path("content").asText("").trim();
+            JsonNode parsed = tryParseJson(content);
 
-            JsonNode parsed = tryParseJsonObject(content.trim());
-            if (parsed == null || !parsed.isObject()) {
-                return Optional.empty();
+            if (parsed == null) return List.of();
+
+            List<ToolCall> calls = new java.util.ArrayList<>();
+            if (parsed.isArray()) {
+                for (JsonNode node : parsed) {
+                    addCall(calls, node);
+                }
+            } else if (parsed.isObject()) {
+                addCall(calls, parsed);
             }
-            String tool = parsed.path("tool").asText("");
-            if (tool.isBlank() || "NONE".equalsIgnoreCase(tool)) {
-                return Optional.empty();
+            return calls;
+        } catch (Exception ex) {
+            return List.of();
+        }
+    }
+
+    private void addCall(List<ToolCall> list, JsonNode node) {
+        String tool = node.path("tool").asText("");
+        if (!tool.isBlank() && !"NONE".equalsIgnoreCase(tool)) {
+            JsonNode args = node.path("arguments");
+            ObjectNode argsNode = args.isObject() ? (ObjectNode) args : objectMapper.createObjectNode();
+            list.add(new ToolCall(tool, argsNode, "ollama_chain_planner"));
+        }
+    }
+
+    private JsonNode tryParseJson(String raw) {
+        try {
+            int start = raw.indexOf('[');
+            int startObj = raw.indexOf('{');
+            
+            // Try array first
+            if (start >= 0 && (start < startObj || startObj < 0)) {
+                int end = raw.lastIndexOf(']');
+                if (end > start) return objectMapper.readTree(raw.substring(start, end + 1));
             }
-            JsonNode args = parsed.path("arguments");
-            ObjectNode argsNode = args != null && args.isObject() ? (ObjectNode) args : objectMapper.createObjectNode();
-            return Optional.of(new ToolCall(tool, argsNode, "ollama_json_planner"));
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            return Optional.empty();
-        } catch (IOException ex) {
-            return Optional.empty();
+            
+            // Try object
+            if (startObj >= 0) {
+                int endObj = raw.lastIndexOf('}');
+                if (endObj > startObj) return objectMapper.readTree(raw.substring(startObj, endObj + 1));
+            }
+            
+            return objectMapper.readTree(raw);
+        } catch (Exception ex) {
+            return null;
         }
     }
 
