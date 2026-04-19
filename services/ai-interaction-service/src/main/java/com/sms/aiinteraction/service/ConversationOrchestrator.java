@@ -145,7 +145,16 @@ public class ConversationOrchestrator {
                 eventConsumer.accept(new AiInteractionDtos.StreamEvent("final", objectMapper.valueToTree(response)));
                 onComplete.run();
             } catch (Exception ex) {
-                errorConsumer.accept(ex);
+                try {
+                    String msg = "I'm sorry, I encountered an issue: " + (ex.getMessage() != null ? ex.getMessage() : "Unknown error");
+                    AiInteractionDtos.RenderedResponse errorRendered = responseRenderer.clarificationResponse(msg);
+                    AiInteractionDtos.ChatResponse errorResponse = new AiInteractionDtos.ChatResponse(null, null, errorRendered);
+                    eventConsumer.accept(new AiInteractionDtos.StreamEvent("final", objectMapper.valueToTree(errorResponse)));
+                } catch (Exception inner) {
+                    errorConsumer.accept(ex);
+                } finally {
+                    onComplete.run();
+                }
             }
         });
     }

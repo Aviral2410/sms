@@ -14,7 +14,9 @@ public class ToolArgumentValidationService {
             case "getAttendanceReport" -> validateAttendance(args);
             case "getEnrollmentTrend" -> validateEnrollmentTrend(args);
             case "getFeeDefaulters", "getAnnouncements", "getHomeworkSummary", "getExamResultsSummary", "getTransportOverview",
-                 "getSchoolDashboard", "getLibraryResources", "getMessageThreads", "getMyLeaveRequests", "getPlatformSchoolsOverview" -> {
+            "getSchoolDashboard", "getLibraryResources", "getMessageThreads", "getMyLeaveRequests", "getPlatformSchoolsOverview",
+            "getSubscriptionPlans", "getPlatformRoadmap", "getPublicPlatformInfo", "submitPublicInquiry", "getOnboardingInfo",
+            "getAuthHelp", "getSchoolJoiningInfo", "getSupportInfo", "getPlatformVision", "getAdminHelp", "getPlatformFaq" -> {
                 // No required arguments for now.
             }
             case "getForumLeaderboard" -> validateForumLeaderboard(args);
