@@ -165,6 +165,14 @@ export const AiAssistantPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const gid = ensureGuestId();
+    if (gid) {
+      fetchWorkspaces();
+      fetchHistory();
+    }
+  }, [ensureGuestId, fetchWorkspaces, fetchHistory]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
@@ -349,7 +357,8 @@ export const AiAssistantPage: React.FC = () => {
 
       {/* Sidebar */}
       <motion.div 
-        animate={{ width: sidebarCollapsed ? 0 : sidebarWidth }}
+        initial={false}
+        animate={{ width: sidebarCollapsed ? 0 : (sidebarWidth || 280) }}
         className="relative bg-black/40 border-r border-emerald-500/10 flex flex-col overflow-hidden"
       >
         <div className="p-6 flex items-center justify-between border-b border-white/5">
