@@ -27,7 +27,7 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
         String normalized = message == null ? "" : message.trim().toLowerCase(Locale.ROOT);
         if (normalized.isBlank()) return Optional.empty();
 

@@ -7,5 +7,5 @@ import java.util.List;
 import java.util.Optional;
 
 public interface LlmPlanningEngine {
-    Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools);
+    Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history);
 }

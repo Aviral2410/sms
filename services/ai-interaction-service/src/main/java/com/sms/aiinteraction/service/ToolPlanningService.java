@@ -31,15 +31,15 @@ public class ToolPlanningService {
      * Each engine returns Optional.empty() when its provider is not configured,
      * so the chain degrades gracefully without errors.
      */
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
-        Optional<ToolCall> ollamaChoice = ollamaPlanner.plan(message, userContext, tools);
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
+        Optional<ToolCall> ollamaChoice = ollamaPlanner.plan(message, userContext, tools, history);
         if (ollamaChoice.isPresent()) {
             return ollamaChoice;
         }
-        Optional<ToolCall> openAiChoice = openAiPlanner.plan(message, userContext, tools);
+        Optional<ToolCall> openAiChoice = openAiPlanner.plan(message, userContext, tools, history);
         if (openAiChoice.isPresent()) {
             return openAiChoice;
         }
-        return fallbackPlanner.plan(message, userContext, tools);
+        return fallbackPlanner.plan(message, userContext, tools, history);
     }
 }

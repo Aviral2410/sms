@@ -32,7 +32,7 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
         String provider = properties.llm().provider();
         boolean isOpenAi = "OPENAI".equalsIgnoreCase(provider);
         boolean isOllama = "OLLAMA".equalsIgnoreCase(provider);

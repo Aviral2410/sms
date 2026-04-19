@@ -32,7 +32,7 @@ public class OllamaPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
         if (!"OLLAMA".equalsIgnoreCase(properties.llm().provider())) {
             return Optional.empty();
         }
@@ -47,16 +47,18 @@ public class OllamaPlanningEngine implements LlmPlanningEngine {
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", properties.llm().ollamaModel());
             requestBody.put("stream", false);
-            requestBody.put("temperature", 0);
+            requestBody.put("temperature", 0.1); // Slightly higher for better reasoning
 
             ArrayNode messages = requestBody.putArray("messages");
-            messages.addObject()
-                    .put("role", "system")
-                    .put("content",
-                            "You are an intent planner. Choose exactly one tool for the user's request. "
-                                    + "Output ONLY a single JSON object with either "
-                                    + "{\"tool\":\"<tool_name>\",\"arguments\":{...}} or {\"tool\":\"NONE\"}. "
-                                    + "Do not include markdown.");
+            
+            // Context-Aware System Prompt
+            StringBuilder systemPrompt = new StringBuilder();
+            systemPrompt.append("You are the ElevateSmart AI Assistant. You help users manage their education platform.\n");
+            systemPrompt.append("Goal: Choose exactly one tool to fulfill the user's intent. Use the provided conversation history to resolve pronouns or context.\n");
+            systemPrompt.append("Constraint: Output ONLY a JSON object: {\"tool\":\"<name>\",\"arguments\":{...}} or {\"tool\":\"NONE\"}.\n");
+            systemPrompt.append("History available: ").append(history.size()).append(" messages.\n");
+
+            messages.addObject().put("role", "system").put("content", systemPrompt.toString());
 
             ObjectNode toolCatalog = objectMapper.createObjectNode();
             for (ToolDescriptor descriptor : tools) {
@@ -64,12 +66,20 @@ public class OllamaPlanningEngine implements LlmPlanningEngine {
                 entry.put("description", descriptor.description());
                 entry.set("parameters", descriptor.inputSchema());
             }
-            messages.addObject()
-                    .put("role", "user")
-                    .put("content",
-                            "role=" + userContext.role().name()
-                                    + "\nrequest=" + message
-                                    + "\n\nTOOLS=" + objectMapper.writeValueAsString(toolCatalog));
+
+            StringBuilder userPrompt = new StringBuilder();
+            if (history != null && !history.isEmpty()) {
+                userPrompt.append("CONVERSATION HISTORY:\n");
+                for (String h : history) {
+                    userPrompt.append("- ").append(h).append("\n");
+                }
+                userPrompt.append("\n");
+            }
+            userPrompt.append("CURRENT REQUEST: ").append(message).append("\n");
+            userPrompt.append("USER ROLE: ").append(userContext.role().name()).append("\n");
+            userPrompt.append("\nAVAILABLE TOOLS:\n").append(objectMapper.writeValueAsString(toolCatalog));
+
+            messages.addObject().put("role", "user").put("content", userPrompt.toString());
 
             String base = properties.llm().ollamaBaseUrl().replaceAll("/+$", "");
             HttpRequest request = HttpRequest.newBuilder()

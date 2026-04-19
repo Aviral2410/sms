@@ -126,14 +126,10 @@ public class ConversationOrchestrator {
         List<ToolDescriptor> descriptors = toolRegistry.all().stream()
                 .map(AiTool::descriptor)
                 .toList();
-        Optional<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors);
-        if (plan.isEmpty()) {
-            List<String> history = conversationMemoryService.getRecentTextHistory(userContext, conversationId);
-            if (!history.isEmpty()) {
-                String contextualPrompt = message + "\n\nRecent context:\n" + String.join("\n", history);
-                plan = toolPlanningService.plan(contextualPrompt, userContext, descriptors);
-            }
-        }
+
+        List<String> history = conversationMemoryService.getRecentTextHistory(userContext, conversationId);
+        Optional<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);
+
         if (plan.isEmpty()) {
             auditEventService.noPlan(userContext, conversationId.toString());
             return responseRenderer.clarificationResponse(
