@@ -14,7 +14,7 @@ import java.util.Arrays;
 @Slf4j
 public class LoggingAspect {
 
-    @Around("execution(* com.sms..*(..)) && !within(com.sms.common.logging..*) && !within(jakarta.servlet.Filter+)")
+    @Around("(@within(org.springframework.stereotype.Service) || @within(org.springframework.web.bind.annotation.RestController)) && !within(com.sms.common.logging..*) && !within(jakarta.servlet.Filter+) && !within(com.sms..config..*)")
     public Object profileAllMethods(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         MethodSignature methodSignature = (MethodSignature) proceedingJoinPoint.getSignature();
         String className = methodSignature.getDeclaringType().getSimpleName();

@@ -24,10 +24,10 @@ const ChatBubble: React.FC<{ message: any; onAction?: (token: string) => void }>
       animate={{ opacity: 1, y: 0 }}
       className={`flex ${isBot ? 'justify-start' : 'justify-end'} mb-6`}
     >
-      <div className={`max-w-[90%] rounded-2xl p-5 ${
+      <div className={`rounded-2xl p-5 ${
         isBot 
-          ? 'bg-[#0a1829] border border-white/10 text-emerald-50 shadow-2xl' 
-          : 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-50 shadow-lg'
+          ? 'bg-[#0a1829] border border-white/10 text-emerald-50 shadow-2xl w-full' 
+          : 'bg-emerald-600/20 border border-emerald-500/30 text-emerald-50 shadow-lg max-w-[85%]'
       }`}>
         <div className="flex items-center gap-2 mb-4">
           {isBot ? (
@@ -208,7 +208,21 @@ export const AiAssistantPage: React.FC = () => {
             const parsed = tryParseJson<any>(data);
             const chunk = parsed.ok ? (parsed.value.text || '') : data;
             streamText += chunk;
-            setMessages(prev => prev.map(m => m.id === assistantId ? { ...m, content: streamText } : m));
+            
+            // Heuristic to detect structured response during streaming
+            let detectedResponse = null;
+            if (streamText.trim().startsWith('{')) {
+                const fullParsed = tryParseJson<any>(streamText);
+                if (fullParsed.ok && fullParsed.value.type === 'smart_ui') {
+                    detectedResponse = fullParsed.value;
+                }
+            }
+
+            setMessages(prev => prev.map(m => m.id === assistantId ? { 
+                ...m, 
+                content: streamText,
+                response: detectedResponse || m.response
+            } : m));
           }
           if (event === 'final') {
             const parsed = tryParseJson<any>(data);
@@ -470,7 +484,7 @@ export const AiAssistantPage: React.FC = () => {
 
         {/* Chat Thread */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pb-40">
-          <div className="max-w-4xl mx-auto">
+          <div className="w-full">
             {messages.length === 0 && (
               <div className="h-[60vh] flex flex-col items-center justify-center text-center">
                 <motion.div 
@@ -509,7 +523,7 @@ export const AiAssistantPage: React.FC = () => {
 
         {/* Sticky Input Area */}
         <div className="absolute bottom-0 inset-x-0 p-8 pb-10 pointer-events-none">
-          <div className="max-w-4xl mx-auto pointer-events-auto">
+          <div className="max-w-6xl mx-auto pointer-events-auto">
             {/* Suggestions */}
             <AnimatePresence>
               {showSuggestions && messages.length < 5 && (
