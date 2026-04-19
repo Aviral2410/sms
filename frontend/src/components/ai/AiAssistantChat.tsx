@@ -545,7 +545,7 @@ export const AiAssistantChat: React.FC = () => {
         
         {response && (
           <div className="mt-4 pt-4 border-t border-emerald-500/10">
-             <SmartUiRenderer payload={response} />
+             <SmartUiRenderer response={response.data} />
           </div>
         )}
       </div>
