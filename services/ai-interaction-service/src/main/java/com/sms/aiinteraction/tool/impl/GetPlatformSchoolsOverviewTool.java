@@ -52,7 +52,7 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
 
     @Override
     public Set<UserRole> allowedRoles() {
-        return Set.of(UserRole.PLATFORM_ADMIN, UserRole.ROLE_ADMIN);
+        return Set.of(UserRole.PLATFORM_ADMIN, UserRole.SCHOOL_ADMIN);
     }
 
     @Override
