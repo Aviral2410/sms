@@ -66,6 +66,13 @@ export const AiAssistantPage: React.FC = () => {
     ensureGuestId, sidebarWidth, setSidebarWidth, 
     sidebarCollapsed, setSidebarCollapsed, showSuggestions, toggleSuggestions 
   } = useAiStore();
+
+  useEffect(() => {
+    // Ensure sidebar is open for new or anonymous users to improve discoverability
+    if (sidebarCollapsed) {
+      setSidebarCollapsed(false);
+    }
+  }, []); // Only on mount
   
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
