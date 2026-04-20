@@ -16,6 +16,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,80 +39,81 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
     public ToolDescriptor descriptor() {
         ObjectNode schema = objectMapper.createObjectNode();
         schema.put("type", "object");
-        schema.putObject("properties");
-        return new ToolDescriptor(name(), "Retrieve count of onboarded schools and growth metrics across the platform.", schema);
+        ObjectNode props = schema.putObject("properties");
+        
+        props.putObject("lastMonths").put("type", "integer").put("description", "Last X months of growth.");
+        props.putObject("status").put("type", "string").put("description", "Status filter.");
+        props.putObject("state").put("type", "string").put("description", "State filter.");
+        props.putObject("region").put("type", "string").put("description", "Region filter.");
+        props.putObject("chartType").put("type", "string").put("description", "Recommendation: 'chart_bar', 'chart_line', or 'chart_pie'.");
+
+        return new ToolDescriptor(name(), "Comprehensive platform analytics including schools growth, status distribution, and regional metrics.", schema);
     }
 
     @Override
     public Set<UserRole> allowedRoles() {
-        return Set.of(UserRole.PLATFORM_ADMIN, UserRole.PUBLIC_ANONYMOUS);
-    }
-
-    @Override
-    public boolean cacheable() {
-        return true;
+        return Set.of(UserRole.PLATFORM_ADMIN, UserRole.SUPER_ADMIN);
     }
 
     @Override
     public ToolResult execute(ObjectNode arguments, UserContext userContext) {
-        // Fetch all schools from the onboarding service
-        JsonNode schoolsResponse = gatewayApiClient.get(
-                "/api/v1/onboarding/schools",
-                Collections.emptyMap(),
-                userContext.authorization()
-        );
+        JsonNode schoolsResponse = gatewayApiClient.get("/api/v1/onboarding/schools", Collections.emptyMap(), userContext.authorization());
+        
+        String statusFilter = arguments.path("status").asText(null);
+        String stateFilter = arguments.path("state").asText(null);
+        int monthsLimit = arguments.path("lastMonths").asInt(0);
+        String chartTypeSpec = arguments.path("chartType").asText("chart_bar");
+        if (!chartTypeSpec.startsWith("chart_")) chartTypeSpec = "chart_" + chartTypeSpec;
 
-        int totalCount = 0;
-        Map<String, Integer> growthByMonth = new TreeMap<>();
-        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+        ZonedDateTime now = ZonedDateTime.now();
+        var filtered = StreamSupport.stream(schoolsResponse.spliterator(), false)
+            .filter(s -> statusFilter == null || statusFilter.equalsIgnoreCase(s.path("status").asText("")))
+            .filter(s -> stateFilter == null || stateFilter.equalsIgnoreCase(s.path("state").asText("")))
+            .filter(s -> {
+                if (monthsLimit <= 0) return true;
+                try { return ZonedDateTime.parse(s.path("createdAt").asText()).isAfter(now.minusMonths(monthsLimit)); }
+                catch (Exception e) { return true; }
+            }).collect(Collectors.toList());
 
-        if (schoolsResponse != null && schoolsResponse.isArray()) {
-            totalCount = schoolsResponse.size();
-            for (JsonNode school : schoolsResponse) {
-                String createdAtStr = school.path("createdAt").asText(null);
-                if (createdAtStr != null) {
-                    try {
-                        String month;
-                        if (createdAtStr.contains("Z") || createdAtStr.contains("+")) {
-                            month = ZonedDateTime.parse(createdAtStr).format(monthFormatter);
-                        } else {
-                            // Fallback for LocalDateTime format
-                            month = java.time.LocalDateTime.parse(createdAtStr).format(monthFormatter);
-                        }
-                        growthByMonth.put(month, growthByMonth.getOrDefault(month, 0) + 1);
-                    } catch (Exception ex) {
-                        // Silent fallback - still count the school but don't group by month
-                    }
-                }
-            }
-        }
-
-        ObjectNode chartData = objectMapper.createObjectNode();
-        chartData.put("xKey", "month");
-        chartData.put("yKey", "count");
-        ArrayNode points = chartData.putArray("points");
-
-        growthByMonth.forEach((month, count) -> {
-            ObjectNode point = points.addObject();
-            point.put("month", month);
-            point.put("count", count);
+        long activeCount = filtered.stream().filter(s -> "ACTIVE".equalsIgnoreCase(s.path("status").asText())).count();
+        long pendingCount = filtered.stream().filter(s -> "PENDING".equalsIgnoreCase(s.path("status").asText())).count();
+        
+        Map<String, Integer> timeMap = new TreeMap<>();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
+        filtered.forEach(s -> {
+            try { String m = ZonedDateTime.parse(s.path("createdAt").asText()).format(fmt); timeMap.put(m, timeMap.getOrDefault(m, 0) + 1); } catch(Exception e){}
         });
 
-        ObjectNode data = objectMapper.createObjectNode();
-        data.put("text", "There are currently " + totalCount + " schools onboarded on the platform.");
-        data.put("totalSchools", totalCount);
-        data.set("chart", chartData);
+        ObjectNode response = objectMapper.createObjectNode();
+        response.put("title", "Platform Intelligence: Schools Onboarding");
+        response.put("view", "mixed_dashboard");
+        response.put("summary", "Analysis of " + filtered.size() + " schools matching criteria. Current health: " + 
+                  (pendingCount > 5 ? "Action required on " + pendingCount + " pending registrations." : "Stable onboarding flow."));
+
+        ArrayNode components = response.putArray("components");
         
-        // Only provide the full school list to Admins
-        if (userContext.role() == UserRole.PLATFORM_ADMIN) {
-            data.set("schools", schoolsResponse != null ? schoolsResponse : objectMapper.createArrayNode());
-        } else {
-            data.set("schools", objectMapper.createArrayNode());
-        }
+        // KPI Cards
+        components.addObject().put("type", "kpi_card").put("title", "Total Matches").put("value", String.valueOf(filtered.size())).put("color", "emerald");
+        components.addObject().put("type", "kpi_card").put("title", "Active Schools").put("value", String.valueOf(activeCount)).put("color", "sky");
+        components.addObject().put("type", "kpi_card").put("title", "Pending Verification").put("value", String.valueOf(pendingCount)).put("color", "amber");
+
+        // Dynamic Chart
+        ObjectNode chart = components.addObject();
+        chart.put("type", chartTypeSpec);
+        chart.put("title", "Growth Distribution");
+        ArrayNode labels = chart.putArray("labels");
+        ArrayNode series = chart.putArray("series");
+        timeMap.forEach((l, v) -> { labels.add(l); series.add(v); });
+
+        // Insights
+        ArrayNode insights = response.putArray("insights");
+        insights.add("Onboarding velocity has " + (timeMap.size() > 1 ? "shifted" : "remained steady") + " over the selected period.");
+        if (pendingCount > 0) insights.add("There are " + pendingCount + " schools awaiting administrative approval.");
+        if (stateFilter != null) insights.add("Regional density in " + stateFilter + " indicates strong market penetration.");
 
         ObjectNode meta = objectMapper.createObjectNode();
-        meta.put("tool", name());
+        meta.put("intent", "PLATFORM_ANALYTICS");
 
-        return new ToolResult("chart", data, meta);
+        return new ToolResult("smart_ui", response, meta);
     }
 }

@@ -625,52 +625,43 @@ export const AiAssistantChat: React.FC = () => {
           {toolsOpen && (
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 200, opacity: 1 }}
+              animate={{ width: 220, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               style={sidebarStyle}
             >
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 12px 8px' }}>
-                Chats
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 16px 8px' }}>
+                Conversation History
               </div>
-              {historyLoading && <div style={{ padding: '8px 12px', fontSize: 11, color: 'rgba(167,243,208,0.5)' }}>Loading...</div>}
-              {chats.map((chat) => (
-                <motion.div
-                  key={chat.conversationId}
-                  whileHover={{ background: 'rgba(16,185,129,0.08)' }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px',
-                    cursor: 'pointer', borderRadius: 8, margin: '1px 4px',
-                    background: chat.conversationId === conversationId ? 'rgba(16,185,129,0.12)' : 'transparent',
-                    borderLeft: chat.conversationId === conversationId ? '2px solid #10b981' : '2px solid transparent',
-                  }}
-                  onClick={() => { setConversationId(chat.conversationId); void loadMessages(chat.conversationId); setToolsOpen(false); }}
-                >
-                  <MessageCircle size={11} style={{ color: '#6ee7b7', flexShrink: 0 }} />
-                  <span style={{ fontSize: 11.5, color: 'rgba(209,250,229,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {chat.title || 'Untitled chat'}
-                  </span>
-                  <motion.button whileHover={{ color: '#f87171' }} type="button"
-                    onClick={(e) => { e.stopPropagation(); void deleteChat(chat.conversationId); }}
-                    style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(167,243,208,0.3)', padding: 2 }}>
-                    <Trash2 size={10} />
-                  </motion.button>
-                </motion.div>
-              ))}
-
+              {historyLoading && <div style={{ padding: '8px 16px', fontSize: 11, color: 'rgba(167,243,208,0.5)' }}>Analyzing neural banks...</div>}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {chats.map((chat) => (
+                    <motion.div
+                    key={chat.conversationId}
+                    whileHover={{ background: 'rgba(16,185,129,0.08)' }}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
+                        cursor: 'pointer', borderRadius: 8, margin: '2px 8px',
+                        background: chat.conversationId === conversationId ? 'rgba(16,185,129,0.12)' : 'transparent',
+                        borderLeft: chat.conversationId === conversationId ? '2px solid #10b981' : '2px solid transparent',
+                    }}
+                    onClick={() => { setConversationId(chat.conversationId); void loadMessages(chat.conversationId); }}
+                    >
+                    <MessageCircle size={13} style={{ color: '#6ee7b7', flexShrink: 0 }} />
+                    <span style={{ fontSize: 12, color: chat.conversationId === conversationId ? '#ecfdf5' : 'rgba(209,250,229,0.7)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: chat.conversationId === conversationId ? 700 : 500 }}>
+                        {chat.title || 'Untitled Session'}
+                    </span>
+                    </motion.div>
+                ))}
+              </div>
+              
               {toolsLoaded && tools.length > 0 && (
-                <>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 12px 8px', marginTop: 8, borderTop: '1px solid rgba(16,185,129,0.1)' }}>
-                    Tools ({tools.length})
-                  </div>
-                  {tools.map((tool) => (
-                    <div key={tool.name} style={{ padding: '6px 12px' }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: '#a7f3d0' }}>{tool.name}</div>
-                      <div style={{ fontSize: 10.5, color: 'rgba(167,243,208,0.55)', marginTop: 2 }}>{tool.description}</div>
-                    </div>
-                  ))}
-                  {toolsError && <div style={{ padding: '6px 12px', fontSize: 11, color: '#f87171' }}>{toolsError}</div>}
-                </>
+                <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(16,185,129,0.1)', paddingBottom: 16 }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: '#6ee7b7', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '12px 16px 6px' }}>Available Tools</div>
+                    {tools.slice(0, 3).map(tool => (
+                        <div key={tool.name} style={{ px: 16, py: 4, fontSize: 10.5, color: 'rgba(167,243,208,0.4)', padding: '4px 16px' }}>• {tool.name}</div>
+                    ))}
+                </div>
               )}
             </motion.div>
           )}

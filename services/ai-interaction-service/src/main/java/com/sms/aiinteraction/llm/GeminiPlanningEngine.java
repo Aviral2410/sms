@@ -8,6 +8,7 @@ import com.sms.aiinteraction.config.AiInteractionProperties;
 import com.sms.aiinteraction.security.UserContext;
 import com.sms.aiinteraction.tool.ToolCall;
 import com.sms.aiinteraction.tool.ToolDescriptor;
+import com.sms.aiinteraction.service.ConversationMemoryService.ChatMessageRecord;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -32,33 +33,37 @@ public class GeminiPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<ChatMessageRecord> history) {
         String apiKey = properties.llm().geminiApiKey();
         String model = properties.llm().geminiModel();
         
-        // Only run if Gemini is the selected provider OR if auto-fallback is enabled
         boolean isSelected = "GEMINI".equalsIgnoreCase(properties.llm().provider());
         boolean canFallback = properties.llm().autoFallback();
         
-        if (!isSelected && !canFallback) {
-            return Optional.empty();
-        }
-        if (apiKey == null || apiKey.isBlank()) {
-            return Optional.empty();
-        }
-        if (model == null || model.isBlank()) {
-            model = "gemini-2.0-flash";
-        }
+        if (!isSelected && !canFallback) return Optional.empty();
+        if (apiKey == null || apiKey.isBlank()) return Optional.empty();
+        if (model == null || model.isBlank()) model = "gemini-2.0-flash";
 
         String url = "https://generativelanguage.googleapis.com/v1/models/" + model + ":generateContent?key=" + apiKey;
 
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
             ArrayNode contents = requestBody.putArray("contents");
-            ObjectNode content = contents.addObject();
-            content.put("role", "user");
-            ArrayNode parts = content.putArray("parts");
-            parts.addObject().put("text", "User Role: " + userContext.role().name() + "\nUser Request: " + message);
+            
+            // Add history
+            if (history != null) {
+                for (ChatMessageRecord msg : history) {
+                    if (msg.content() == null || msg.content().isBlank()) continue;
+                    ObjectNode content = contents.addObject();
+                    content.put("role", "assistant".equalsIgnoreCase(msg.role()) ? "model" : "user");
+                    content.putArray("parts").addObject().put("text", msg.content());
+                }
+            }
+
+            // Add current message
+            ObjectNode currentContent = contents.addObject();
+            currentContent.put("role", "user");
+            currentContent.putArray("parts").addObject().put("text", "User Role: " + userContext.role().name() + "\nRequest: " + message);
 
             ArrayNode toolsNode = requestBody.putArray("tools");
             ObjectNode toolEntry = toolsNode.addObject();
@@ -72,8 +77,7 @@ public class GeminiPlanningEngine implements LlmPlanningEngine {
             }
 
             ObjectNode toolConfig = requestBody.putObject("tool_config");
-            ObjectNode functionCallingConfig = toolConfig.putObject("function_calling_config");
-            functionCallingConfig.put("mode", "ANY");
+            toolConfig.putObject("function_calling_config").put("mode", "ANY");
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
@@ -83,27 +87,17 @@ public class GeminiPlanningEngine implements LlmPlanningEngine {
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                return Optional.empty();
-            }
+            if (response.statusCode() < 200 || response.statusCode() >= 300) return Optional.empty();
 
             JsonNode root = objectMapper.readTree(response.body());
             JsonNode candidate = root.path("candidates").path(0);
             JsonNode callNode = candidate.path("content").path("parts").path(0).path("function_call");
             
             String toolName = callNode.path("name").asText(null);
-            if (toolName == null || toolName.isBlank()) {
-                return Optional.empty();
-            }
+            if (toolName == null || toolName.isBlank()) return Optional.empty();
 
-            JsonNode args = callNode.path("args");
-            ObjectNode argsNode = args.isObject() ? (ObjectNode) args : objectMapper.createObjectNode();
-            
-            return Optional.of(new ToolCall(toolName, argsNode, "gemini_planner"));
-        } catch (InterruptedException ex) {
-            Thread.currentThread().interrupt();
-            return Optional.empty();
-        } catch (IOException ex) {
+            return Optional.of(new ToolCall(toolName, (ObjectNode) callNode.path("args"), "gemini_planner"));
+        } catch (Exception ex) {
             return Optional.empty();
         }
     }

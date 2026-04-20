@@ -7,6 +7,7 @@ import com.sms.aiinteraction.llm.RuleBasedPlanningEngine;
 import com.sms.aiinteraction.security.UserContext;
 import com.sms.aiinteraction.tool.ToolCall;
 import com.sms.aiinteraction.tool.ToolDescriptor;
+import com.sms.aiinteraction.service.ConversationMemoryService.ChatMessageRecord;
 import lombok.extern.slf4j.Slf4j;
 import java.util.List;
 import java.util.Optional;
@@ -32,25 +33,12 @@ public class ToolPlanningService {
         this.fallbackPlanner = fallbackPlanner;
     }
 
-    /**
-     * Planning chain with hierarchy: Gemini → OpenAI → Ollama (Gemma/Llama) → RuleBased
-     */
-    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
-        log.info("[ORCHESTRATOR] Planning tool call for request: {}", message);
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<ChatMessageRecord> history) {
+        log.info("[ORCHESTRATOR] Planning tool call for request: {} (History size: {})", message, history.size());
 
-        // 1. Gemini (Primary)
-        Optional<ToolCall> geminiChoice = geminiPlanner.plan(message, userContext, tools);
-        if (geminiChoice.isPresent()) return geminiChoice;
-
-        // 2. OpenAI (Secondary)
-        Optional<ToolCall> openAiChoice = openAiPlanner.plan(message, userContext, tools);
-        if (openAiChoice.isPresent()) return openAiChoice;
-
-        // 3. Ollama (Local Fallback - Gemma/Llama)
-        Optional<ToolCall> ollamaChoice = ollamaPlanner.plan(message, userContext, tools);
-        if (ollamaChoice.isPresent()) return ollamaChoice;
-
-        // 4. RuleBased (Absolute Fallback)
-        return fallbackPlanner.plan(message, userContext, tools);
+        return geminiPlanner.plan(message, userContext, tools, history)
+                .or(() -> openAiPlanner.plan(message, userContext, tools, history))
+                .or(() -> ollamaPlanner.plan(message, userContext, tools, history))
+                .or(() -> fallbackPlanner.plan(message, userContext, tools, history));
     }
 }
