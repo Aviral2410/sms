@@ -434,7 +434,10 @@ export const AiAssistantChat: React.FC = () => {
                     <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">Live Sync</span>
                 </div>
             </div>
-            <div className="text-[10px] font-black text-white/20 uppercase tracking-widest">v4.0 UNICORN CORE</div>
+            <div className="text-[10px] font-black text-emerald-500/40 uppercase tracking-[0.3em] flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                AURA v4.1-λ | NEURAL SYNC ACTIVE
+            </div>
         </div>
       </div>
     </motion.div>
