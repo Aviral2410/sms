@@ -106,6 +106,38 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   formula_card: FormulaCard,
   kpi_card: KpiCard,
   table: SmartTable,
+  molecule_canvas: (props: { molecules: string[], title: string }) => (
+    <div className={`${GLASS_BG} rounded-[2rem] p-8 my-4 text-center`}>
+        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-400/60 mb-6">{props.title}</div>
+        <div className="flex justify-center gap-6">
+            {props.molecules?.map((m, i) => (
+                <div key={i} className="w-20 h-20 rounded-full border-2 border-cyan-500/20 flex items-center justify-center text-xl font-bold bg-cyan-500/10 text-cyan-400 shadow-[0_0_30px_rgba(34,211,238,0.2)]">
+                    {m}
+                </div>
+            ))}
+        </div>
+        <div className="mt-8 h-2 bg-white/5 rounded-full overflow-hidden">
+            <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} className="h-full bg-cyan-500 shadow-[0_0_15px_rgba(34,211,238,1)]" />
+        </div>
+    </div>
+  ),
+  narrative_timeline: (props: { events: Array<{title: string, impact: string}> }) => (
+    <div className={`${GLASS_BG} rounded-[2rem] p-8 my-4`}>
+        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-violet-400/60 mb-8">Story Arc Synthesis</div>
+        <div className="flex justify-between relative">
+             <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-white/10 -translate-y-1/2" />
+             {props.events?.map((e, i) => (
+                 <div key={i} className="relative z-10 flex flex-col items-center gap-4">
+                     <div className="w-4 h-4 rounded-full bg-violet-500 shadow-[0_0_15px_rgba(139,92,246,1)]" />
+                     <div className="text-center group">
+                         <div className="text-[10px] font-black text-white group-hover:text-violet-400 transition-colors uppercase tracking-tighter">{e.title}</div>
+                         <div className="text-[9px] text-white/30 italic max-w-[80px]">{e.impact}</div>
+                     </div>
+                 </div>
+             ))}
+        </div>
+    </div>
+  ),
   checklist: (props) => (
     <div className={`${GLASS_BG} rounded-[2rem] p-6 my-4`}>
         <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-5 pl-1">{props.title}</div>
@@ -221,7 +253,7 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> =
             <motion.div 
               key={i} 
               variants={item} 
-              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline','simulation_canvas','step_ladder','formula_card'].includes(comp.type) ? 'col-span-2' : ''}
+              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline','simulation_canvas','step_ladder','formula_card','molecule_canvas','narrative_timeline'].includes(comp.type) ? 'col-span-2' : ''}
             >
               <Comp {...comp} />
             </motion.div>

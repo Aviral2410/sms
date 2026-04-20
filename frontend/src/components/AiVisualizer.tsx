@@ -72,7 +72,36 @@ export const AiVisualizer: React.FC = () => {
 
         <div className="flex items-center gap-6">
             <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-white/30">
-                <span className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer"><Target size={14} /> Quantum Analysis</span>
+                <div className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer group relative">
+                    <Target size={14} /> 
+                    <span>Subject Vault</span>
+                    {/* Dropdown for examples */}
+                    <div className="absolute top-full left-0 mt-4 bg-black/90 border border-white/10 p-4 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto min-w-[200px] shadow-2xl">
+                        <div onClick={() => setActivePayload({
+                            title: "Newtonian Mechanics",
+                            summary: "Real-time physics simulation of Force, Mass, and Acceleration.",
+                            components: [{ type: "simulation_canvas", title: "F=ma Engine", logic: "physics_f_ma", parameters: {force: 25, mass: 5} }]
+                        })} className="p-3 hover:bg-emerald-500/10 rounded-xl transition-all text-white/60 hover:text-emerald-400">Physics: Motion</div>
+                        
+                        <div onClick={() => setActivePayload({
+                            title: "Atomic Synthesis",
+                            summary: "Visualizing molecular structures and metabolic pathways.",
+                            components: [{ type: "molecule_canvas", title: "Glucose Structure", molecules: ["C6", "H12", "O6"] }]
+                        })} className="p-3 hover:bg-cyan-500/10 rounded-xl transition-all text-white/60 hover:text-cyan-400">Chemistry: Glucose</div>
+                        
+                        <div onClick={() => setActivePayload({
+                            title: "Mathematical Logic",
+                            summary: "Step-by-step derivation of fundamental theorems.",
+                            components: [{ type: "step_ladder", title: "Pythagorean Derivation", steps: [{title: "Square the sides", desc: "a² + b²"}, {title: "Equate to Hypotenuse", desc: "c²"}] }]
+                        })} className="p-3 hover:bg-sky-500/10 rounded-xl transition-all text-white/60 hover:text-sky-400">Maths: Geometry</div>
+
+                        <div onClick={() => setActivePayload({
+                            title: "Literary Analysis",
+                            summary: "Mapping the narrative arc of classic literature.",
+                            components: [{ type: "narrative_timeline", events: [{title: "Exposition", impact: "High"}, {title: "Climax", impact: "Max"}] }]
+                        })} className="p-3 hover:bg-violet-500/10 rounded-xl transition-all text-white/60 hover:text-violet-400">English: Narrative</div>
+                    </div>
+                </div>
                 <span className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer"><Layers size={14} /> Neural Layers</span>
             </div>
             <div className="h-8 w-[1px] bg-white/10" />
