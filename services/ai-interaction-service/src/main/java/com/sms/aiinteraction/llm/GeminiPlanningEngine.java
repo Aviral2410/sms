@@ -40,6 +40,7 @@ public class GeminiPlanningEngine implements LlmPlanningEngine {
         boolean isSelected = "GEMINI".equalsIgnoreCase(properties.llm().provider());
         boolean canFallback = properties.llm().autoFallback();
         
+        if (!isSelected && !canFallback) {
             return Optional.empty();
         }
         if (apiKey == null || apiKey.isBlank()) {

@@ -45,6 +45,7 @@ const ChatBubble: React.FC<{ message: any; onAction?: (token: string) => void }>
         </div>
         
         {/* If it's a legacy or simple text message */}
+        {!message.response && (
             <div className="text-[14px] leading-relaxed whitespace-pre-wrap font-medium text-emerald-50/90">
                 {message.content}
             </div>
@@ -101,6 +102,7 @@ export const AiAssistantPage: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setWorkspaces(data);
+        if (data && data.length > 0) {
           setActiveWorkspaceId(data[0].workspaceId);
         }
       }
@@ -451,12 +453,10 @@ export const AiAssistantPage: React.FC = () => {
         </div>
       </motion.div>
 
-      {/* Resize Handle */}
         <div 
           onMouseDown={handleMouseDown}
           className="w-[2px] cursor-col-resize hover:bg-emerald-500/50 transition-colors z-50 bg-white/5"
         />
-      )}
 
       {/* Main Area */}
       <div className="flex-1 flex flex-col relative bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-emerald-500/5 via-transparent to-transparent">
@@ -570,6 +570,7 @@ export const AiAssistantPage: React.FC = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       sendMessage();
                     }
@@ -580,10 +581,12 @@ export const AiAssistantPage: React.FC = () => {
                 <button 
                   onClick={() => sendMessage()}
                   className={`p-4 rounded-[1.8rem] transition-all flex items-center gap-2 group/send ${
+                    input.trim().length > 0
                       ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95' 
                       : 'text-emerald-500/20'
                   }`}
                 >
+                  <Send size={18} />
                 </button>
               </div>
             </div>

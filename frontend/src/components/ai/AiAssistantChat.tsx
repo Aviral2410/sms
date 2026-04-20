@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-import SmartUiRenderer from "./SmartUiRenderer";
   Bot, CheckCheck, Globe, MessageCircle, Plus, Send,
   Sparkles, Trash2, UserCircle2, X, ChevronRight, Cpu
 } from 'lucide-react';
+import SmartUiRenderer from "./SmartUiRenderer";
 import { useStore } from '../../store/useStore';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { readSseStream, tryParseJson } from '../../lib/sse';
@@ -528,6 +528,22 @@ export const AiAssistantChat: React.FC = () => {
 
     return null;
   };
+
+  // ─── Launcher FAB ──────────────────────────────────────────────────────────
+
+  if (!open) {
+    return (
+      <AnimatePresence>
+        <motion.button
+          key="launcher"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          whileHover={{ scale: 1.12, boxShadow: '0 0 30px rgba(16,185,129,0.6)' }}
+          whileTap={{ scale: 0.92 }}
+          type="button"
+          onClick={() => setOpen(true)}
+          style={fabStyle}
           title="Open AI Assistant"
         >
           <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 4 }}>
