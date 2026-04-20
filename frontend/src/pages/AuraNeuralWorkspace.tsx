@@ -6,9 +6,10 @@ import {
   ChevronRight, MoreHorizontal, Maximize2, 
   Mic, Paperclip, Send, Sparkles, Brain,
   Trash2, GripVertical, FileText, BarChart3,
-  Globe, Code, UserCircle2, RefreshCcw, Command, X
+  Globe, Code, UserCircle2, RefreshCcw, Command, X, MessageSquare
 } from 'lucide-react';
 import { SmartUiRenderer } from "../components/ai/SmartUiRenderer";
+import { AuraVisualizerCanvas } from "../components/ai/AuraVisualizerCanvas";
 import { useStore } from '../store/useStore';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -183,6 +184,8 @@ export const AuraNeuralWorkspace: React.FC = () => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [workspaces] = useState<Workspace[]>([
     { id: 'ws1', name: 'Elite Operations', color: '#10b981' },
     { id: 'ws2', name: 'Strategic KPI Bank', color: '#8b5cf6' }
@@ -190,6 +193,20 @@ export const AuraNeuralWorkspace: React.FC = () => {
   const [chats, setChats] = useState<any[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const lastAssistantResponse = [...messages].reverse().find(m => m.role === 'assistant')?.response;
+
+  // ─── Neural Shortcuts ───────────────────────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            setShowPalette(prev => !prev);
+        }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const loadChats = useCallback(async () => {
     if (!session.token) return;
@@ -215,6 +232,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
     setMessages(prev => [...prev, msg]);
     setInput('');
     setLoading(true);
+    setIsThinking(true);
     
     // UI Synthesis Logic Simulation
     setTimeout(() => {
@@ -224,15 +242,14 @@ export const AuraNeuralWorkspace: React.FC = () => {
             text: 'Neural synthesis complete. Initializing strategic visualization stage.',
             ts: Date.now(),
             response: {
-                type: 'school_dashboard',
-                data: { title: "Operations Hub", kpis: [
-                    { title: "Revenue", value: "$1.2M", trend: "+12%" },
-                    { title: "Attendance", value: "98.4%", trend: "Stable" }
-                ]}
+                type: 'simulation_canvas',
+                logic: 'physics_f_ma',
+                parameters: { force: 50, mass: 10 }
             }
         }]);
         setLoading(false);
-    }, 1500);
+        setIsThinking(false);
+    }, 2000);
   };
 
   return (
@@ -251,138 +268,140 @@ export const AuraNeuralWorkspace: React.FC = () => {
         <header className="h-24 flex items-center justify-between px-12 border-b border-white/5 backdrop-blur-md">
             <div className="flex items-center gap-4">
                 <Sparkles className="text-emerald-500" size={20} />
-                <h2 className="text-xl font-black tracking-tighter">Strategic Synthesis <span className="text-white/20">/</span> <span className="text-emerald-500">0x24λ</span></h2>
+                <h2 className="text-xl font-black tracking-tighter">Neural Visualizer Stage <span className="text-white/20">/</span> <span className="text-emerald-500">0x24λ</span></h2>
             </div>
             <div className="flex items-center gap-6">
-                <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
-                    <button className="px-4 py-1.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest">Active Core</button>
-                    <button className="px-4 py-1.5 rounded-full text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Workspace</button>
-                </div>
+                <button className="px-6 py-2 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white transition-all">Split View Active</button>
                 <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                     <UserCircle2 size={24} className="text-emerald-500" />
                 </div>
-                <button 
-                  onClick={() => window.history.back()}
-                  className="p-2 rounded-xl hover:bg-white/5 text-white/40"
-                >
-                  <X size={20} />
-                </button>
             </div>
         </header>
 
-        {/* Message Feed */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-12 space-y-12 no-scrollbar scroll-smooth">
-            <AnimatePresence initial={false}>
-                {messages.length === 0 && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto space-y-8">
-                        <div className="w-24 h-24 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-4 animate-bounce">
-                            <Sparkles size={48} />
-                        </div>
-                        <h1 className="text-5xl font-black tracking-tighter leading-tight">Master your Strategic <br />Intelligence with <span className="text-emerald-500">AURA</span>.</h1>
-                        <p className="text-xl text-white/40 font-medium leading-relaxed">Launch a neural directive to synthesize KPIs, learn complex concepts, or manage entire operations with elite AI architecture.</p>
-                        <div className="grid grid-cols-2 gap-4 w-full mt-8">
-                            {['Summarize Student Growth', 'Run Physics Simulation', 'Draft Fee Policy', 'Analyze Support Backlog'].map(t => (
-                                <button key={t} className="p-6 rounded-3xl bg-white/[0.02] border border-white/5 text-left hover:border-emerald-500/30 hover:bg-white/[0.05] transition-all group">
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500 mb-2">Preset Directive</div>
-                                    <div className="text-sm font-bold text-white/70 group-hover:text-white">{t}</div>
-                                </button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-
-                {messages.map((m) => (
-                    <motion.div 
-                        key={m.id} 
-                        initial={{ opacity: 0, x: m.role === 'user' ? 20 : -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className={`flex gap-6 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
-                    >
-                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 border transition-all ${m.role === 'user' ? 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-white/5 border-white/10 text-emerald-500'}`}>
-                            {m.role === 'user' ? <GripVertical size={20} /> : <Zap size={20} />}
-                        </div>
-                        <div className={`max-w-[70%] space-y-4 ${m.role === 'user' ? 'items-end' : ''}`}>
-                            {m.response ? (
-                                <div className="p-1 rounded-[3rem] bg-gradient-to-br from-emerald-500/20 to-sky-500/20 border border-white/10 shadow-2xl">
-                                    <div className="p-8 rounded-[2.8rem] bg-[#0A0A0A]">
-                                        <SmartUiRenderer response={m.response} />
-                                    </div>
+        {/* Dual Pane Synthesis Grid */}
+        <div className="flex-1 flex overflow-hidden">
+            {/* LEFT: NEURAL STREAM */}
+            <div className="w-[450px] border-r border-white/5 flex flex-col bg-black/20">
+                <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 no-scrollbar scroll-smooth">
+                    <AnimatePresence initial={false}>
+                        {messages.length === 0 && (
+                            <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
+                                <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-white/20">
+                                    <MessageSquare size={32} />
                                 </div>
-                            ) : (
-                                <div className={`p-8 rounded-[2.5rem] text-lg font-medium leading-relaxed shadow-xl ${m.role === 'user' ? 'bg-white/5 border border-white/10' : 'bg-[#0A0A0A] text-white/80 border border-white/5'}`}>
+                                <h3 className="text-sm font-black uppercase tracking-widest text-white/20">Neural Stream Ready</h3>
+                            </div>
+                        )}
+                        {messages.map((m) => (
+                            <motion.div 
+                                key={m.id} 
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                className={`flex flex-col gap-3 ${m.role === 'user' ? 'items-end' : 'items-start'}`}
+                            >
+                                <div className={`p-6 rounded-3xl text-sm font-medium leading-relaxed ${m.role === 'user' ? 'bg-white/5 border border-white/10 text-white/90' : 'bg-emerald-500/5 border border-emerald-500/10 text-emerald-400'}`}>
                                     {m.text}
                                 </div>
-                            )}
-                            <div className="px-4 text-[10px] font-black text-white/10 uppercase tracking-widest">{new Date(m.ts).toLocaleTimeString()}</div>
-                        </div>
-                    </motion.div>
-                ))}
-
-                {loading && (
-                    <div className="flex gap-6">
-                        <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                            <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }}>
-                                <RefreshCcw size={20} className="text-emerald-500/40" />
+                                <div className="px-2 text-[8px] font-black uppercase tracking-widest text-white/10">{new Date(m.ts).toLocaleTimeString()}</div>
                             </motion.div>
-                        </div>
-                        <div className="space-y-4 w-1/2">
-                            <div className="h-6 bg-white/5 rounded-full animate-pulse w-full" />
-                            <div className="h-6 bg-white/5 rounded-full animate-pulse w-3/4" />
-                        </div>
-                    </div>
-                )}
-            </AnimatePresence>
-        </div>
+                        ))}
+                    </AnimatePresence>
+                </div>
 
-        {/* Global Input Node */}
-        <div className="p-12 pt-0">
-            <div className="max-w-4xl mx-auto relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-sky-500/20 rounded-[3rem] blur opacity-25 group-focus-within:opacity-100 transition-opacity" />
-                <div className="relative p-3 rounded-[3rem] bg-black/60 backdrop-blur-3xl border border-white/10 group-focus-within:border-emerald-500/40 transition-all flex flex-col">
-                    <div className="flex items-center gap-4 px-6 pt-3 pb-1">
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                            <Database size={10} className="text-sky-400" />
-                            <span className="text-[9px] font-black uppercase text-white/40 tracking-widest">Mem: 42GB</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                            <Target size={10} className="text-emerald-400" />
-                            <span className="text-[9px] font-black uppercase text-white/40 tracking-widest">Goal: Strategic</span>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
+                {/* Local Input Node */}
+                <div className="p-8 border-t border-white/5">
+                    <div className="relative group">
                         <textarea 
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
-                            placeholder="Enter a neural command orbit (eg. /predict student growth)"
-                            className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/20 p-6 resize-none h-[80px] text-lg font-bold custom-scrollbar"
+                            placeholder="Neural directive..."
+                            className="w-full bg-white/5 rounded-2xl border border-white/10 p-4 min-h-[100px] outline-none focus:border-emerald-500/40 text-sm font-bold text-white transition-all"
                         />
-                        <div className="flex items-center gap-3 pr-6">
-                            <button className="p-4 rounded-2xl bg-white/5 text-white/40 hover:bg-white/10 transition-all"><Paperclip size={20} /></button>
-                            <button className="p-4 rounded-2xl bg-white/5 text-white/40 hover:bg-white/10 transition-all"><Mic size={20} /></button>
-                            <button 
-                                onClick={onSend}
-                                className="w-12 h-12 rounded-2xl bg-emerald-500 text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)]"
-                            >
-                                <Send size={24} />
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                
-                <div className="mt-4 flex items-center justify-center gap-8">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] hover:text-emerald-500 transition-colors cursor-help">
-                        <Command size={12} /> Press Command + K for Palette
-                    </div>
-                    <div className="w-1.5 h-1.5 rounded-full bg-white/5" />
-                    <div className="flex items-center gap-2 text-[10px] font-black text-white/20 uppercase tracking-[0.3em] hover:text-sky-500 transition-colors cursor-help">
-                        <Maximize2 size={12} /> Focus Synthesis Lane
+                        <button 
+                            onClick={onSend}
+                            className="absolute bottom-4 right-4 w-10 h-10 rounded-xl bg-emerald-500 text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                        >
+                            <Send size={18} />
+                        </button>
                     </div>
                 </div>
             </div>
+
+            {/* RIGHT: VISUALIZER STAGE (The Revolution) */}
+            <div className="flex-1 p-8 bg-black relative">
+                <AuraVisualizerCanvas 
+                    response={lastAssistantResponse}
+                    status={loading ? "SYNTESIZING" : "IDLE"}
+                />
+
+                {/* Siri-style Voice Orb / Thinking Loader */}
+                <AnimatePresence>
+                    {isThinking && (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            className="absolute bottom-16 right-16 flex flex-col items-center gap-4"
+                        >
+                            <div className="relative">
+                                <motion.div 
+                                    animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="absolute -inset-8 bg-emerald-500/20 blur-3xl rounded-full"
+                                />
+                                <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.5)]">
+                                    <Sparkles className="text-black" size={24} />
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 animate-pulse">Neural Synthesis Active</span>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
       </main>
+
+      {/* Global Command Palette */}
+      <AnimatePresence>
+        {showPalette && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-12 bg-black/80 backdrop-blur-md">
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="w-full max-w-2xl bg-[#0A0A0A] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
+                >
+                    <div className="p-8 border-b border-white/5 flex items-center gap-4">
+                        <Search className="text-emerald-500" size={24} />
+                        <input 
+                            autoFocus
+                            placeholder="Type a command or search neural banks..."
+                            className="flex-1 bg-transparent border-none outline-none text-2xl font-bold text-white placeholder-white/10"
+                        />
+                        <button onClick={() => setShowPalette(false)} className="p-2 bg-white/5 rounded-xl text-white/40 hover:text-white"><X size={20} /></button>
+                    </div>
+                    <div className="p-4 space-y-1">
+                        {[
+                            { name: 'Switch to Strategic KPI Bank', icon: <Database size={16} /> },
+                            { name: 'Launch Physics Simulation (F=ma)', icon: <Zap size={16} /> },
+                            { name: 'Deploy School Attendance Insight', icon: <Activity size={16} /> },
+                            { name: 'AURA System Settings', icon: <Settings size={16} /> }
+                        ].map((cmd, i) => (
+                            <button key={i} className="w-full p-4 rounded-2xl flex items-center gap-4 text-white/40 hover:text-white hover:bg-emerald-500/10 transition-all text-sm font-bold">
+                                {cmd.icon}
+                                {cmd.name}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="p-6 bg-emerald-500/5 border-t border-white/5 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-emerald-500/40">
+                        <span>Naviate with arrows</span>
+                        <span>Press Enter to deploy</span>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+      </AnimatePresence>
 
       <IntelligenceLens memory={84} tools={12} />
     </div>
