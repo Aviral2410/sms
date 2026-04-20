@@ -13,7 +13,12 @@ public record AiInteractionProperties(
             String openaiApiKey,
             String openaiModel,
             String ollamaBaseUrl,
-            String ollamaModel
+            String ollamaModel,
+            String geminiApiKey,
+            String geminiModel,
+            String claudeApiKey,
+            String claudeModel,
+            boolean autoFallback
     ) {}
 
     public record CacheProperties(

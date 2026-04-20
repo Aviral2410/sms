@@ -29,11 +29,7 @@ services:
   # Ollama: local LLM inference. PVC mounts to /data/ollama on the node host.
   # Model pull required after first deploy: kubectl exec -n sms deploy/ollama -- ollama pull llama3.2:3b
   ollama:
-    enabled: true
-    image:
-      repository: ollama/ollama
-      tag: "0.3.14"
-      pullPolicy: IfNotPresent
+    enabled: false
     replicaCount: 1
     resources:
       requests:
@@ -340,38 +336,17 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: GEMINI_API_KEY
+        value: "AIzaSyCT1-JpF3JCfKz82IvCGN6YEIqJLxMiXek"
+      - name: GEMINI_MODEL
+        value: "gemini-2.0-flash"
+      - name: LLM_AUTO_FALLBACK
+        value: "true"
       - name: LLM_PROVIDER
-        value: "OLLAMA"
+        value: "GEMINI"
       - name: OLLAMA_BASE_URL
-        value: "http://ollama:11434"
-      - name: OLLAMA_MODEL
-        value: "llama3.2:3b"
-      - name: SERVER_PORT
-        value: "8090"
-      - name: GATEWAY_BASE_URL
-        valueFrom:
-          secretKeyRef:
-            name: sms-secrets
-            key: GATEWAY_BASE_URL
-      - name: REDIS_HOST
-        value: redis
-      - name: REDIS_PORT
-        value: "6379"
-      - name: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://postgres:5432/sms_platform
-      - name: SPRING_DATASOURCE_USERNAME
-        valueFrom:
-          secretKeyRef:
-            name: sms-secrets
-            key: POSTGRES_USER
-      - name: SPRING_DATASOURCE_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            name: sms-secrets
-            key: POSTGRES_PASSWORD
-      - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
-        value: org.postgresql.Driver
-  mcpServer:
+  ollama:
+    enabled: false
     replicaCount: 1
     resources:
       requests:

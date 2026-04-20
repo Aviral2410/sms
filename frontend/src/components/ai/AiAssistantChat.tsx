@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+import SmartUiRenderer from "./SmartUiRenderer";
   Bot, CheckCheck, Globe, MessageCircle, Plus, Send,
   Sparkles, Trash2, UserCircle2, X, ChevronRight, Cpu
 } from 'lucide-react';
@@ -502,101 +503,31 @@ export const AiAssistantChat: React.FC = () => {
       </div>
     );
   };
-
   const renderAssistantContent = (msg: ChatMessage) => {
     const { response, text, streaming } = msg;
 
-    if (!response && text !== undefined) {
+    if (response) {
       return (
-        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
+        <SmartUiRenderer 
+          response={response} 
+          onActionConfirm={confirmAction} 
+        />
+      );
+    }
+
+    if (text !== undefined) {
+      return (
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: "#d1fae5" }}>
           {streaming && text
             ? <StreamingText text={text} streaming />
-            : renderMarkdownLite(text || '')
+            : renderMarkdownLite(text || "")
           }
         </p>
       );
     }
 
-    if (!response) return null;
-
-    if (response.type === 'text') {
-      const t = typeof response.data?.text === 'string' ? response.data.text : JSON.stringify(response.data);
-      return (
-        <div style={{ display: 'grid', gap: 10 }}>
-          <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
-            {renderMarkdownLite(t)}
-          </p>
-        </div>
-      );
-    }
-
-    if (response.type === 'table') {
-      const rows = Array.isArray(response.data?.rows) ? (response.data.rows as Record<string, unknown>[]) : [];
-      return (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>Rows: {rows.length}</div>
-          {rows.length > 0 && (
-            <button type="button" onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv')} style={actionBtnStyle}>
-              Export CSV
-            </button>
-          )}
-          <pre style={preStyle}>{JSON.stringify(rows.slice(0, 10), null, 2)}</pre>
-        </div>
-      );
-    }
-
-    if (response.type === 'chart') {
-      const points = Array.isArray((response.data?.chart as any)?.points) ? (response.data.chart as any).points : [];
-      const t = typeof response.data?.text === 'string' ? response.data.text : '';
-      return (
-        <div style={{ display: 'grid', gap: 10 }}>
-          {t && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>{renderMarkdownLite(t)}</p>}
-          {renderChart(response)}
-          {points.length > 0 && (
-            <button type="button" onClick={() => downloadText(`ai-chart-${Date.now()}.csv`, toCsv(points), 'text/csv')} style={actionBtnStyle}>
-              Export CSV
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    if (response.type === 'action') {
-      const status = typeof response.data?.status === 'string' ? response.data.status : '';
-      const token = typeof response.data?.confirmationToken === 'string' ? response.data.confirmationToken : '';
-      const msgText = typeof response.data?.message === 'string' ? response.data.message : '';
-      return (
-        <div style={{ display: 'grid', gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#6ee7b7' }}>{status || 'Action'}</div>
-          {msgText && <div style={{ fontSize: 12, color: 'rgba(167,243,208,0.7)' }}>{msgText}</div>}
-          {status === 'CONFIRMATION_REQUIRED' && token && (
-            <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => void confirmAction(token)} style={confirmBtnStyle}>
-              Confirm Action
-            </motion.button>
-          )}
-          <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>
-        </div>
-      );
-    }
-
-    return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
+    return null;
   };
-
-  // ─── Launcher FAB ──────────────────────────────────────────────────────────
-
-  if (!open) {
-    return (
-      <AnimatePresence>
-        <motion.button
-          key="launcher"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          whileHover={{ scale: 1.12, boxShadow: '0 0 30px rgba(16,185,129,0.6)' }}
-          whileTap={{ scale: 0.92 }}
-          type="button"
-          onClick={() => setOpen(true)}
-          style={fabStyle}
           title="Open AI Assistant"
         >
           <motion.div animate={{ rotate: [0, 5, -5, 0] }} transition={{ repeat: Infinity, duration: 4 }}>

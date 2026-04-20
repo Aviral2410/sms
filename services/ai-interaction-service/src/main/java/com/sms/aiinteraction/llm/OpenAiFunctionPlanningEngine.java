@@ -32,13 +32,13 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
     }
 
     @Override
-    public List<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<String> history) {
+    public Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools) {
         String provider = properties.llm().provider();
-        boolean isOpenAi = "OPENAI".equalsIgnoreCase(provider);
+        boolean isOpenAi = "OPENAI".equalsIgnoreCase(provider) || properties.llm().autoFallback();
         boolean isOllama = "OLLAMA".equalsIgnoreCase(provider);
         
         if (!isOpenAi && !isOllama) {
-            return List.of();
+            return Optional.empty();
         }
 
         String baseUrl = isOpenAi ? "https://api.openai.com/v1" : properties.llm().ollamaBaseUrl();
@@ -51,20 +51,21 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
         String apiKey = isOpenAi ? properties.llm().openaiApiKey() : "not-needed";
 
         if (isOpenAi && (apiKey == null || apiKey.isBlank())) {
-            return List.of();
+            return Optional.empty();
         }
 
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", model);
             requestBody.put("temperature", 0);
-            requestBody.put("max_tokens", 512);
+            requestBody.put("max_tokens", 256);
 
             ArrayNode messages = requestBody.putArray("messages");
             messages.addObject()
                     .put("role", "system")
                     .put("content",
-                            "You are an intent planner. Select relevant function calls. Never answer in free text.");
+                            "You are an intent planner. Select exactly one function call based on user request and role scope. "
+                                    + "Never answer in free text.");
             messages.addObject()
                     .put("role", "user")
                     .put("content", "role=" + userContext.role().name() + ", request=" + message);
@@ -81,7 +82,7 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
 
             HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(fullUri))
-                    .timeout(Duration.ofSeconds(15))
+                    .timeout(Duration.ofSeconds(12))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody)));
             
@@ -90,27 +91,27 @@ public class OpenAiFunctionPlanningEngine implements LlmPlanningEngine {
             }
 
             HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() != 200) {
-                return List.of();
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                return Optional.empty();
             }
 
             JsonNode root = objectMapper.readTree(response.body());
-            JsonNode toolCalls = root.path("choices").path(0).path("message").path("tool_calls");
-            if (!toolCalls.isArray()) return List.of();
+            JsonNode toolCall = root.path("choices").path(0).path("message").path("tool_calls").path(0);
+            String name = toolCall.path("function").path("name").asText(null);
+            String argsRaw = toolCall.path("function").path("arguments").asText("{}");
 
-            List<ToolCall> calls = new java.util.ArrayList<>();
-            for (JsonNode tc : toolCalls) {
-                String name = tc.path("function").path("name").asText(null);
-                String argsRaw = tc.path("function").path("arguments").asText("{}");
-                if (name != null) {
-                    JsonNode parsedArgs = objectMapper.readTree(argsRaw);
-                    ObjectNode argsNode = parsedArgs.isObject() ? (ObjectNode) parsedArgs : objectMapper.createObjectNode();
-                    calls.add(new ToolCall(name, argsNode, "openai_chain_planner"));
-                }
+            if (name == null || name.isBlank()) {
+                return Optional.empty();
             }
-            return calls;
-        } catch (Exception ex) {
-            return List.of();
+
+            JsonNode parsedArgs = objectMapper.readTree(argsRaw);
+            ObjectNode argsNode = parsedArgs.isObject() ? (ObjectNode) parsedArgs : objectMapper.createObjectNode();
+            return Optional.of(new ToolCall(name, argsNode, "openai_function_calling"));
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
+        } catch (IOException ex) {
+            return Optional.empty();
         }
     }
 }
