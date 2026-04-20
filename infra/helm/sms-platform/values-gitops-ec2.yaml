@@ -344,6 +344,14 @@ services:
         value: "true"
       - name: LLM_PROVIDER
         value: "GEMINI"
+      - name: SPRING_DATASOURCE_URL
+        value: "jdbc:postgresql://postgres:5432/sms_ai"
+      - name: SPRING_DATASOURCE_USERNAME
+        value: "postgres"
+      - name: SPRING_DATASOURCE_PASSWORD
+        value: "postgres"
+      - name: SPRING_PROFILES_ACTIVE
+        value: "docker"
       - name: OLLAMA_BASE_URL
   ollama:
     enabled: false
