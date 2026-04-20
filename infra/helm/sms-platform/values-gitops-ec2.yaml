@@ -345,7 +345,7 @@ services:
       - name: LLM_PROVIDER
         value: "GEMINI"
       - name: SPRING_DATASOURCE_URL
-        value: "jdbc:postgresql://postgres:5432/sms_ai"
+        value: "jdbc:postgresql://postgres:5432/sms_platform"
       - name: SPRING_DATASOURCE_USERNAME
         valueFrom:
           secretKeyRef:
