@@ -6,29 +6,71 @@ import {
   Play, Activity
 } from 'lucide-react';
 
-const AnimatedSubjectPreview = ({ color }: { color: string }) => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
-    <motion.div
-      animate={{
-        scale: [1, 1.2, 1],
-        rotate: [0, 90, 180, 270, 360],
-        opacity: [0.1, 0.3, 0.1]
-      }}
-      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-      className={`absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-${color}-500/30 to-transparent rounded-full blur-[80px]`}
-    />
-    <motion.div
-        animate={{
-            x: [-20, 20, -20],
-            y: [-20, 20, -20],
-        }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute inset-0 flex items-center justify-center opacity-20"
-    >
-        <div className={`w-32 h-32 border-2 border-${color}-500/20 rounded-full animate-ping`} />
-    </motion.div>
-  </div>
-);
+const AnimatedSubjectPreview = ({ subject, color }: { subject: string, color: string }) => {
+  const isPhysics = subject === "Physics";
+  const isChemistry = subject === "Chemistry";
+  const isMaths = subject === "Maths";
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {/* Cinematic Deep Background */}
+      <div className={`absolute inset-0 bg-gradient-to-br from-${color}-500/5 to-transparent`} />
+      
+      {/* Subject-Specific 'Video' Logic */}
+      {isPhysics && (
+        <motion.div 
+            animate={{ rotate: [30, -30, 30] }}
+            transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-10 left-1/2 -translate-x-1/2 flex flex-col items-center"
+        >
+            <div className="w-1 h-32 bg-white/10 rounded-full" />
+            <div className={`w-8 h-8 rounded-full bg-${color}-500 shadow-[0_0_30px_rgba(16,185,129,0.5)]`} />
+        </motion.div>
+      )}
+
+      {isChemistry && (
+        <div className="absolute inset-0 flex items-center justify-center">
+            <motion.div 
+                animate={{ rotate: 360 }}
+                transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+                className="relative w-40 h-40 border border-white/5 rounded-full"
+            >
+                <motion.div 
+                    animate={{ scale: [1, 1.2, 1] }} 
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className={`absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-${color}-400 shadow-[0_0_20px_#22d3ee]`}
+                />
+            </motion.div>
+            <div className="absolute w-8 h-8 rounded-full bg-white/10 blur-xl" />
+        </div>
+      )}
+
+      {isMaths && (
+        <div className="absolute inset-0 flex items-center justify-center gap-1">
+            {[...Array(12)].map((_, i) => (
+                <motion.div 
+                    key={i}
+                    animate={{ height: [20, 60, 20] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.1 }}
+                    className={`w-1 rounded-full bg-${color}-500/30`}
+                />
+            ))}
+        </div>
+      )}
+
+      {!isPhysics && !isChemistry && !isMaths && (
+        <motion.div 
+            animate={{ x: [-100, 100] }}
+            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            className={`absolute top-1/2 w-full h-[2px] bg-gradient-to-r from-transparent via-${color}-500/50 to-transparent`}
+        />
+      )}
+
+      {/* Gloss Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-white/5 opacity-20" />
+    </div>
+  );
+};
 
 const SUBJECT_EXAMPLES = [
   {
@@ -121,7 +163,7 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({ onSelect }) => {
             className="group relative h-80 rounded-[3rem] bg-[#0A0A0A] border border-white/5 hover:border-emerald-500/40 transition-all text-left overflow-hidden shadow-2xl"
           >
             {/* SUBJECT ANIMATION PREVIEW (Video-like) */}
-            <AnimatedSubjectPreview color={ex.color} />
+            <AnimatedSubjectPreview subject={ex.subject} color={ex.color} />
             
             <div className={`absolute top-0 right-0 p-8 text-[12px] font-black uppercase tracking-[0.4em] text-${ex.color}-400/40 group-hover:text-emerald-400 transition-colors`}>
                 {ex.subject}
