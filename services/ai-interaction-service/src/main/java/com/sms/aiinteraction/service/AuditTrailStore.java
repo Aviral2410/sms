@@ -12,6 +12,7 @@ import com.sms.common.exception.ForbiddenException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -60,11 +61,11 @@ public class AuditTrailStore {
         return events.stream()
                 .map(e -> {
                     try {
-                        return objectMapper.readTree(e.getPayload());
+                        return (JsonNode) objectMapper.readTree(e.getPayload());
                     } catch (JsonProcessingException ex) {
-                        return objectMapper.createObjectNode().put("error", "Serialization failed");
+                        return (JsonNode) objectMapper.createObjectNode().put("error", "Serialization failed");
                     }
                 })
-                .toList();
+                .collect(Collectors.toList());
     }
 }

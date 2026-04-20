@@ -213,6 +213,9 @@ export const AiAssistantPage: React.FC = () => {
 
 
       let streamText = '';
+      if (!response.body) {
+        throw new Error('ReadableStream not supported or empty response body');
+      }
       await readSseStream(response.body, {
         onEvent: ({ event, data }) => {
           if (event === 'delta' || event === 'token' || event === 'status') {
