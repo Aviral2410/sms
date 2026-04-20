@@ -183,60 +183,63 @@ export const AuraNeuralWorkspace: React.FC = () => {
                     </motion.div>
                 </div>
             ) : (
-                /* Active State - Split View Visualizer */
-                <div className="flex-1 flex overflow-hidden">
-                    {/* Left Panel: Chat List */}
-                    <div className="flex-1 flex flex-col max-w-2xl border-r border-white/5 bg-[#050505]/40 backdrop-blur-xl">
-                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-10 no-scrollbar scroll-smooth">
+                    {/* LEFT Panel: Chat List - Fixed Width to prevent distortion */}
+                    <div className="w-[500px] flex flex-col border-r border-white/5 bg-[#050505]/40 backdrop-blur-3xl shadow-2xl relative z-20">
+                        <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-10 no-scrollbar scroll-smooth">
                             {messages.map((m) => (
                                 <motion.div 
                                     key={m.id} 
-                                    initial={{ opacity: 0, x: -10 }}
-                                    animate={{ opacity: 1, x: 0 }}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
                                     className={`flex gap-6 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}
                                 >
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${m.role === 'user' ? 'bg-[#222] text-white border border-white/10' : 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]'}`}>
-                                        {m.role === 'user' ? <UserCircle2 size={16} /> : <Brain size={16} />}
+                                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 border transition-all ${m.role === 'user' ? 'bg-[#222] text-white border-white/10' : 'bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.3)]'}`}>
+                                        {m.role === 'user' ? <UserCircle2 size={20} /> : <Brain size={20} />}
                                     </div>
-                                    <div className={`p-1 rounded-2xl max-w-[85%] ${m.role === 'user' ? 'bg-transparent text-white/90' : 'text-white/80'}`}>
-                                        <div className="text-sm font-medium leading-relaxed">{m.text}</div>
-                                        <div className="mt-2 text-[8px] font-black uppercase tracking-widest text-white/10">{new Date(m.ts).toLocaleTimeString()}</div>
+                                    <div className={`space-y-2 max-w-[80%] ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                        <div className={`p-6 rounded-[2.5rem] text-[15px] font-medium leading-relaxed ${m.role === 'user' ? 'bg-white/5 border border-white/10 text-white/90' : 'text-white/80'}`}>
+                                            {m.text}
+                                        </div>
+                                        <div className="px-4 text-[9px] font-black uppercase tracking-widest text-white/10">{new Date(m.ts).toLocaleTimeString()}</div>
                                     </div>
                                 </motion.div>
                             ))}
                             {loading && (
                                 <div className="flex gap-6 animate-pulse">
-                                    <div className="w-8 h-8 rounded-lg bg-white/5" />
-                                    <div className="h-12 w-2/3 bg-white/5 rounded-2xl" />
+                                    <div className="w-10 h-10 rounded-2xl bg-white/5" />
+                                    <div className="h-20 w-3/4 bg-white/5 rounded-[2.5rem]" />
                                 </div>
                             )}
                         </div>
                         {/* Input Area (Bottom in active mode) */}
-                        <div className="p-8 border-t border-white/5 bg-black/20">
-                            <div className="relative flex items-center bg-[#111] border border-white/10 rounded-[2rem] p-3">
-                                <button className="p-3 text-white/20 hover:text-white transition-all"><Plus size={18} /></button>
-                                <textarea 
-                                    value={input}
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
-                                    placeholder="Message AURA..."
-                                    className="flex-1 bg-transparent border-none outline-none text-sm p-2 resize-none h-[40px] text-white no-scrollbar font-medium"
-                                />
-                                <button 
-                                    onClick={onSend}
-                                    className="w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
-                                >
-                                    <Send size={18} />
-                                </button>
+                        <div className="p-10 border-t border-white/5 bg-black/40">
+                            <div className="relative group">
+                                <div className="absolute -inset-1 bg-emerald-500/10 rounded-[2.5rem] blur opacity-0 group-focus-within:opacity-100 transition-opacity" />
+                                <div className="relative flex items-center bg-[#111] border border-white/10 rounded-[2.5rem] p-3 group-focus-within:border-emerald-500/30 transition-all">
+                                    <button className="p-4 text-white/20 hover:text-white transition-all"><Plus size={20} /></button>
+                                    <textarea 
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
+                                        onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }}
+                                        placeholder="Message AURA..."
+                                        className="flex-1 bg-transparent border-none outline-none text-sm p-2 resize-none h-[50px] text-white no-scrollbar font-bold"
+                                    />
+                                    <button 
+                                        onClick={onSend}
+                                        className="w-12 h-12 rounded-2xl bg-white text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+                                    >
+                                        <Send size={20} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Right Panel: The Visualizer Canvas */}
-                    <div className="flex-[1.2] p-8 bg-black relative">
+                    <div className="flex-1 p-10 bg-black relative z-10">
                         <AuraVisualizerCanvas 
                             response={lastAssistantResponse}
-                            status={loading ? "SYNTHESIZING" : "READY"}
+                            status={loading ? "SYNTHESIZING" : "IDLE"}
                         />
                     </div>
                 </div>
