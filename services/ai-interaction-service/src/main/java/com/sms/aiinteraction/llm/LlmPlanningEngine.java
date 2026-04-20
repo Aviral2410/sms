@@ -5,8 +5,7 @@ import com.sms.aiinteraction.tool.ToolCall;
 import com.sms.aiinteraction.tool.ToolDescriptor;
 import com.sms.aiinteraction.service.ConversationMemoryService.ChatMessageRecord;
 import java.util.List;
-import java.util.Optional;
 
 public interface LlmPlanningEngine {
-    Optional<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<ChatMessageRecord> history);
+    List<ToolCall> plan(String message, UserContext userContext, List<ToolDescriptor> tools, List<ChatMessageRecord> history);
 }
