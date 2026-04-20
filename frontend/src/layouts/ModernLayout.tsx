@@ -45,7 +45,7 @@ function getNavItems(role: string): NavItem[] {
     { path: '/admin/ai-governance', label: 'AI Governance', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#22d3ee' },
     { path: '/admin/pricing', label: 'Pricing Control', icon: TrendingUp, roles: [...PLATFORM_ROLES], group: 'Operations', color: '#fbbf24' },
     { path: '/admin/inquiries', label: 'Public Inbox', icon: Bell, roles: [...PLATFORM_ROLES], group: 'Operations', color: '#f472b6' },
-    { path: '/learn', label: 'AI Visualizer', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#fbbf24' },
+    { path: '/learn', label: 'LUMINA Neural Canvas', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#10b981' },
     { path: '/admin/logs', label: 'System Logs', icon: Activity, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#f87171' },
     { path: '/settings', label: 'Platform Engine', icon: Settings, roles: [...PLATFORM_ROLES], group: 'System', color: '#64748b' },
     // School Admin

@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExamplesPanel } from '../components/ai/ExamplesPanel';
-import { LearningVisualizerPanel } from '../components/ai/LearningVisualizerPanel';
+import { SmartUiRenderer } from '../components/ai/SmartUiRenderer';
 import { ApiError, schoolOpsApi, subscriptionApi, type ExampleResponse, type VisualizeResponse } from '../lib/api';
 import { hasFeature } from '../lib/features';
 import { buildBasicExamples, buildBasicVisualization } from '../lib/learningFallback';
@@ -214,9 +214,19 @@ export default function LearningModePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
-        <div className="mb-6">
-          <h1 className="text-2xl font-black text-slate-100 tracking-tight">AI Visualizer</h1>
-          <p className="text-slate-400 text-sm">Transforming complex concepts into interactive, step-by-step masterclasses.</p>
+        <div className="mb-10 px-4">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
+              <BrainCircuit size={28} />
+            </div>
+            <div>
+              <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/60 leading-none mb-2">Interactive Neural Workspace</h1>
+              <h2 className="text-3xl font-black text-white tracking-tighter">LUMINA <span className="text-emerald-500">Neural Canvas</span></h2>
+            </div>
+          </div>
+          <p className="text-white/30 text-sm font-medium ml-16 max-w-2xl leading-relaxed">
+            Generating high-fidelity visualizations and interactive simulations for complex pedagogical concepts.
+          </p>
         </div>
 
         <main className="learning-mode-stage">
@@ -273,11 +283,13 @@ export default function LearningModePage() {
                         {streamStatus}
                       </div>
                     ) : null}
-                    <LearningVisualizerPanel data={visualizeData} loading={loading} error={error} />
+                    <div className="min-h-[500px]">
+                        <SmartUiRenderer response={visualizeData} />
+                    </div>
                   </motion.div>
                 ) : (
                   <motion.div key="examples" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                    <ExamplesPanel data={examplesData} loading={loading} error={error} />
+                    <ExamplesPanel onSelect={(p) => { setVisualizeData(p); setActiveTab('visualize'); }} />
                   </motion.div>
                 )}
               </AnimatePresence>
