@@ -273,14 +273,14 @@ export const AiAssistantChat: React.FC = () => {
       <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
         <div className="flex items-center gap-4">
           <div 
-            style={{ backgroundColor: `${themeConfig.primary}20`, borderColor: `${themeConfig.primary}30` }}
-            className="w-10 h-10 rounded-2xl border flex items-center justify-center"
+            style={{ backgroundColor: `rgba(16, 185, 129, 0.1)`, borderColor: `rgba(16, 185, 129, 0.2)` }}
+            className="w-12 h-12 rounded-2xl border flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.1)]"
           >
-            <Sparkles size={20} style={{ color: themeConfig.primary }} />
+            <Sparkles size={24} style={{ color: themeConfig.primary }} />
           </div>
-          <div>
-            <div style={{ color: `${themeConfig.primary}60` }} className="text-[11px] font-black uppercase tracking-[0.2em] mb-0.5 ml-0.5">Neural Interface</div>
-            <div className="text-lg font-black text-white tracking-tight flex items-center gap-3">
+          <div className="flex-1">
+            <div style={{ color: `${themeConfig.primary}80` }} className="text-[10px] font-black uppercase tracking-[0.3em] mb-1">Neural Interface</div>
+            <div className="text-xl font-black text-white tracking-tighter flex items-center gap-3">
               AURA 
               <div className="flex gap-1.5 ml-2">
                 {Object.entries(themes).map(([name, cfg]) => (
@@ -370,10 +370,10 @@ export const AiAssistantChat: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.1 }}
                     onClick={() => sendMessage(prompt)}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-left text-[12px] text-white/70 font-bold hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all flex items-center gap-3 group"
+                    className="w-full p-5 rounded-[1.5rem] bg-[#10b981]/05 border border-[#10b981]/20 text-left text-[12px] text-white/70 font-bold hover:bg-[#10b981]/10 hover:border-[#10b981]/40 transition-all flex items-center gap-4 group shadow-lg"
                   >
-                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-500/20">
-                        <ChevronRight size={14} style={{ color: themeConfig.primary }} className="group-hover:translate-x-1 transition-all" />
+                    <div className="w-8 h-8 rounded-xl bg-[#10b981]/10 flex items-center justify-center flex-shrink-0 group-hover:bg-[#10b981]/20">
+                        <ChevronRight size={14} className="text-emerald-500 group-hover:translate-x-1 transition-all" />
                     </div>
                     {prompt}
                   </motion.button>

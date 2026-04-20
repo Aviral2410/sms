@@ -137,21 +137,21 @@ public class AdministrativeInferenceService {
             STRICT RULES:
             - Return ONLY valid JSON.
             - Intent Mapping: Detect if query is ADMIN (KPIs) or STUDENT (Concepts/Simulations).
+            - Mandatory: For SCIENCE, MATH, or SUBJECT queries, use 'simulation_canvas', 'molecule_canvas', or 'step_ladder'.
             
             EXTENDED SCHEMA:
             {
-              "intent": "string",
-              "title": "Visualization Hub",
-              "summary": "Deep-dive analysis of the concept or data.",
+              "intent": "student_learning",
+              "title": "AURA Intelligence Hub",
+              "summary": "Synthesized analysis for pedagogical excellence.",
               "components": [
-                { "type": "kpi_card", "title": "Total Metric", "value": "1.2M" },
-                { "type": "simulation_canvas", "title": "Interactive Model", "logic": "physics_f_ma", "parameters": {"force": 10, "mass": 2} },
-                { "type": "step_ladder", "title": "Concept Breakdown", "steps": [{"title": "Step 1", "desc": "..."}, {"why": "..."}] },
-                { "type": "formula_card", "latex": "F = m \\times a", "title": "The Governing Equation" },
-                { "type": "chart_line", "title": "Trend Analysis", "labels": ["A", "B"], "series": [10, 20] }
+                { "type": "simulation_canvas", "title": "Interactive Model", "logic": "physics_f_ma", "parameters": {"force": 40, "mass": 8} },
+                { "type": "molecule_canvas", "title": "Atomic Layout", "molecules": ["DNA", "C6H12O6"] },
+                { "type": "step_ladder", "title": "Scaffolding Steps", "steps": [{"title": "Step 1", "desc": "..."}] },
+                { "type": "formula_card", "latex": "E = mc^2", "title": "Foundational Law" }
               ],
-              "insights": ["Scientific insight 1", "Strategic insight 2"],
-              "quiz": [{"q": "Question?", "options": ["A", "B", "C"], "correct": 0}]
+              "insights": ["Scientific insight 1"],
+              "quiz": [{"q": "Concept check?", "options": ["Yes", "No"], "correct": 0}]
             }
             
             When students ask about Science/Math, prioritize 'simulation_canvas', 'step_ladder', and 'formula_card'.
