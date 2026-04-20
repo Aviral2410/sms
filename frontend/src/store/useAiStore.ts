@@ -50,11 +50,9 @@ export const useAiStore = create<AiState>()(
       setHistory: (history) => set({ history }),
       setSidebarWidth: (sidebarWidth) => set({ sidebarWidth }),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
-      toggleSuggestions: () => set((state) => ({ showSuggestions: !state.showSuggestions })),
 
       ensureGuestId: () => {
         let gid = get().guestId;
-        if (!gid) {
           gid = uuidv4();
           set({ guestId: gid });
         }

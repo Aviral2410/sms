@@ -17,10 +17,10 @@ networking:
     enabled: true
     # For k3s default, use `traefik`. If you install ingress-nginx, use `nginx`.
     className: traefik
-    frontendHost: sms.example.com
-    frontendWildcardHost: "*.sms.example.com"
-    apiHost: api.sms.example.com
-    mcpHost: mcp.sms.example.com
+    frontendHost: sms.3.109.156.68.sslip.io
+    frontendWildcardHost: "*.sms.3.109.156.68.sslip.io"
+    apiHost: api.sms.3.109.156.68.sslip.io
+    mcpHost: mcp.sms.3.109.156.68.sslip.io
     tls:
       enabled: false
       secretName: sms-platform-tls
@@ -38,10 +38,10 @@ services:
     resources:
       requests:
         cpu: 100m
-        memory: 1Gi
+        memory: 4Gi
       limits:
         cpu: "1"
-        memory: 2Gi
+        memory: 6Gi
     persistence:
       enabled: true
       hostPath: /data/ollama
@@ -54,12 +54,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        memory: 320Mi
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -85,19 +85,19 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-auth-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   schoolOnboardingService:
     replicaCount: 1
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        memory: 384Mi
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -121,19 +121,19 @@ services:
         value: docker
     image:
       repository: ghcr.io/aviral2410/sms-school-onboarding-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   schoolOperationsService:
     replicaCount: 1
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        memory: 384Mi
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -159,19 +159,19 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-school-operations-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   communicationService:
     replicaCount: 1
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
-      limits:
         memory: 256Mi
+      limits:
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -195,19 +195,19 @@ services:
         value: docker
     image:
       repository: ghcr.io/aviral2410/sms-communication-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   financeService:
     replicaCount: 1
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        memory: 320Mi
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -229,19 +229,19 @@ services:
         value: docker
     image:
       repository: ghcr.io/aviral2410/sms-finance-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   subscriptionService:
     replicaCount: 1
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        memory: 320Mi
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -265,19 +265,19 @@ services:
         value: docker
     image:
       repository: ghcr.io/aviral2410/sms-subscription-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   apiGateway:
     replicaCount: 1
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
+        memory: 256Mi
       limits:
-        memory: 320Mi
+        memory: 1Gi
     env:
       - name: JAVA_OPTS
-        value: "-Xmx160m"
+        value: "-Xmx384m"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
@@ -317,7 +317,7 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-api-gateway
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   aiInteractionService:
     replicaCount: 1
@@ -326,10 +326,10 @@ services:
         cpu: 50m
         memory: 256Mi
       limits:
-        memory: 512Mi
+        memory: 448Mi
     image:
       repository: ghcr.io/aviral2410/sms-ai-interaction-service
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
     # Override LLM config directly — no Vault dependency for cluster-internal Ollama URL
     env:
@@ -376,12 +376,12 @@ services:
     resources:
       requests:
         cpu: 20m
-        memory: 128Mi
-      limits:
         memory: 256Mi
+      limits:
+        memory: 1Gi
     image:
       repository: ghcr.io/aviral2410/sms-mcp-server
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always
   frontend:
     replicaCount: 1
@@ -393,5 +393,5 @@ services:
       enabled: false
     image:
       repository: ghcr.io/aviral2410/sms-frontend
-      tag: fbeeb9de300a2e1dccfe8afd447433d288d1e294
+      tag: 88c0285855d45e07469bae7568c8823ff265c2de
       pullPolicy: Always

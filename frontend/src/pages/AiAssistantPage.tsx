@@ -45,7 +45,6 @@ const ChatBubble: React.FC<{ message: any; onAction?: (token: string) => void }>
         </div>
         
         {/* If it's a legacy or simple text message */}
-        {message.content && !message.response && (
             <div className="text-[14px] leading-relaxed whitespace-pre-wrap font-medium text-emerald-50/90">
                 {message.content}
             </div>
@@ -102,7 +101,6 @@ export const AiAssistantPage: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setWorkspaces(data);
-        if (data.length > 0 && !activeWorkspaceId) {
           setActiveWorkspaceId(data[0].workspaceId);
         }
       }
@@ -112,7 +110,6 @@ export const AiAssistantPage: React.FC = () => {
   }, [session.token, ensureGuestId, activeWorkspaceId]);
 
   const fetchHistory = useCallback(async () => {
-    if (!activeWorkspaceId) return;
     const gid = ensureGuestId();
     const headers: any = { 'X-Guest-ID': gid };
     if (session.token) headers.Authorization = `Bearer ${session.token}`;
@@ -136,7 +133,6 @@ export const AiAssistantPage: React.FC = () => {
   }, [fetchHistory]);
 
   const createWorkspace = async () => {
-    if (!newWorkspaceName.trim()) return;
     const gid = ensureGuestId();
     const headers: any = { 
         'X-Guest-ID': gid,
@@ -185,7 +181,6 @@ export const AiAssistantPage: React.FC = () => {
 
   const sendMessage = async (overrideText?: string) => {
     const messageToSend = (overrideText || input).trim();
-    if (!messageToSend || loading) return;
     
     setInput('');
     const userMsg = { id: Date.now().toString(), role: 'user', content: messageToSend };
@@ -214,7 +209,6 @@ export const AiAssistantPage: React.FC = () => {
         }),
       });
 
-      if (!response.ok || !response.body) throw new Error('Stream failed');
 
       let streamText = '';
       await readSseStream(response.body, {
@@ -270,7 +264,6 @@ export const AiAssistantPage: React.FC = () => {
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (!isResizing.current) return;
     const newWidth = Math.max(240, Math.min(600, e.clientX));
     setSidebarWidth(newWidth);
   };
@@ -459,7 +452,6 @@ export const AiAssistantPage: React.FC = () => {
       </motion.div>
 
       {/* Resize Handle */}
-      {!sidebarCollapsed && (
         <div 
           onMouseDown={handleMouseDown}
           className="w-[2px] cursor-col-resize hover:bg-emerald-500/50 transition-colors z-50 bg-white/5"
@@ -472,7 +464,6 @@ export const AiAssistantPage: React.FC = () => {
         <header className="h-16 border-b border-white/5 flex items-center justify-between px-8 bg-[#020c1b]/80 backdrop-blur-xl z-10">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="p-2 hover:bg-emerald-500/10 rounded-lg transition-colors text-emerald-400/70 hover:text-emerald-400"
             >
               {sidebarCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
@@ -579,7 +570,6 @@ export const AiAssistantPage: React.FC = () => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       sendMessage();
                     }
@@ -589,14 +579,11 @@ export const AiAssistantPage: React.FC = () => {
                 />
                 <button 
                   onClick={() => sendMessage()}
-                  disabled={!input.trim() || loading}
                   className={`p-4 rounded-[1.8rem] transition-all flex items-center gap-2 group/send ${
-                    input.trim() && !loading 
                       ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95' 
                       : 'text-emerald-500/20'
                   }`}
                 >
-                  <Send size={18} className={input.trim() && !loading ? 'group-hover/send:translate-x-0.5 group-hover/send:-translate-y-0.5 transition-transform' : ''} />
                 </button>
               </div>
             </div>

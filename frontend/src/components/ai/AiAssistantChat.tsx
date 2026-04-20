@@ -5,8 +5,7 @@ import {
   Sparkles, Trash2, UserCircle2, X, ChevronRight, Cpu
 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
-import { useAiStore } from '../../store/useAiStore';
-import { SmartUiRenderer } from './SmartUiRenderer';
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { readSseStream, tryParseJson } from '../../lib/sse';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -191,16 +190,10 @@ export const AiAssistantChat: React.FC = () => {
   const [toolsError, setToolsError] = useState<string | null>(null);
   const [toolsLoading, setToolsLoading] = useState(false);
 
-  const { guestId, ensureGuestId } = useAiStore();
-
   const authHeaders = useMemo(() => {
-    const gid = ensureGuestId();
-    const headers: any = { 'X-Guest-ID': gid };
-    if (session.token) {
-      headers['Authorization'] = `Bearer ${session.token}`;
-    }
-    return headers;
-  }, [session.token, ensureGuestId]);
+    if (!session.token) return null;
+    return { Authorization: `Bearer ${session.token}` };
+  }, [session.token]);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{ active: boolean; dx: number; dy: number }>({ active: false, dx: 0, dy: 0 });
@@ -221,33 +214,11 @@ export const AiAssistantChat: React.FC = () => {
     return { x: Math.max(16, window.innerWidth - w - 24), y: Math.max(16, window.innerHeight - h - 24), w, h };
   });
 
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const canSend = useMemo(() => !!session.token && input.trim().length > 0 && !loading, [session.token, input, loading]);
 
-  const canSend = useMemo(() => input.trim().length > 0 && !loading, [input, loading]);
-
-  const scrollToBottom = useCallback((instant = false) => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior: instant ? 'auto' : 'smooth',
-      });
-    }
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight; }, 0);
   }, []);
-
-  useEffect(() => {
-    if (open) {
-      requestAnimationFrame(() => scrollToBottom(loading));
-    }
-  }, [messages, loading, open, scrollToBottom]);
-
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    const obs = new ResizeObserver(() => {
-      if (loading) scrollToBottom(true);
-    });
-    obs.observe(scrollRef.current);
-    return () => obs.disconnect();
-  }, [loading, scrollToBottom]);
 
   const appendMessage = useCallback((msg: ChatMessage) => {
     setMessages((prev) => [...prev, { ts: Date.now(), ...msg }]);
@@ -408,10 +379,6 @@ export const AiAssistantChat: React.FC = () => {
     if (!session.token) return;
     const message = (override ?? input).trim();
     if (!message || loading) return;
-
-    if (abortControllerRef.current) abortControllerRef.current.abort();
-    abortControllerRef.current = new AbortController();
-
     setInput('');
     appendMessage({ id: `u-${Date.now()}`, role: 'user', text: message });
     setLoading(true);
@@ -423,7 +390,6 @@ export const AiAssistantChat: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ workspaceId, conversationId, message, context: { route: window.location.pathname } }),
-        signal: abortControllerRef.current.signal,
       });
 
       if (!response.ok || !response.body) throw new Error('Unable to stream AI response.');
@@ -448,18 +414,11 @@ export const AiAssistantChat: React.FC = () => {
             return;
           }
           const parsed = tryParseJson<any>(data);
-          const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : data;
+          const chunk = parsed.ok && typeof parsed.value?.text === 'string' ? parsed.value.text as string : data;
           if (event === 'token' || event === 'delta' || event === 'chunk' || event === 'message') {
-            if (chunk) {
-              streamingText += chunk;
-              patchMessage(assistantId, { text: streamingText, streaming: true });
-            }
+            if (chunk) { streamingText += chunk; patchMessage(assistantId, { text: streamingText, streaming: true }); }
           }
         },
-        onError: (err) => {
-          console.error('SSE Error:', err);
-          patchMessage(assistantId, { text: 'I encountered an issue connecting to the AI service. Please try again.', streaming: false });
-        }
       });
 
       const payload = finalPayload as StreamFinalPayload | null;
@@ -474,23 +433,9 @@ export const AiAssistantChat: React.FC = () => {
         patchMessage(assistantId, { text: streamingText || 'Received an empty response.', streaming: false });
       }
     } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        patchMessage(assistantId, { text: 'Request cancelled.', streaming: false });
-      } else {
-        patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.', streaming: false });
-      }
-    } finally {
-      setLoading(false);
-      abortControllerRef.current = null;
-    }
+      patchMessage(assistantId, { text: error instanceof Error ? `Connection error: ${error.message}` : 'Failed to fetch AI response.', streaming: false });
+    } finally { setLoading(false); }
   };
-
-  const cancelRequest = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
-  }, []);
 
   const send = async () => {
     if (!canSend) return;
@@ -529,27 +474,112 @@ export const AiAssistantChat: React.FC = () => {
 
   // ── Render helpers ──────────────────────────────────────────────────────────
 
+  const renderChart = (response: RenderedResponse) => {
+    const chart = response.data?.chart as { xKey?: string; yKey?: string; points?: Record<string, unknown>[] } | undefined;
+    const points = Array.isArray(chart?.points) ? chart.points : [];
+    const xKey = chart?.xKey || 'x'; const yKey = chart?.yKey || 'y';
+    if (points.length === 0) return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
+    return (
+      <div style={{ width: '100%', height: 220 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          {points.length > 7
+            ? <LineChart data={points}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
+                <XAxis dataKey={xKey} stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <YAxis stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <Tooltip contentStyle={{ background: 'rgba(2,12,27,0.95)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10 }} />
+                <Line type="monotone" dataKey={yKey} stroke="#10b981" strokeWidth={2} dot={false} />
+              </LineChart>
+            : <BarChart data={points}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(16,185,129,0.1)" />
+                <XAxis dataKey={xKey} stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <YAxis stroke="rgba(167,243,208,0.5)" fontSize={10} />
+                <Tooltip contentStyle={{ background: 'rgba(2,12,27,0.95)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10 }} />
+                <Bar dataKey={yKey} fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
+          }
+        </ResponsiveContainer>
+      </div>
+    );
+  };
+
   const renderAssistantContent = (msg: ChatMessage) => {
     const { response, text, streaming } = msg;
 
-    return (
-      <div className="space-y-4">
-        {text && (
+    if (!response && text !== undefined) {
+      return (
+        <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
+          {streaming && text
+            ? <StreamingText text={text} streaming />
+            : renderMarkdownLite(text || '')
+          }
+        </p>
+      );
+    }
+
+    if (!response) return null;
+
+    if (response.type === 'text') {
+      const t = typeof response.data?.text === 'string' ? response.data.text : JSON.stringify(response.data);
+      return (
+        <div style={{ display: 'grid', gap: 10 }}>
           <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>
-            {streaming 
-              ? <StreamingText text={text} streaming />
-              : renderMarkdownLite(text)
-            }
+            {renderMarkdownLite(t)}
           </p>
-        )}
-        
-        {response && (
-          <div className="mt-4 pt-4 border-t border-emerald-500/10">
-             <SmartUiRenderer response={response.data} />
-          </div>
-        )}
-      </div>
-    );
+        </div>
+      );
+    }
+
+    if (response.type === 'table') {
+      const rows = Array.isArray(response.data?.rows) ? (response.data.rows as Record<string, unknown>[]) : [];
+      return (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#6ee7b7' }}>Rows: {rows.length}</div>
+          {rows.length > 0 && (
+            <button type="button" onClick={() => downloadText(`ai-table-${Date.now()}.csv`, toCsv(rows), 'text/csv')} style={actionBtnStyle}>
+              Export CSV
+            </button>
+          )}
+          <pre style={preStyle}>{JSON.stringify(rows.slice(0, 10), null, 2)}</pre>
+        </div>
+      );
+    }
+
+    if (response.type === 'chart') {
+      const points = Array.isArray((response.data?.chart as any)?.points) ? (response.data.chart as any).points : [];
+      const t = typeof response.data?.text === 'string' ? response.data.text : '';
+      return (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {t && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.65, color: '#d1fae5' }}>{renderMarkdownLite(t)}</p>}
+          {renderChart(response)}
+          {points.length > 0 && (
+            <button type="button" onClick={() => downloadText(`ai-chart-${Date.now()}.csv`, toCsv(points), 'text/csv')} style={actionBtnStyle}>
+              Export CSV
+            </button>
+          )}
+        </div>
+      );
+    }
+
+    if (response.type === 'action') {
+      const status = typeof response.data?.status === 'string' ? response.data.status : '';
+      const token = typeof response.data?.confirmationToken === 'string' ? response.data.confirmationToken : '';
+      const msgText = typeof response.data?.message === 'string' ? response.data.message : '';
+      return (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#6ee7b7' }}>{status || 'Action'}</div>
+          {msgText && <div style={{ fontSize: 12, color: 'rgba(167,243,208,0.7)' }}>{msgText}</div>}
+          {status === 'CONFIRMATION_REQUIRED' && token && (
+            <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => void confirmAction(token)} style={confirmBtnStyle}>
+              Confirm Action
+            </motion.button>
+          )}
+          <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>
+        </div>
+      );
+    }
+
+    return <pre style={preStyle}>{JSON.stringify(response.data, null, 2)}</pre>;
   };
 
   // ─── Launcher FAB ──────────────────────────────────────────────────────────
@@ -630,8 +660,8 @@ export const AiAssistantChat: React.FC = () => {
           </motion.button>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(16,185,129,0.15)' }} type="button"
             onPointerDown={(e) => e.stopPropagation()}
-            onClick={() => { if (!toolsOpen && !toolsLoaded) void loadTools(); setToolsOpen((v) => !v); }} style={headerBtnStyle} title="Chat history & Tools">
-            <MessageCircle size={15} />
+            onClick={() => { if (!toolsOpen && !toolsLoaded) void loadTools(); setToolsOpen((v) => !v); }} style={headerBtnStyle} title="AI tools">
+            <Globe size={15} />
           </motion.button>
           <motion.button whileHover={{ scale: 1.1, background: 'rgba(239,68,68,0.15)' }} type="button"
             onPointerDown={(e) => e.stopPropagation()}
@@ -759,15 +789,11 @@ export const AiAssistantChat: React.FC = () => {
                     </motion.div>
                   )}
                   <div style={msg.role === 'user' ? userBubbleStyle : assistantBubbleStyle}>
-                    {msg.role === 'assistant' ? (
-                      msg.text === '' && loading ? (
-                        <ThinkingDots />
-                      ) : (
-                        renderAssistantContent(msg)
-                      )
-                    ) : (
-                      <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6 }}>{msg.text}</p>
-                    )}
+                    {msg.role === 'assistant' && msg.text === '' && loading
+                      ? <ThinkingDots />
+                      : renderAssistantContent(msg)
+                    }
+                    {msg.role === 'user' && <p style={{ margin: 0, fontSize: 13.5, lineHeight: 1.6 }}>{msg.text}</p>}
                     <div style={tsStyle}>{formatTime(msg.ts)}</div>
                   </div>
                   {msg.role === 'user' && (
@@ -814,7 +840,7 @@ export const AiAssistantChat: React.FC = () => {
             {input.length > 0 ? `${input.length}/${MAX_INPUT_CHARS}` : 'Ollama · llama3.2:3b'}
           </span>
           {!session.token && (
-            <span style={{ fontSize: 10.5, color: '#10b981', opacity: 0.6 }}>Guest Session Active</span>
+            <span style={{ fontSize: 10.5, color: '#f87171' }}>Sign in to use AI chat</span>
           )}
         </div>
       </div>
