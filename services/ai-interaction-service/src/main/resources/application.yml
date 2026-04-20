@@ -5,6 +5,19 @@ spring:
     redis:
       host: ${REDIS_SERVICE_HOST:localhost}
       port: ${REDIS_SERVICE_PORT:6379}
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sms_platform}
+    username: ${SPRING_DATASOURCE_USERNAME:sms}
+    password: ${SPRING_DATASOURCE_PASSWORD:sms}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.postgresql.Driver}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
 
 server:
   port: ${SERVER_PORT:8090}
