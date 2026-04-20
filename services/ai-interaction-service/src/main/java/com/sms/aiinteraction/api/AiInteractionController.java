@@ -136,7 +136,7 @@ public class AiInteractionController {
     }
 
     @GetMapping("/workspaces/{workspaceId}/chats")
-    public ResponseEntity<List<AiInteractionDtos.ChatSummaryResponse>> listChats(
+    public ResponseEntity<List<AiInteractionDtos.ChatSummaryResponse>> listWorkspaceChats(
             @PathVariable java.util.UUID workspaceId,
             HttpServletRequest servletRequest
     ) {
@@ -144,6 +144,24 @@ public class AiInteractionController {
         return ResponseEntity.ok(conversationMemoryService.listChats(user, workspaceId).stream()
                 .map(this::toChatSummary)
                 .toList());
+    }
+
+    @GetMapping("/chats")
+    public ResponseEntity<List<AiInteractionDtos.ChatSummaryResponse>> listAllChats(HttpServletRequest servletRequest) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        return ResponseEntity.ok(conversationMemoryService.listChats(user, null).stream()
+                .map(this::toChatSummary)
+                .toList());
+    }
+
+    @DeleteMapping("/chats/{conversationId}")
+    public ResponseEntity<Void> deleteChat(
+            @PathVariable java.util.UUID conversationId,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        conversationMemoryService.deleteChat(user, conversationId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/chats/{conversationId}/messages")

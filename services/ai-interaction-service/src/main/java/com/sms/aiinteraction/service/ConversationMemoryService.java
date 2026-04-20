@@ -106,7 +106,12 @@ public class ConversationMemoryService {
     }
 
     public List<ChatRecord> listChats(UserContext user, UUID workspaceId) {
-        WorkspaceRecord workspace = requireWorkspaceOwnedByUser(user, workspaceId);
+        UUID effectiveWorkspaceId = workspaceId;
+        if (effectiveWorkspaceId == null) {
+            effectiveWorkspaceId = ensureDefaultWorkspace(user).workspaceId();
+        }
+        
+        WorkspaceRecord workspace = requireWorkspaceOwnedByUser(user, effectiveWorkspaceId);
         UUID effectiveUserId = getEffectiveUserId(user);
         List<ChatRecord> fromRedis = loadWorkspaceChatsRedis(workspace.workspaceId(), effectiveUserId);
         if (!fromRedis.isEmpty()) {
@@ -116,6 +121,17 @@ public class ConversationMemoryService {
                 .filter(chat -> chat.userId().equals(effectiveUserId) && chat.workspaceId().equals(workspace.workspaceId()))
                 .sorted(Comparator.comparing(ChatRecord::updatedAt).reversed())
                 .toList();
+    }
+
+    public void deleteChat(UserContext user, UUID conversationId) {
+        ChatRecord chat = requireChatOwnedByUser(user, conversationId);
+        if (redisTemplate != null) {
+            redisTemplate.delete("ai:chat:" + chat.conversationId());
+            redisTemplate.delete("ai:chat:" + chat.conversationId() + ":messages");
+            redisTemplate.opsForSet().remove("ai:workspace:" + chat.workspaceId() + ":chats", chat.conversationId().toString());
+        }
+        chatsFallback.remove(chat.conversationId());
+        messagesFallback.remove(chat.conversationId());
     }
 
     public void addUserMessage(UserContext user, UUID conversationId, String message) {

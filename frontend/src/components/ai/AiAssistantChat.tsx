@@ -320,14 +320,31 @@ export const AiAssistantChat: React.FC = () => {
                 </button>
                 <div className="space-y-2">
                   {chats.map(chat => (
-                    <button 
-                      key={chat.conversationId}
-                      onClick={() => { setConversationId(chat.conversationId); setToolsOpen(false); }}
-                      className="w-full p-4 rounded-xl hover:bg-white/5 text-left transition-all border border-transparent hover:border-white/5 group"
-                    >
-                      <div className="text-[12px] text-white/60 font-bold truncate group-hover:text-white/90">{chat.title || "Neural Session"}</div>
-                      <div className="text-[9px] text-white/20 font-black uppercase mt-1">{new Date(chat.updatedAt || chat.createdAt).toLocaleDateString()}</div>
-                    </button>
+                    <div key={chat.conversationId} className="group relative">
+                        <button 
+                          onClick={() => { setConversationId(chat.conversationId); setToolsOpen(false); }}
+                          className="w-full p-4 rounded-xl hover:bg-white/5 text-left transition-all border border-transparent hover:border-white/5"
+                        >
+                          <div className="text-[12px] text-white/60 font-bold truncate group-hover:text-white/90 pr-8">{chat.title || "Neural Session"}</div>
+                          <div className="text-[9px] text-white/20 font-black uppercase mt-1">{new Date(chat.updatedAt || chat.createdAt).toLocaleDateString()}</div>
+                        </button>
+                        <button 
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if(!session.token) return;
+                                try {
+                                    await fetch(`/api/v1/ai-interaction/chats/${chat.conversationId}`, { 
+                                        method: 'DELETE',
+                                        headers: { 'Authorization': `Bearer ${session.token}` }
+                                    });
+                                    loadChats();
+                                } catch(err) { console.error('Delete failed:', err); }
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-500/40 hover:text-red-500 transition-all"
+                        >
+                            <Trash2 size={14} />
+                        </button>
+                    </div>
                   ))}
                   {historyLoading && <div style={{ color: `${themeConfig.primary}40` }} className="text-[10px] animate-pulse font-black p-4 uppercase tracking-widest text-center">Syncing Banks...</div>}
                 </div>
