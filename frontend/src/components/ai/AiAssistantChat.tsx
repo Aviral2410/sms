@@ -51,8 +51,8 @@ export const AiAssistantChat: React.FC = () => {
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [workspaces] = useState<Workspace[]>([
-      { id: 'ws-1', name: 'Elite Operations', color: '#10b981' },
-      { id: 'ws-2', name: 'Strategic KPI Bank', color: '#8b5cf6' }
+      { id: '00000000-0000-0000-0000-000000000000', name: 'Elite Operations', color: '#10b981' },
+      { id: '11111111-1111-1111-1111-111111111111', name: 'Strategic KPI Bank', color: '#8b5cf6' }
   ]);
   const [chats, setChats] = useState<any[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);

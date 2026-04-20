@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Play, Pause, RotateCcw, Share2, Download, Maximize2, 
   Activity, BarChart3, Binary, Layout, Video, HelpCircle,
-  ChevronRight, FastForward, Info, Layers, Zap
+  ChevronRight, FastForward, Info, Layers, Zap, ArrowRight, X
 } from 'lucide-react';
 import { SmartUiRenderer } from "./SmartUiRenderer";
 
@@ -27,6 +27,13 @@ export const AuraVisualizerCanvas: React.FC<VisualizerProps> = ({ response, stat
     { id: 'diagram', icon: <Layers size={14} />, label: 'Diagram' },
     { id: 'video', icon: <Video size={14} />, label: 'Video' },
     { id: 'interactive', icon: <Zap size={14} />, label: 'Interactive' }
+  ];
+
+  const videoSimulations = [
+    { id: 'v1', title: 'Photosynthesis Cycle', category: 'Science', color: 'emerald' },
+    { id: 'v2', title: '2008 Market Liquidity', category: 'Finance', color: 'amber' },
+    { id: 'v3', title: 'Merge Sort Recursion', category: 'DSA', color: 'sky' },
+    { id: 'v4', title: 'Quantum Entanglement', category: 'Physics', color: 'violet' }
   ];
 
   return (
@@ -63,28 +70,66 @@ export const AuraVisualizerCanvas: React.FC<VisualizerProps> = ({ response, stat
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#10b981 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
         
         <AnimatePresence mode="wait">
-            <motion.div 
-                key={activeTab + JSON.stringify(response)}
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 1.02, y: -10 }}
-                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="w-full h-full flex items-center justify-center"
-            >
-                {response ? (
-                    <div className="w-full h-full relative">
-                        <SmartUiRenderer response={response} />
-                    </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center space-y-6 text-center max-w-sm">
-                        <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-4">
-                            <Activity size={40} className="animate-pulse" />
+            {activeTab === 'video' ? (
+                <motion.div 
+                    key="video-hub"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.05 }}
+                    className="w-full h-full grid grid-cols-2 gap-6"
+                >
+                    {videoSimulations.map((v, i) => (
+                        <motion.div 
+                            key={v.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0, transition: { delay: i * 0.1 } }}
+                            className="relative group/video rounded-[2rem] bg-white/[0.02] border border-white/5 p-8 flex flex-col justify-end overflow-hidden hover:border-emerald-500/30 transition-all cursor-pointer"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10" />
+                            
+                            {/* Animated Video Preview Mock */}
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 group-hover/video:opacity-30 transition-opacity">
+                                <motion.div 
+                                    animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+                                    transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                                    className={`w-64 h-64 rounded-full border-[1px] border-emerald-500/40 border-dashed`}
+                                />
+                            </div>
+
+                            <div className="relative z-20">
+                                <div className={`text-[9px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-2`}>{v.category} Neural Explainer</div>
+                                <h4 className="text-lg font-black text-white mb-4">{v.title}</h4>
+                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500/60 group-hover/video:text-emerald-500 group-hover/video:translate-x-2 transition-all">
+                                    Initiate Playback <ArrowRight size={12} />
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </motion.div>
+            ) : (
+                <motion.div 
+                    key={activeTab + JSON.stringify(response)}
+                    initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 1.02, y: -10 }}
+                    transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                    className="w-full h-full flex items-center justify-center"
+                >
+                    {response ? (
+                        <div className="w-full h-full relative">
+                            <SmartUiRenderer response={response} />
                         </div>
-                        <h3 className="text-xl font-black text-white uppercase tracking-tighter">Ready for Synthesis</h3>
-                        <p className="text-sm text-white/40 font-medium">Deploy a query to initiate a high-fidelity visual explanation orbit.</p>
-                    </div>
-                )}
-            </motion.div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center space-y-6 text-center max-w-sm">
+                            <div className="w-20 h-20 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 mb-4">
+                                <Activity size={40} className="animate-pulse" />
+                            </div>
+                            <h3 className="text-xl font-black text-white uppercase tracking-tighter">Ready for Synthesis</h3>
+                            <p className="text-sm text-white/40 font-medium">Deploy a query to initiate a high-fidelity visual explanation orbit.</p>
+                        </div>
+                    )}
+                </motion.div>
+            )}
         </AnimatePresence>
 
         {/* Live Status Overlays */}
@@ -92,9 +137,6 @@ export const AuraVisualizerCanvas: React.FC<VisualizerProps> = ({ response, stat
             <div className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-emerald-500/30 flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500/80">Render: {status}</span>
-            </div>
-            <div className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-white/5 flex items-center gap-3">
-                <span className="text-[9px] font-black uppercase tracking-widest text-white/30">FPS: 60.00</span>
             </div>
         </div>
       </div>
@@ -137,16 +179,8 @@ export const AuraVisualizerCanvas: React.FC<VisualizerProps> = ({ response, stat
             </button>
         </div>
       </footer>
-
-      {/* Progress Rail */}
-      <div className="absolute bottom-[96px] left-0 w-full h-[2px] bg-white/5">
-        <motion.div 
-            initial={{ width: 0 }}
-            animate={{ width: isPlaying ? '100%' : '30%' }}
-            transition={{ duration: 30, ease: "linear" }}
-            className="h-full bg-emerald-500 shadow-[0_0_10px_#10b981]" 
-        />
-      </div>
     </div>
   );
 };
+
+export default AuraVisualizerCanvas;

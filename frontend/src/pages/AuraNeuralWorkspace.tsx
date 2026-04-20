@@ -187,8 +187,8 @@ export const AuraNeuralWorkspace: React.FC = () => {
   const [showPalette, setShowPalette] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [workspaces] = useState<Workspace[]>([
-    { id: 'ws1', name: 'Elite Operations', color: '#10b981' },
-    { id: 'ws2', name: 'Strategic KPI Bank', color: '#8b5cf6' }
+    { id: '00000000-0000-0000-0000-000000000000', name: 'Elite Operations', color: '#10b981' },
+    { id: '11111111-1111-1111-1111-111111111111', name: 'Strategic KPI Bank', color: '#8b5cf6' }
   ]);
   const [chats, setChats] = useState<any[]>([]);
 
@@ -260,7 +260,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <NeuralSidebar workspaces={workspaces} chats={chats} onNewChat={() => setMessages([])} activeWorkspace="ws1" onSelectChat={() => {}} />
+      <NeuralSidebar workspaces={workspaces} chats={chats} onNewChat={() => setMessages([])} activeWorkspace="00000000-0000-0000-0000-000000000000" onSelectChat={() => {}} />
 
       {/* Main Synthesis Arena */}
       <main className="flex-1 flex flex-col relative z-10 bg-gradient-to-b from-transparent to-black/20">
