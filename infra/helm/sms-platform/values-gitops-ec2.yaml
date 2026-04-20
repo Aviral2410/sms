@@ -347,9 +347,15 @@ services:
       - name: SPRING_DATASOURCE_URL
         value: "jdbc:postgresql://postgres:5432/sms_ai"
       - name: SPRING_DATASOURCE_USERNAME
-        value: "postgres"
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
       - name: SPRING_DATASOURCE_PASSWORD
-        value: "postgres"
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
       - name: SPRING_PROFILES_ACTIVE
         value: "docker"
       - name: OLLAMA_BASE_URL

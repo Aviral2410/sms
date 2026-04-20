@@ -25,7 +25,7 @@ class AiChatCompatMapperTest {
         ObjectNode meta = objectMapper.createObjectNode();
         meta.put("intent", "Announcements");
 
-        AiInteractionDtos.RenderedResponse rendered = new AiInteractionDtos.RenderedResponse("table", rows, meta);
+        AiInteractionDtos.RenderedResponse rendered = new AiInteractionDtos.RenderedResponse("table", rows, meta, null);
         UUID conversationId = UUID.randomUUID();
         AiInteractionDtos.ChatResponse response = new AiInteractionDtos.ChatResponse(null, conversationId, rendered);
 
@@ -54,7 +54,7 @@ class AiChatCompatMapperTest {
         ObjectNode meta = objectMapper.createObjectNode();
         meta.put("tool", "getAttendanceReport");
 
-        AiInteractionDtos.RenderedResponse rendered = new AiInteractionDtos.RenderedResponse("chart", data, meta);
+        AiInteractionDtos.RenderedResponse rendered = new AiInteractionDtos.RenderedResponse("chart", data, meta, null);
         UUID conversationId = UUID.randomUUID();
         AiInteractionDtos.ChatResponse response = new AiInteractionDtos.ChatResponse(null, conversationId, rendered);
 
@@ -72,7 +72,7 @@ class AiChatCompatMapperTest {
     void streamsTextIntoTextEvents() {
         ObjectNode data = objectMapper.createObjectNode();
         data.put("text", "Hello world");
-        AiInteractionDtos.RenderedResponse rendered = new AiInteractionDtos.RenderedResponse("text", data, objectMapper.createObjectNode());
+        AiInteractionDtos.RenderedResponse rendered = new AiInteractionDtos.RenderedResponse("text", data, objectMapper.createObjectNode(), null);
         AiInteractionDtos.ChatResponse response = new AiInteractionDtos.ChatResponse(null, UUID.randomUUID(), rendered);
 
         List<ObjectNode> events = mapper.toStreamEvents(response);
