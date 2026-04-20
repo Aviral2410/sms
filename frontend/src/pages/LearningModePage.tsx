@@ -296,52 +296,43 @@ export default function LearningModePage() {
             </div>
           </section>
 
-          <form onSubmit={handleProcess} className="learning-mode-composer">
-            <div className="learning-mode-composer__row">
-              <div className="learning-mode-composer__field">
-                <textarea
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder="What would you like to visualize? (e.g. How does photosynthesis work?)"
-                  className="learning-mode-composer__input"
-                />
-                {question && (
-                  <button type="button" className="learning-mode-composer__clear" onClick={() => setQuestion('')}>
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-
-              <div className="learning-mode-composer__controls">
-                <select value={subject} onChange={(e) => setSubject(e.target.value)} className="learning-mode-composer__select">
-                  <option value="">Auto-subject</option>
-                  <option value="Mathematics">Mathematics</option>
-                  <option value="Physics">Physics</option>
-                  <option value="Computer Science">Computer Science</option>
-                </select>
-                <button className="learning-mode-composer__send" type="submit" disabled={loading}>
-                  {loading ? <Loader className="animate-spin" size={18} /> : <Send size={18} />}
-                </button>
-              </div>
-            </div>
-            <div className="learning-mode-composer__footer">
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} className="text-amber-400" />
-                <span>AI will automatically tailor the visualization to your query.</span>
-              </div>
-              <button type="button" className="text-indigo-400 hover:text-indigo-300 transition-colors" onClick={() => setShowAdvanced(!showAdvanced)}>
-                {showAdvanced ? 'Simple Mode' : 'Advanced Options'}
-              </button>
-              {showAdvanced && (
-                <div className="flex items-center gap-3">
-                  <span className="text-slate-500 uppercase text-[10px] font-black">Complexity</span>
-                  <select value={level} onChange={(e) => setLevel(e.target.value as any)} className="bg-slate-800 border-none rounded-lg text-xs px-2 py-1 outline-none text-slate-300">
-                    <option value="BEGINNER">Beginner</option>
-                    <option value="STANDARD">Standard</option>
-                    <option value="ADVANCED">Advanced</option>
-                  </select>
+          <form onSubmit={handleProcess} className="learning-mode-composer max-w-4xl w-full mx-auto mt-10">
+            <div className="relative group">
+                {/* Visual Depth Glow */}
+                <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-sky-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                
+                <div className="relative flex items-center gap-4 p-2 rounded-3xl bg-black/40 backdrop-blur-2xl border border-white/10 group-focus-within:border-emerald-500/30 transition-all">
+                    <textarea
+                        value={question}
+                        onChange={(e) => setQuestion(e.target.value)}
+                        onKeyDown={(e) => {
+                            if(e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleProcess();
+                            }
+                        }}
+                        placeholder="What would you like to visualize? (e.g. How does Newtonian physics work?)"
+                        className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/20 p-4 resize-none h-[64px] text-lg font-medium custom-scrollbar"
+                    />
+                    
+                    <button 
+                        className="w-12 h-12 rounded-2xl bg-emerald-500 text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:grayscale" 
+                        type="submit" 
+                        disabled={loading}
+                    >
+                        {loading ? <Loader className="animate-spin" size={20} /> : <Send size={20} />}
+                    </button>
                 </div>
-              )}
+            </div>
+            
+            <div className="mt-4 flex items-center justify-center gap-6">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/40">
+                    <Zap size={12} /> Neural Synthesis Active
+                </div>
+                <div className="w-1 h-1 rounded-full bg-white/10" />
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
+                    <Sparkles size={12} /> High-Fidelity Render Engine
+                </div>
             </div>
           </form>
         </main>

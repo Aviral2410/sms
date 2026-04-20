@@ -2,16 +2,42 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   Atom, BookOpen, Calculator, 
-  Orbit, ChevronRight, Zap, Target
+  Orbit, ChevronRight, Zap, Target,
+  Play, Activity
 } from 'lucide-react';
+
+const AnimatedSubjectPreview = ({ color }: { color: string }) => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+    <motion.div
+      animate={{
+        scale: [1, 1.2, 1],
+        rotate: [0, 90, 180, 270, 360],
+        opacity: [0.1, 0.3, 0.1]
+      }}
+      transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+      className={`absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-to-br from-${color}-500/30 to-transparent rounded-full blur-[80px]`}
+    />
+    <motion.div
+        animate={{
+            x: [-20, 20, -20],
+            y: [-20, 20, -20],
+        }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute inset-0 flex items-center justify-center opacity-20"
+    >
+        <div className={`w-32 h-32 border-2 border-${color}-500/20 rounded-full animate-ping`} />
+    </motion.div>
+  </div>
+);
 
 const SUBJECT_EXAMPLES = [
   {
     subject: "Physics",
     title: "Newtonian Mechanics",
     desc: "Real-time physics simulation of Force, Mass, and Acceleration (F = ma).",
-    icon: <Orbit className="w-6 h-6 text-emerald-400" />,
+    icon: <Orbit className="w-8 h-8 text-emerald-400" />,
     color: "emerald",
+    animation: "pendulum",
     payload: {
       type: "simulation_canvas",
       title: "Newtonian Engine",
@@ -23,8 +49,9 @@ const SUBJECT_EXAMPLES = [
     subject: "Chemistry",
     title: "Atomic Synthesis",
     desc: "3D Visualizations of molecular structures and bonding patterns.",
-    icon: <Atom className="w-6 h-6 text-cyan-400" />,
+    icon: <Atom className="w-8 h-8 text-cyan-400" />,
     color: "cyan",
+    animation: "electron_cloud",
     payload: {
       type: "molecule_canvas",
       title: "Molecular Map",
@@ -35,8 +62,9 @@ const SUBJECT_EXAMPLES = [
     subject: "Maths",
     title: "Geometric Logic",
     desc: "Step-by-step visual proofs and derivations of fundamental theorems.",
-    icon: <Calculator className="w-6 h-6 text-sky-400" />,
+    icon: <Calculator className="w-8 h-8 text-sky-400" />,
     color: "sky",
+    animation: "fractal_pulse",
     payload: {
       type: "step_ladder",
       title: "Pythagorean Derivation",
@@ -51,8 +79,9 @@ const SUBJECT_EXAMPLES = [
     subject: "English",
     title: "Narrative Arc",
     desc: "Interactive mapping of literary structures and narrative timelines.",
-    icon: <BookOpen className="w-6 h-6 text-violet-400" />,
+    icon: <BookOpen className="w-8 h-8 text-violet-400" />,
     color: "violet",
+    animation: "pulse_line",
     payload: {
       type: "narrative_timeline",
       title: "Classic Literary Arc",
@@ -71,60 +100,59 @@ interface ExamplesPanelProps {
 
 export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({ onSelect }) => {
   return (
-    <div className="space-y-8 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-white/20 mb-1">Pedagogical Discovery</h3>
-          <h2 className="text-2xl font-black text-white tracking-tight">Interactive <span className="text-emerald-500">Subject Vault</span></h2>
+    <div className="space-y-12 p-8 max-w-7xl mx-auto">
+      <div className="flex flex-col items-center text-center space-y-4">
+        <div className="px-4 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center gap-2">
+            <Activity size={14} className="text-emerald-500 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500">Neural Gallery Mode</span>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-            <Zap size={12} className="text-emerald-500" />
-            <span className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">AURA Synthesis Active</span>
-        </div>
+        <h2 className="text-4xl font-black text-white tracking-tighter">Choose Your <span className="text-emerald-500 underline decoration-emerald-500/30 underline-offset-8">Simulation</span>.</h2>
+        <p className="text-white/40 text-lg max-w-2xl">High-fidelity pedagogical synthesis projecting complex concepts into interactable neural models.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {SUBJECT_EXAMPLES.map((ex, idx) => (
           <motion.button
             key={ex.subject}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.1 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: idx * 0.15 }}
             onClick={() => onSelect(ex.payload)}
-            className="group relative p-6 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:border-emerald-500/30 transition-all text-left overflow-hidden"
+            className="group relative h-80 rounded-[3rem] bg-[#0A0A0A] border border-white/5 hover:border-emerald-500/40 transition-all text-left overflow-hidden shadow-2xl"
           >
-            {/* Background Glow */}
-            <div className={`absolute top-0 right-0 w-32 h-32 bg-${ex.color}-500/5 blur-[50px] group-hover:bg-emerald-500/10 transition-all`} />
+            {/* SUBJECT ANIMATION PREVIEW (Video-like) */}
+            <AnimatedSubjectPreview color={ex.color} />
             
-            <div className="relative z-10 flex flex-col h-full justify-between gap-4">
-              <div className="flex items-start justify-between">
-                <div className="p-3 rounded-2xl bg-white/5 border border-white/5 group-hover:border-emerald-500/20 transition-all">
-                  {ex.icon}
+            <div className={`absolute top-0 right-0 p-8 text-[12px] font-black uppercase tracking-[0.4em] text-${ex.color}-400/40 group-hover:text-emerald-400 transition-colors`}>
+                {ex.subject}
+            </div>
+
+            <div className="absolute inset-0 p-10 flex flex-col justify-end bg-gradient-to-t from-black via-black/40 to-transparent">
+                <div className="flex items-center gap-6 mb-6">
+                    <div className="w-16 h-16 rounded-[1.5rem] bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-black transition-all duration-500">
+                        {ex.icon}
+                    </div>
+                    <div>
+                        <h4 className="text-2xl font-black text-white mb-1 group-hover:text-emerald-400 transition-colors">{ex.title}</h4>
+                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/30">
+                            <Play size={10} /> Previewing Live Engine
+                        </div>
+                    </div>
                 </div>
-                <div className={`text-[10px] font-black uppercase tracking-widest text-${ex.color}-400/60`}>{ex.subject}</div>
-              </div>
-              
-              <div>
-                <h4 className="text-lg font-black text-white mb-2 group-hover:text-emerald-400 transition-colors">{ex.title}</h4>
-                <p className="text-[13px] text-white/40 font-medium leading-relaxed mb-4">{ex.desc}</p>
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-500 opacity-60 group-hover:opacity-100 transition-all">
-                  Launch Neural Model <ChevronRight size={14} className="group-hover:translate-x-1 transition-all" />
+                
+                <p className="text-white/40 text-sm font-medium leading-relaxed mb-8 max-w-sm group-hover:text-white/60 transition-colors">
+                    {ex.desc}
+                </p>
+
+                <div className="flex items-center justify-between">
+                    <div className="h-[1px] flex-1 bg-white/5 group-hover:bg-emerald-500/20 transition-all" />
+                    <div className="pl-6 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em] text-emerald-500 opacity-60 group-hover:opacity-100 group-hover:translate-x-2 transition-all">
+                        Launch Neural Stream <ChevronRight size={16} />
+                    </div>
                 </div>
-              </div>
             </div>
           </motion.button>
         ))}
-      </div>
-
-      <div className="pt-8 flex items-center justify-center gap-8 border-t border-white/5 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all cursor-help">
-          <div className="flex items-center gap-2">
-              <Target size={14} className="text-emerald-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Curriculum Aligned</span>
-          </div>
-          <div className="flex items-center gap-2">
-              <Zap size={14} className="text-sky-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white">Live Synthesis</span>
-          </div>
       </div>
     </div>
   );
