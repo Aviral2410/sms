@@ -13,10 +13,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: validate
+      default_schema: ${DB_SCHEMA:aiinteraction}
     show-sql: false
   flyway:
     enabled: true
     baseline-on-migrate: true
+    schemas: ${DB_SCHEMA:aiinteraction}
     locations: classpath:db/migration
 
 server:

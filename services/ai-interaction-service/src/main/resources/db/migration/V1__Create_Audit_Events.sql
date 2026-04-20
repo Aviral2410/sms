@@ -1,4 +1,6 @@
-CREATE TABLE audit_events (
+CREATE SCHEMA IF NOT EXISTS aiinteraction;
+
+CREATE TABLE IF NOT EXISTS aiinteraction.audit_events (
     id UUID PRIMARY KEY,
     timestamp TIMESTAMPTZ NOT NULL,
     event_type VARCHAR(255) NOT NULL,
@@ -8,6 +10,7 @@ CREATE TABLE audit_events (
     status VARCHAR(50) NOT NULL
 );
 
-CREATE INDEX idx_audit_timestamp ON audit_events(timestamp DESC);
-CREATE INDEX idx_audit_user ON audit_events(user_id);
-CREATE INDEX idx_audit_school ON audit_events(school_id);
+CREATE INDEX IF NOT EXISTS idx_audit_timestamp ON aiinteraction.audit_events(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_user ON aiinteraction.audit_events(user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_school ON aiinteraction.audit_events(school_id);
+
