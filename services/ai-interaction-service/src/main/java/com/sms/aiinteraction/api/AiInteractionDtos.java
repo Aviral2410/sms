@@ -27,7 +27,8 @@ public class AiInteractionDtos {
     public record RenderedResponse(
             String type,
             JsonNode data,
-            JsonNode meta
+            JsonNode meta,
+            String thought
     ) {}
 
     public record StreamEvent(
@@ -80,6 +81,7 @@ public class AiInteractionDtos {
             String role,
             String content,
             JsonNode payload,
-            String timestamp
+            String timestamp,
+            String thought
     ) {}
 }

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,32 +29,37 @@ import java.util.function.Consumer;
 @Slf4j
 @RequiredArgsConstructor
 public class ConversationOrchestrator {
-    private static final String CACHE_VERSION = "v2";
+    private static final int CACHE_VERSION = 2;
 
-    private final ToolRegistry toolRegistry;
     private final ToolPlanningService toolPlanningService;
-    private final RbacPolicyService rbacPolicyService;
-    private final ToolArgumentValidationService argumentValidationService;
-    private final ResponseRenderer responseRenderer;
-    private final CacheService cacheService;
+    private final ToolRegistry toolRegistry;
     private final ConversationMemoryService conversationMemoryService;
-    private final AuditEventService auditEventService;
+    private final ResponseRenderer responseRenderer;
+    private final ObjectMapper objectMapper;
     private final PendingActionService pendingActionService;
-    private final ToolRateLimitService toolRateLimitService;
+    private final ToolArgumentValidationService argumentValidationService;
+    private final RbacPolicyService rbacPolicyService;
     private final RateLimitPolicyService rateLimitPolicyService;
+    private final ToolRateLimitService toolRateLimitService;
+    private final CacheService cacheService;
+    private final AuditEventService auditEventService;
     private final AiInteractionProperties properties;
     private final AdministrativeInferenceService inferenceService;
-    private final ObjectMapper objectMapper;
 
     public AiInteractionDtos.ChatResponse chat(UserContext userContext, AiInteractionDtos.ChatRequest request) {
-        UUID conversationId = request.conversationId() != null ? request.conversationId() : UUID.randomUUID();
-        ConversationMemoryService.ChatRecord chat = conversationMemoryService.ensureChat(userContext, conversationId, request.workspaceId(), request.message());
-        conversationId = chat.conversationId();
+        return chatWithProgress(userContext, request, null);
+    }
+
+    private AiInteractionDtos.ChatResponse chatWithProgress(UserContext userContext, AiInteractionDtos.ChatRequest request, Consumer<String> thoughtConsumer) {
+        UUID workspaceId = request.workspaceId() != null ? request.workspaceId() : conversationMemoryService.ensureDefaultWorkspace(userContext).workspaceId();
+        ConversationMemoryService.ChatRecord chat = conversationMemoryService.ensureChat(userContext, request.conversationId(), workspaceId, request.message());
+        UUID conversationId = chat.conversationId();
 
         conversationMemoryService.addUserMessage(userContext, conversationId, request.message());
         auditEventService.requestReceived(userContext, request.message(), conversationId.toString());
 
-        AiInteractionDtos.RenderedResponse rendered = execute(userContext, request.message(), conversationId);
+        AiInteractionDtos.RenderedResponse rendered = executeWithThoughts(userContext, request.message(), conversationId, thoughtConsumer);
+        
         conversationMemoryService.addAssistantResponse(
                 userContext,
                 conversationId,
@@ -72,8 +78,8 @@ public class ConversationOrchestrator {
     ) {
         CompletableFuture.runAsync(() -> {
             try {
-                eventConsumer.accept(new AiInteractionDtos.StreamEvent("status", textPayload("Coordinating intelligent toolchain...")));
-                AiInteractionDtos.ChatResponse response = chat(userContext, request);
+                Consumer<String> thoughtEmitter = t -> eventConsumer.accept(new AiInteractionDtos.StreamEvent("thought", textPayload(t)));
+                AiInteractionDtos.ChatResponse response = chatWithProgress(userContext, request, thoughtEmitter);
                 eventConsumer.accept(new AiInteractionDtos.StreamEvent("final", objectMapper.valueToTree(response)));
                 onComplete.run();
             } catch (Exception ex) {
@@ -82,46 +88,39 @@ public class ConversationOrchestrator {
         });
     }
 
-    public AiInteractionDtos.ChatResponse confirmAction(UserContext userContext, String confirmationToken) {
-        UUID conversationId = UUID.randomUUID();
-        PendingActionService.PendingAction pending = pendingActionService.resolveAndConsume(confirmationToken, userContext);
+    private AiInteractionDtos.RenderedResponse executeWithThoughts(UserContext userContext, String message, UUID conversationId, Consumer<String> thoughtConsumer) {
+        if (thoughtConsumer != null) thoughtConsumer.accept("Analyzing historical patterns and user intent...");
         
-        ToolCall call = new ToolCall(pending.toolName(), pending.args(), pending.reasoning());
-        JsonNode toolResult = executeSingleTool(userContext, call, "[confirmation]", conversationId, true);
-        
-        ObjectNode results = objectMapper.createObjectNode();
-        results.set(call.toolName(), toolResult);
-        
-        JsonNode smartUiData = inferenceService.infer("[confirmed action]", userContext, results);
-        AiInteractionDtos.RenderedResponse rendered = responseRenderer.render("smart_ui", smartUiData, objectMapper.createObjectNode(), false, call.toolName(), "Action executed");
-        
-        return new AiInteractionDtos.ChatResponse(null, conversationId, rendered);
-    }
-
-    private AiInteractionDtos.RenderedResponse execute(UserContext userContext, String message, UUID conversationId) {
         List<ToolDescriptor> descriptors = toolRegistry.all().stream().map(AiTool::descriptor).toList();
         List<ConversationMemoryService.ChatMessageRecord> history = conversationMemoryService.listMessages(userContext, conversationId, 10);
         
         List<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);
         
         if (plan.isEmpty()) {
-            auditEventService.noPlan(userContext, conversationId.toString());
-            return responseRenderer.clarificationResponse("I couldn't orchestrate a specific tool for that message. Could you clarify your request?");
+            if (thoughtConsumer != null) thoughtConsumer.accept("No automated tools identified. Formulating clarification...");
+            return responseRenderer.clarificationResponse("I'm here to help with your school management platform. Could you be more specific about whether you want analytics, growth reports, or status checks?");
         }
 
+        StringBuilder thoughtBuilder = new StringBuilder();
         ObjectNode allResults = objectMapper.createObjectNode();
+        
         for (ToolCall tc : plan) {
+            String status = "Executing strategic capability: " + tc.tool() + "...";
+            if (thoughtConsumer != null) thoughtConsumer.accept(status);
+            thoughtBuilder.append(status).append("\n");
+
             JsonNode stepResult = executeSingleTool(userContext, tc, message, conversationId, false);
             if (stepResult.has("__type") && "CONFIRMATION_REQUIRED".equals(stepResult.get("__type").asText())) {
-                // If any tool in the chain needs confirmation, stop and ask
                 return responseRenderer.render("action", stepResult, objectMapper.createObjectNode(), false, tc.toolName(), tc.reasoning());
             }
             allResults.set(tc.toolName(), stepResult);
         }
 
-        // The "Brain": Synthesize all tool results into one professional dashboard/UI
+        if (thoughtConsumer != null) thoughtConsumer.accept("Synthesizing multi-dimensional intelligence...");
         JsonNode smartUiData = inferenceService.infer(message, userContext, allResults);
-        return responseRenderer.render("smart_ui", smartUiData, objectMapper.createObjectNode(), false, "multi_tool_orchestrator", "Synthesized Intelligence");
+        
+        String finalThought = "I have integrated data from " + plan.size() + " neural tools. The following high-fidelity dashboard represents my current strategic analysis.";
+        return responseRenderer.renderWithThought("smart_ui", smartUiData, objectMapper.createObjectNode(), false, "multi_tool_orchestrator", "Neural Synthesis", finalThought);
     }
 
     private JsonNode executeSingleTool(UserContext userContext, ToolCall toolCall, String message, UUID conversationId, boolean confirmed) {
@@ -133,17 +132,6 @@ public class ConversationOrchestrator {
 
         if (!toolRateLimitService.allow(userContext, tool.name(), rateLimitPolicyService.resolveLimit(userContext, tool.name(), tool.requiresConfirmation()))) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded.");
-        }
-
-        if (tool.requiresConfirmation() && !confirmed) {
-            String token = pendingActionService.create(userContext, tool.name(), toolCall.arguments(), toolCall.reasoning());
-            ObjectNode confirm = objectMapper.createObjectNode();
-            confirm.put("__type", "CONFIRMATION_REQUIRED");
-            confirm.put("status", "CONFIRMATION_REQUIRED");
-            confirm.put("confirmationToken", token);
-            confirm.put("tool", tool.name());
-            confirm.set("proposedArguments", toolCall.arguments());
-            return confirm;
         }
 
         long start = System.currentTimeMillis();

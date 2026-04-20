@@ -1,43 +1,88 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   TrendingUp, TrendingDown, Users, Calendar, 
   AlertCircle, CheckCircle2, ListTodo, Layers,
   BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon,
-  Clock, ArrowRight, UserCircle2, Building2
+  Clock, ArrowRight, UserCircle2, Building2,
+  Sparkles, Zap, Brain, ShieldCheck, Activity
 } from 'lucide-react';
 
-const KpiCard: React.FC<{ title: string; value: string; subtitle?: string; color?: string }> = ({ title, value, subtitle, color = 'emerald' }) => (
+// --- Premium Glassmorphic Constants ---
+const GLASS_BG = "bg-white/[0.03] backdrop-blur-xl border border-white/[0.08]";
+const GLASS_HOVER = "hover:bg-white/[0.06] hover:border-white/[0.15] hover:shadow-[0_0_30px_rgba(16,185,129,0.1)] transition-all duration-500";
+const NEURAL_GRADIENT = "bg-gradient-to-br from-emerald-500/20 via-sky-500/10 to-transparent";
+
+// --- Loading Skeleton ---
+const SkeletonPulse: React.FC = () => (
+  <div className="space-y-4 w-full h-full p-6 animate-pulse">
+    <div className="h-8 bg-white/5 rounded-full w-1/3" />
+    <div className="grid grid-cols-2 gap-4">
+      <div className="h-32 bg-white/5 rounded-3xl" />
+      <div className="h-32 bg-white/5 rounded-3xl" />
+    </div>
+    <div className="h-48 bg-white/5 rounded-3xl w-full" />
+  </div>
+);
+
+const KpiCard: React.FC<{ title: string; value: string; subtitle?: string; color?: string; trend?: 'up' | 'down' | 'neutral' }> = ({ title, value, subtitle, color = 'emerald', trend }) => (
   <motion.div 
-    initial={{ opacity: 0, scale: 0.95 }}
-    animate={{ opacity: 1, scale: 1 }}
-    className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between"
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    whileHover={{ y: -5, scale: 1.02 }}
+    className={`${GLASS_BG} ${GLASS_HOVER} rounded-[2rem] p-6 flex flex-col justify-between relative overflow-hidden`}
   >
-    <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">{title}</div>
-    <div className={`text-2xl font-black text-${color}-400 mb-1`}>{value}</div>
-    {subtitle && <div className="text-[11px] font-medium text-white/30">{subtitle}</div>}
+    <div className="absolute top-0 right-0 p-4 opacity-10">
+      <Activity size={40} className={`text-${color}-400`} />
+    </div>
+    
+    <div>
+        <div className="flex items-center gap-2 mb-2">
+            <div className={`w-1.5 h-1.5 rounded-full bg-${color}-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]`} />
+            <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{title}</div>
+        </div>
+        <div className={`text-3xl font-black text-${color}-400 tracking-tight flex items-baseline gap-2`}>
+            {value}
+            {trend === 'up' && <TrendingUp size={16} className="text-emerald-400" />}
+            {trend === 'down' && <TrendingDown size={16} className="text-rose-400" />}
+        </div>
+    </div>
+    {subtitle && (
+      <div className="mt-4 flex items-center gap-2 bg-white/5 w-fit px-3 py-1 rounded-full border border-white/5">
+        <span className="text-[10px] font-bold text-white/30 italic">{subtitle}</span>
+      </div>
+    )}
   </motion.div>
 );
 
 const SmartTable: React.FC<{ title: string; columns: string[]; rows: any[] }> = ({ title, columns, rows }) => (
-  <div className="bg-black/40 border border-white/10 rounded-2xl overflow-hidden my-4">
-    <div className="px-4 py-3 border-b border-white/5 bg-white/5 flex items-center justify-between">
-      <h4 className="text-[11px] font-black uppercase tracking-widest text-white/60">{title}</h4>
-      <span className="text-[8px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-bold">{rows.length} Records</span>
+  <div className={`${GLASS_BG} rounded-[2rem] overflow-hidden my-6 group`}>
+    <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <Layers size={14} />
+        </div>
+        <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-white/70">{title}</h4>
+      </div>
+      <span className="text-[10px] px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-black border border-emerald-500/20">
+        {rows.length} NEURAL RECORDS
+      </span>
     </div>
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-xs">
-        <thead className="bg-white/[0.02] text-white/30 font-bold uppercase tracking-wider text-[10px]">
+      <table className="w-full text-left text-xs border-collapse">
+        <thead className="bg-white/[0.01] text-white/30 font-black uppercase tracking-widest text-[9px]">
           <tr>
-            {columns.map(col => <th key={col} className="px-4 py-2 border-r border-white/5 last:border-0">{col}</th>)}
+            {columns.map(col => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
           {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-white/[0.02] transition-colors">
+            <tr key={i} className="hover:bg-white/[0.03] transition-all duration-300">
               {columns.map(col => (
-                <td key={col} className="px-4 py-2 text-white/70">
-                  {typeof row[col] === 'object' ? JSON.stringify(row[col]) : (row[col]?.toString() || '—')}
+                <td key={col} className="px-6 py-4">
+                  <div className="text-white/80 font-medium truncate max-w-[200px]">
+                    {typeof row[col] === 'object' ? JSON.stringify(row[col]) : (row[col]?.toString() || '—')}
+                  </div>
                 </td>
               ))}
             </tr>
@@ -48,37 +93,6 @@ const SmartTable: React.FC<{ title: string; columns: string[]; rows: any[] }> = 
   </div>
 );
 
-const Checklist: React.FC<{ title: string; items: any[] }> = ({ title, items }) => (
-  <div className="space-y-2 my-4">
-    <div className="text-[10px] font-bold uppercase tracking-widest text-white/30 px-1">{title}</div>
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-3 space-y-2">
-      {items.map((item, i) => (
-        <div key={i} className="flex items-start gap-2 group">
-          <div className="mt-0.5 flex-shrink-0">
-            {typeof item === 'string' || item.checked ? (
-               <CheckCircle2 size={14} className="text-emerald-500" />
-            ) : (
-               <div className="w-3.5 h-3.5 rounded border border-white/20" />
-            )}
-          </div>
-          <span className="text-xs text-white/70 font-medium">{typeof item === 'string' ? item : item.label}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-const AlertBanner: React.FC<{ message: string; severity: string }> = ({ message, severity }) => (
-  <div className={`p-4 rounded-xl border flex items-start gap-3 my-4 ${
-    severity === 'high' ? 'bg-rose-500/10 border-rose-500/30 text-rose-200' :
-    severity === 'medium' ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' :
-    'bg-sky-500/10 border-sky-500/30 text-sky-200'
-  }`}>
-    <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
-    <div className="text-xs font-semibold leading-relaxed">{message}</div>
-  </div>
-);
-
 import { ProfessionalBarChart, ProfessionalAreaChart, ProfessionalPieChart } from './ProfessionalCharts';
 import { FormReview } from './FormReview';
 import { ProfilePanel, Timeline, Kanban, Heatmap } from './AiVisuals';
@@ -86,8 +100,43 @@ import { ProfilePanel, Timeline, Kanban, Heatmap } from './AiVisuals';
 const ComponentRegistry: Record<string, React.FC<any>> = {
   kpi_card: KpiCard,
   table: SmartTable,
-  checklist: Checklist,
-  alert_banner: AlertBanner,
+  checklist: (props) => (
+    <div className={`${GLASS_BG} rounded-[2rem] p-6 my-4`}>
+        <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-5 pl-1">{props.title}</div>
+        <div className="space-y-3">
+            {props.items.map((item: any, i: number) => (
+                <motion.div 
+                   key={i} 
+                   whileHover={{ x: 5 }}
+                   className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/5 transition-colors hover:border-emerald-500/20"
+                >
+                    <div className="w-5 h-5 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+                        {item.checked ? <CheckCircle2 size={12} className="text-emerald-400" /> : <Clock size={12} className="text-white/20" />}
+                    </div>
+                    <span className="text-xs text-white/80 font-bold">{typeof item === 'string' ? item : item.label}</span>
+                </motion.div>
+            ))}
+        </div>
+    </div>
+  ),
+  alert_banner: (props) => (
+    <motion.div 
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      className={`p-5 rounded-[2rem] border flex items-center gap-4 my-6 shadow-xl ${
+      props.severity === 'high' ? 'bg-rose-500/10 border-rose-500/30 text-rose-200' :
+      props.severity === 'medium' ? 'bg-amber-500/10 border-amber-500/30 text-amber-200' :
+      'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+    }`}>
+      <div className={`p-3 rounded-2xl ${props.severity === 'high' ? 'bg-rose-500/20' : 'bg-emerald-500/20'}`}>
+        <ShieldCheck size={24} />
+      </div>
+      <div>
+        <div className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-1">System Intelligence Alert</div>
+        <div className="text-sm font-black leading-tight tracking-tight">{props.message}</div>
+      </div>
+    </motion.div>
+  ),
   profile_panel: ProfilePanel,
   timeline: Timeline,
   kanban: Kanban,
@@ -98,45 +147,87 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   form_prefill: FormReview
 };
 
-export const SmartUiRenderer: React.FC<{ response: any }> = ({ response }) => {
+export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> = ({ response, isLoading }) => {
+  if (isLoading) return <SkeletonPulse />;
+  if (!response) return null;
+
   const { title, view, components, insights, actions, summary } = response;
-  const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.15, delayChildren: 0.2 } } };
-  const item = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } } };
+  
+  const container = { 
+    hidden: { opacity: 0 }, 
+    show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } } 
+  };
+  const item = { 
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' }, 
+    show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring', stiffness: 200, damping: 20 } } 
+  };
+
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-4">
-      <motion.div variants={item} className="mb-6 border-b border-white/5 pb-4">
-        {title && <h3 className="text-xl font-black tracking-tight text-white mb-2">{title}</h3>}
-        {summary && <p className="text-sm text-emerald-50/60 font-medium leading-relaxed">{summary}</p>}
+    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 relative">
+      <div className={`absolute -top-20 -left-20 w-96 h-96 rounded-full ${NEURAL_GRADIENT} blur-[100px] pointer-events-none opacity-50`} />
+      
+      <motion.div variants={item} className="mb-8 border-b border-white/10 pb-6 relative z-10">
+        <div className="flex items-center gap-3 mb-3">
+            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Brain size={18} />
+            </div>
+            {title && <h3 className="text-3xl font-black tracking-tight text-white">{title}</h3>}
+        </div>
+        {summary && (
+          <div className="relative pl-6 border-l-2 border-emerald-500/40">
+             <p className="text-[15px] text-white/60 font-bold leading-relaxed">{summary}</p>
+          </div>
+        )}
       </motion.div>
-      <div className={`grid gap-4 ${view === 'mixed_dashboard' ? 'grid-cols-2' : 'grid-cols-1'}`}>
+
+      <div className={`grid gap-6 ${view === 'mixed_dashboard' ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {components?.map((comp: any, i: number) => {
           const Comp = ComponentRegistry[comp.type];
+          if (!Comp) return null;
           return (
-            <motion.div key={i} variants={item} className={['table','chart_bar','chart_line','form_prefill','profile_panel'].includes(comp.type) ? 'col-span-2' : ''}>
+            <motion.div 
+              key={i} 
+              variants={item} 
+              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline'].includes(comp.type) ? 'col-span-2' : ''}
+            >
               <Comp {...comp} />
             </motion.div>
           );
         })}
       </div>
+
       {insights && insights.length > 0 && (
-        <motion.div variants={item} className="mt-6 pt-4 border-t border-white/5">
-          <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60 mb-3">Expert Insights</div>
-          <div className="space-y-3">
+        <motion.div variants={item} className={`mt-10 p-8 rounded-[2.5rem] ${GLASS_BG} relative overflow-hidden group`}>
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+            <Sparkles size={120} />
+          </div>
+          
+          <div className="flex items-center gap-3 mb-6">
+            <Zap className="text-emerald-400 fill-emerald-400" size={16} />
+            <div className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-400 shadow-emerald-500/50">Strategic Intelligence</div>
+          </div>
+          
+          <div className="grid gap-4">
             {insights.map((insight: string, i: number) => (
-              <div key={i} className="flex gap-3 text-xs text-white/70 font-medium">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+              <motion.div 
+                key={i} 
+                whileHover={{ x: 10 }}
+                className="flex gap-4 text-sm text-white/70 font-bold leading-relaxed group/insight p-2 rounded-2xl transition-colors hover:bg-white/5"
+              >
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0 shadow-[0_0_12px_rgba(16,185,129,1)] group-hover/insight:scale-150 transition-transform" />
                 {insight}
-              </div>
+              </motion.div>
             ))}
           </div>
         </motion.div>
       )}
+
       {actions && actions.length > 0 && (
-        <motion.div variants={item} className="mt-8 flex flex-wrap gap-2">
+        <motion.div variants={item} className="mt-10 flex flex-wrap gap-4">
           {actions.map((btn: any, j: number) => (
-            <button key={j} className="px-4 py-2.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-black uppercase tracking-wider hover:bg-emerald-500/20 transition-all flex items-center gap-2 group">
+            <button key={j} className="px-8 py-4 rounded-full bg-emerald-500 text-black text-[13px] font-black uppercase tracking-widest hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_20px_50px_rgba(16,185,129,0.3)] group">
               {btn.label}
-              <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+              <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
             </button>
           ))}
         </motion.div>

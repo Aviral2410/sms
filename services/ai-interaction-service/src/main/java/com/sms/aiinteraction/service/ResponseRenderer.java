@@ -23,6 +23,18 @@ public class ResponseRenderer {
             String intent,
             String reasoning
     ) {
+        return renderWithThought(type, data, baseMeta, cached, intent, reasoning, null);
+    }
+
+    public AiInteractionDtos.RenderedResponse renderWithThought(
+            String type,
+            JsonNode data,
+            JsonNode baseMeta,
+            boolean cached,
+            String intent,
+            String reasoning,
+            String thought
+    ) {
         ObjectNode meta = objectMapper.createObjectNode();
         if (baseMeta != null && baseMeta.isObject()) {
             meta.setAll((ObjectNode) baseMeta);
@@ -33,7 +45,7 @@ public class ResponseRenderer {
             meta.put("planner", reasoning);
         }
         meta.set("orchestration", buildOrchestration(type, intent, reasoning, data));
-        return new AiInteractionDtos.RenderedResponse(type, data, meta);
+        return new AiInteractionDtos.RenderedResponse(type, data, meta, thought);
     }
 
     public AiInteractionDtos.RenderedResponse clarificationResponse(String message) {
@@ -42,7 +54,7 @@ public class ResponseRenderer {
         ObjectNode meta = objectMapper.createObjectNode();
         meta.put("intent", "clarification");
         meta.set("orchestration", buildOrchestration("text", "clarification", null, data));
-        return new AiInteractionDtos.RenderedResponse("text", data, meta);
+        return new AiInteractionDtos.RenderedResponse("text", data, meta, null);
     }
 
     private ObjectNode buildOrchestration(String type, String intent, String reasoning, JsonNode data) {
