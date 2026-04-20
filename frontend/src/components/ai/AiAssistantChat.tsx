@@ -94,7 +94,35 @@ export const AiAssistantChat: React.FC = () => {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  const EXAMPLE_PROMPTS = [
+    'Summarize the most important metrics for this workspace.',
+    'Show a chart of admissions by month for the last 6 months.',
+    'Draft a support update message for parents about transport delays.',
+    'List the next 5 onboarding steps to activate a new school.',
+  ];
+
   const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  // --- Chat management ---
+  const loadChats = useCallback(async () => {
+    if (!session.token) return;
+    setHistoryLoading(true);
+    try {
+      const res = await fetch('/api/v1/ai-interaction/chats', {
+        headers: { 'Authorization': `Bearer ${session.token}` }
+      });
+      if (res.ok) setChats(await res.json());
+    } finally { setHistoryLoading(false); }
+  }, [session.token]);
+
+  const startNewChat = async () => {
+    if (!session.token) return;
+    setMessages([{ id: 'a-welcome', role: 'assistant', text: 'Neural session initialized.', ts: Date.now() }]);
+    setConversationId(null);
+    setToolsOpen(false);
+  };
+
+  useEffect(() => { if (open) loadChats(); }, [open, loadChats]);
 
   // --- Voice Setup ---
   const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -232,11 +260,11 @@ export const AiAssistantChat: React.FC = () => {
       <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
         <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-            <Brain size={20} />
+            <Sparkles size={20} />
           </div>
           <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-0.5 ml-0.5">Neural Assistant</div>
-            <div className="text-lg font-black text-white tracking-tight">Strategy Core</div>
+            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-0.5 ml-0.5">Neural Interface</div>
+            <div className="text-lg font-black text-white tracking-tight">AURA <span className="text-white/40 font-medium text-xs ml-1 tracking-widest uppercase">v4.0</span></div>
           </div>
         </div>
         <button onClick={() => setOpen(false)} className="p-2 rounded-xl hover:bg-white/5 text-white/40 transition-colors">
@@ -245,9 +273,67 @@ export const AiAssistantChat: React.FC = () => {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar - History */}
+        <AnimatePresence>
+          {toolsOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 280, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              className="border-r border-white/5 bg-black/20 backdrop-blur-3xl overflow-hidden flex flex-col"
+            >
+              <div className="p-6">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-6">Neural Registry</div>
+                <button 
+                  onClick={startNewChat}
+                  className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/10 text-white/80 text-[12px] font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition-all mb-6"
+                >
+                  <Plus size={14} /> New Session
+                </button>
+                <div className="space-y-2">
+                  {chats.map(chat => (
+                    <button 
+                      key={chat.conversationId}
+                      onClick={() => { setConversationId(chat.conversationId); setToolsOpen(false); }}
+                      className="w-full p-4 rounded-xl hover:bg-white/5 text-left transition-all border border-transparent hover:border-white/5 group"
+                    >
+                      <div className="text-[12px] text-white/60 font-bold truncate group-hover:text-white/90">{chat.title || "Neural Session"}</div>
+                      <div className="text-[9px] text-white/20 font-black uppercase mt-1">{new Date(chat.updatedAt || chat.createdAt).toLocaleDateString()}</div>
+                    </button>
+                  ))}
+                  {historyLoading && <div className="text-[10px] text-emerald-500/40 animate-pulse font-black p-4 uppercase tracking-widest text-center">Syncing Banks...</div>}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Main Feed */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-8 scroll-smooth no-scrollbar">
           <AnimatePresence initial={false}>
+            {messages.length <= 1 && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="py-8 space-y-4"
+              >
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 mb-4 px-2">Recommended Directives</div>
+                {EXAMPLE_PROMPTS.map((prompt, idx) => (
+                  <motion.button
+                    key={prompt}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    onClick={() => sendMessage(prompt)}
+                    className="w-full p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-left text-[13px] text-white/50 font-bold hover:bg-emerald-500/5 hover:border-emerald-500/20 hover:text-emerald-100 transition-all flex items-center gap-3 group"
+                  >
+                    <ChevronRight size={14} className="text-emerald-500/40 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+                    {prompt}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+            
             {messages.map((msg) => (
               <motion.div
                 key={msg.id}

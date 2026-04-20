@@ -15,13 +15,7 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
@@ -74,7 +68,6 @@ public class AiInteractionController {
             try {
                 emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream timed out.\"}"));
             } catch (Exception ignored) {
-                // ignore
             } finally {
                 emitter.complete();
             }
@@ -84,7 +77,6 @@ public class AiInteractionController {
             try {
                 emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream error.\"}"));
             } catch (Exception ignored) {
-                // ignore
             } finally {
                 emitter.complete();
             }
@@ -99,7 +91,6 @@ public class AiInteractionController {
                 try {
                     emitter.send(SseEmitter.event().name("error").data("{\"text\":\"Stream write failed.\"}"));
                 } catch (Exception ignored) {
-                    // ignore
                 } finally {
                     emitter.complete();
                 }
@@ -109,7 +100,6 @@ public class AiInteractionController {
                 String msg = ex == null ? "Stream failed." : ex.getMessage();
                 emitter.send(SseEmitter.event().name("error").data(objectMapper.writeValueAsString(Map.of("text", msg == null ? "Stream failed." : msg)), MediaType.APPLICATION_JSON));
             } catch (Exception ignored) {
-                // ignore
             } finally {
                 emitter.complete();
             }
@@ -117,7 +107,6 @@ public class AiInteractionController {
             try {
                 emitter.send(SseEmitter.event().name("done").data("[DONE]"));
             } catch (Exception ignored) {
-                // ignore
             } finally {
                 emitter.complete();
             }
@@ -145,50 +134,13 @@ public class AiInteractionController {
         return ResponseEntity.ok(toolCatalogService.forUser(user));
     }
 
-    @PostMapping("/workspaces")
-    public ResponseEntity<AiInteractionDtos.WorkspaceResponse> createWorkspace(
-            @Valid @RequestBody AiInteractionDtos.WorkspaceCreateRequest request,
-            HttpServletRequest servletRequest
-    ) {
-        UserContext user = userContextResolver.resolve(servletRequest);
-        ConversationMemoryService.WorkspaceRecord workspace = conversationMemoryService.createWorkspace(user, request.name());
-        return ResponseEntity.ok(toWorkspaceResponse(workspace));
-    }
-
     @GetMapping("/workspaces")
     public ResponseEntity<List<AiInteractionDtos.WorkspaceResponse>> listWorkspaces(HttpServletRequest servletRequest) {
         UserContext user = userContextResolver.resolve(servletRequest);
-        
-        // Ensure at least one workspace exists for the user/guest
         conversationMemoryService.ensureDefaultWorkspace(user);
-        
         return ResponseEntity.ok(conversationMemoryService.listWorkspaces(user).stream()
                 .map(this::toWorkspaceResponse)
                 .toList());
-    }
-
-    @PostMapping("/chats")
-    public ResponseEntity<AiInteractionDtos.ChatSummaryResponse> createChatInDefaultWorkspace(
-            @RequestBody(required = false) AiInteractionDtos.ChatCreateRequest request,
-            HttpServletRequest servletRequest
-    ) {
-        UserContext user = userContextResolver.resolve(servletRequest);
-        String title = request == null ? null : request.title();
-        ConversationMemoryService.WorkspaceRecord workspace = conversationMemoryService.ensureDefaultWorkspace(user);
-        ConversationMemoryService.ChatRecord chat = conversationMemoryService.createChat(user, workspace.workspaceId(), title);
-        return ResponseEntity.ok(toChatSummary(chat));
-    }
-
-    @PostMapping("/workspaces/{workspaceId}/chats")
-    public ResponseEntity<AiInteractionDtos.ChatSummaryResponse> createChat(
-            @PathVariable java.util.UUID workspaceId,
-            @RequestBody(required = false) AiInteractionDtos.ChatCreateRequest request,
-            HttpServletRequest servletRequest
-    ) {
-        UserContext user = userContextResolver.resolve(servletRequest);
-        String title = request == null ? null : request.title();
-        ConversationMemoryService.ChatRecord chat = conversationMemoryService.createChat(user, workspaceId, title);
-        return ResponseEntity.ok(toChatSummary(chat));
     }
 
     @GetMapping("/workspaces/{workspaceId}/chats")
@@ -212,39 +164,6 @@ public class AiInteractionController {
         return ResponseEntity.ok(conversationMemoryService.listMessages(user, conversationId, limit).stream()
                 .map(this::toChatMessage)
                 .toList());
-    }
-
-    @GetMapping("/audit/events")
-    public ResponseEntity<List<com.fasterxml.jackson.databind.JsonNode>> auditEvents(
-            @RequestParam(defaultValue = "100") int limit,
-            HttpServletRequest servletRequest
-    ) {
-        UserContext user = userContextResolver.resolve(servletRequest);
-        return ResponseEntity.ok(auditTrailStore.list(user, limit));
-    }
-
-    @GetMapping("/admin/rate-limits")
-    public ResponseEntity<AiInteractionDtos.RateLimitPolicyResponse> getRateLimits(HttpServletRequest servletRequest) {
-        UserContext user = userContextResolver.resolve(servletRequest);
-        return ResponseEntity.ok(rateLimitPolicyService.readPolicy(user));
-    }
-
-    @PostMapping("/admin/rate-limits")
-    public ResponseEntity<AiInteractionDtos.RateLimitPolicyResponse> updateRateLimits(
-            @Valid @RequestBody AiInteractionDtos.PlanToolRateLimits request,
-            HttpServletRequest servletRequest
-    ) {
-        UserContext user = userContextResolver.resolve(servletRequest);
-        return ResponseEntity.ok(rateLimitPolicyService.updatePolicy(user, request));
-    }
-
-    @PostMapping("/health-check")
-    public Map<String, Object> healthCheck() {
-        return Map.of(
-                "service", "ai-interaction-service",
-                "status", "UP",
-                "capabilities", new String[]{"chat", "stream", "tool-calling", "rbac", "cache", "confirm-actions", "tools-catalog", "audit-export", "workspace-chat-persistence"}
-        );
     }
 
     private AiInteractionDtos.WorkspaceResponse toWorkspaceResponse(ConversationMemoryService.WorkspaceRecord workspace) {
@@ -272,7 +191,8 @@ public class AiInteractionController {
                 message.role(),
                 message.content(),
                 message.payload(),
-                message.timestamp().toString()
+                message.timestamp().toString(),
+                null 
         );
     }
 }

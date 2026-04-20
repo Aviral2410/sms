@@ -6,17 +6,18 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sms.aiinteraction.config.AiInteractionProperties;
 import com.sms.aiinteraction.security.UserContext;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AdministrativeInferenceService {
+    private static final Logger log = LoggerFactory.getLogger(AdministrativeInferenceService.class);
     private final AiInteractionProperties properties;
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newBuilder()
@@ -28,16 +29,66 @@ public class AdministrativeInferenceService {
         this.objectMapper = objectMapper;
     }
 
-    public JsonNode infer(String userQuery, UserContext userContext, ObjectNode toolResults) {
+    public JsonNode infer(String userQuery, UserContext userContext, JsonNode toolResults) {
         String provider = properties.llm().provider();
-        if ("OLLAMA".equalsIgnoreCase(provider)) {
-            return inferWithOllama(userQuery, userContext, toolResults);
+        
+        if ("GEMINI".equalsIgnoreCase(provider)) {
+            JsonNode geminiRes = inferWithGemini(userQuery, userContext, toolResults);
+            if (geminiRes != null) return geminiRes;
         }
-        // Fallback to a basic structured wrapper if LLM is unavailable
+        
+        if ("OLLAMA".equalsIgnoreCase(provider) || properties.llm().autoFallback()) {
+            JsonNode ollamaRes = inferWithOllama(userQuery, userContext, toolResults);
+            if (ollamaRes != null) return ollamaRes;
+        }
+
         return basicStructuredResponse(toolResults);
     }
 
-    private JsonNode inferWithOllama(String userQuery, UserContext userContext, ObjectNode toolResults) {
+    private JsonNode inferWithGemini(String userQuery, UserContext userContext, JsonNode toolResults) {
+        String apiKey = properties.llm().geminiApiKey();
+        String model = properties.llm().geminiModel();
+        if (apiKey == null || apiKey.isBlank()) return null;
+        if (model == null || model.isBlank()) model = "gemini-2.0-flash";
+
+        String url = "https://generativelanguage.googleapis.com/v1/models/" + model + ":generateContent?key=" + apiKey;
+
+        try {
+            ObjectNode requestBody = objectMapper.createObjectNode();
+            ArrayNode contents = requestBody.putArray("contents");
+            ObjectNode content = contents.addObject();
+            content.put("role", "user");
+            ArrayNode parts = content.putArray("parts");
+            
+            StringBuilder prompt = new StringBuilder();
+            prompt.append(getSystemPrompt());
+            prompt.append("\n\nUser Question: ").append(userQuery);
+            prompt.append("\nUser Role: ").append(userContext.role().name());
+            prompt.append("\nAvailable Data (from multiple tools):\n").append(objectMapper.writeValueAsString(toolResults));
+            prompt.append("\n\nNow, generate the synthesized Dashboard JSON response.");
+
+            parts.addObject().put("text", prompt.toString());
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(requestBody)))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonNode root = objectMapper.readTree(response.body());
+                String text = root.path("candidates").get(0).path("content").path("parts").get(0).path("text").asText("");
+                return tryParseJson(text);
+            }
+        } catch (Exception ex) {
+            log.error("Gemini inference failed", ex);
+        }
+        return null;
+    }
+
+    private JsonNode inferWithOllama(String userQuery, UserContext userContext, JsonNode toolResults) {
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", properties.llm().ollamaModel());
@@ -55,7 +106,10 @@ public class AdministrativeInferenceService {
 
             messages.addObject().put("role", "user").put("content", userPrompt.toString());
 
-            String base = properties.llm().ollamaBaseUrl().replaceAll("/+$", "");
+            String base = properties.llm().ollamaBaseUrl();
+            if (base == null || base.isBlank()) return null;
+            base = base.replaceAll("/+$", "");
+            
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(base + "/api/chat"))
                     .timeout(Duration.ofSeconds(45))
@@ -70,48 +124,32 @@ public class AdministrativeInferenceService {
                 return tryParseJson(content);
             }
         } catch (Exception ex) {
-            // Log error
+            log.error("Ollama inference failed", ex);
         }
-        return basicStructuredResponse(toolResults);
+        return null;
     }
 
     private String getSystemPrompt() {
         return """
-            You are the AI Operating Layer inside a modern Student Management System (SMS).
-            Role: School Administrator, Success Coach, Data Analyst, and Product Designer.
+            You are the STRATEGIC SYNTHESIS LAYER of a production-grade School Management System.
+            Your task is to take RAW tool results and convert them into an ACTIONABLE Dashboard JSON.
             
-            STRICT PROTOCOL:
-            1. Return ONLY valid JSON.
-            2. Never use plain text when a rich component exists.
-            3. HIDE raw tool data; synthesize it into Elite UI nodes.
+            STRICT RULES:
+            - Return ONLY valid JSON.
+            - Role-dependent views: Admin sees high-level KPIs; Teachers see student trends.
             
-            SMART UI DECISION RULES:
-            - STUDENT LOOKUP: Use profile_panel, quick stats, attendance %.
-            - ATTENDANCE: Use table, heatmap, trend line, absentee alerts.
-            - FEES/FINANCE: Use kpi_card, due list table, overdue alerts.
-            - EXAMS/MARKS: Use rank table, subject comparison charts, topper cards.
-            - TIMETABLE: Use calendar, weekly grid, teacher slot cards.
-            - PLANNING: Use timeline, kanban, milestones.
-            - TRANSPORT: Use route cards, bus occupancy tables.
-            
-            UI COMPONENT LEXICON:
-            - kpi_card: { "type": "kpi_card", "title": "...", "value": "...", "subtitle": "..." }
-            - table: { "type": "table", "title": "...", "columns": [...], "rows": [...] }
-            - chart_bar / chart_line: { "type": "chart_bar", "title": "...", "labels": [...], "series": [...] }
-            - profile_panel: { "name": "...", "meta": {...}, "stats": [...] }
-            - timeline: { "items": [{ "date": "...", "title": "...", "description": "..." }] }
-            - kanban: { "columns": [{ "title": "...", "items": [...] }] }
-            - alert_banner: { "severity": "low|medium|high", "message": "..." }
-            
-            OUTPUT SCHEMA:
+            SCHEMA:
             {
               "intent": "string",
-              "title": "string",
-              "view": "mixed_dashboard | profile | analytics",
-              "summary": "high-level summary",
-              "components": [...],
-              "insights": [...],
-              "actions": [ { "label": "Text", "action": "id" } ]
+              "title": "Synthesis Dashboard",
+              "summary": "Executive summary",
+              "components": [
+                { "type": "kpi_card", "title": "Total Revenue", "value": "$1.2M", "trend": "+12%" },
+                { "type": "chart_bar", "title": "Revenue by Region", "labels": ["West", "East"], "series": [500, 700] },
+                { "type": "table", "title": "Anomalous Schools", "columns": ["Name", "Reason"], "rows": [...] }
+              ],
+              "insights": ["Insight 1", "Insight 2"],
+              "actions": [{ "label": "Download Report", "action": "export_csv" }]
             }
             """;
     }
@@ -129,20 +167,22 @@ public class AdministrativeInferenceService {
         }
     }
 
-    private JsonNode basicStructuredResponse(ObjectNode toolResults) {
+    private JsonNode basicStructuredResponse(JsonNode toolResults) {
         ObjectNode root = objectMapper.createObjectNode();
         root.put("intent", "multi_data_view");
-        root.put("title", "Aggregated Service Results");
-        root.put("view", "light");
-        root.put("summary", "Automated view generated for multiple data sources.");
+        root.put("title", "Aggregated Intelligence");
+        root.put("view", "mixed");
+        root.put("summary", "Automatically synthesized results from multiple neural services.");
         ArrayNode components = root.putArray("components");
         
-        toolResults.fields().forEachRemaining(entry -> {
-            ObjectNode table = components.addObject();
-            table.put("type", "table");
-            table.put("title", "Source: " + entry.getKey());
-            table.set("data", entry.getValue());
-        });
+        if (toolResults.isObject()) {
+            toolResults.fields().forEachRemaining(entry -> {
+                ObjectNode table = components.addObject();
+                table.put("type", "table");
+                table.put("title", "Data Source: " + entry.getKey());
+                table.set("data", entry.getValue());
+            });
+        }
         
         return root;
     }
