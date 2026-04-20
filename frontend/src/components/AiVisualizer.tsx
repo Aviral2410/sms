@@ -73,6 +73,13 @@ export const AiVisualizer: React.FC = () => {
             </div>
             <div className="h-8 w-[1px] bg-white/10" />
             <button 
+                onClick={() => alert('Quantum Snapshot saved to Neural Library.')}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[11px] font-black uppercase hover:bg-white/10 hover:text-emerald-400 transition-all group"
+            >
+                <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
+                Snapshot
+            </button>
+            <button 
                 onClick={() => setIsLensActive(!isLensActive)}
                 className={`p-3 rounded-2xl transition-all border ${isLensActive ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'}`}
             >

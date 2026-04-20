@@ -150,7 +150,34 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   chart_line: ProfessionalAreaChart,
   chart_pie: ProfessionalPieChart,
   heatmap: Heatmap,
-  form_prefill: FormReview
+  form_prefill: FormReview,
+  quiz: (props: { quiz: Array<{q: string, options: string[], correct: number}> }) => (
+    <div className="space-y-6">
+      {props.quiz.map((q, i) => (
+        <motion.div 
+          key={i}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className={`${GLASS_BG} rounded-[2rem] p-8 border-emerald-500/20`}
+        >
+          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/60 mb-4">Neural Checkpoint</div>
+          <h4 className="text-xl font-black text-white mb-6 leading-tight">{q.q}</h4>
+          <div className="grid gap-3">
+            {q.options.map((opt, idx) => (
+               <button 
+                key={idx}
+                onClick={() => alert(idx === q.correct ? 'Correct! Neural Sync Optimized.' : 'Incorrect. Recalibrating...')}
+                className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-left text-sm text-white/60 font-bold hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-white transition-all flex items-center justify-between group"
+               >
+                 {opt}
+                 <ArrowRight size={14} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+               </button>
+            ))}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  )
 };
 
 export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> = ({ response, isLoading }) => {
