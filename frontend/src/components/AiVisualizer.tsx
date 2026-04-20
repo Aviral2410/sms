@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, Zap, Brain, Activity, 
-  Expand, Shrink, Target, Info,
-  Command, Layers, Fingerprint
+  Target, Info, Command, Layers, Fingerprint
 } from 'lucide-react';
 import { SmartUiRenderer } from './ai/SmartUiRenderer';
 import { useRealtime } from './RealtimeHub';
+import { NeuralCore } from './ai/NeuralCore';
 
 const GLASS_BG = "bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08]";
 
@@ -15,9 +15,10 @@ export const AiVisualizer: React.FC = () => {
   const [activePayload, setActivePayload] = useState<any>(null);
   const [isLensActive, setIsLensActive] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const constraintsRef = useRef(null);
 
   useEffect(() => {
-    // Listen for AI visualization events (same as original logic but higher fidelity)
+    // Listen for AI visualization events
     const lastMsg = messages[messages.length - 1];
     if (lastMsg?.topic?.includes('ai/visualize')) {
       try {
@@ -35,9 +36,12 @@ export const AiVisualizer: React.FC = () => {
 
   return (
     <div 
+        ref={constraintsRef}
         onMouseMove={handleMouseMove}
         className="relative min-h-screen w-full bg-[#050505] overflow-hidden flex flex-col font-sans selection:bg-emerald-500/30"
     >
+      <NeuralCore isThinking={false} themeColor="#10b981" />
+
       {/* --- LUMINA NEURAL MESH BACKGROUND --- */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
           <div className="absolute inset-0" 
@@ -110,9 +114,15 @@ export const AiVisualizer: React.FC = () => {
                 </div>
             </motion.div>
         ) : (
-            <div className="w-full max-w-6xl">
+            <motion.div 
+                drag
+                dragConstraints={constraintsRef}
+                dragElastic={0.2}
+                dragMomentum={true}
+                className="w-full max-w-6xl cursor-grab active:cursor-grabbing"
+            >
                 <SmartUiRenderer response={activePayload} />
-            </div>
+            </motion.div>
         )}
 
         {/* --- DYNAMIC NEURAL LENS OVERLAY --- */}
