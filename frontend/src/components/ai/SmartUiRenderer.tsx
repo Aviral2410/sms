@@ -105,6 +105,16 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   step_ladder: StepLadder,
   formula_card: FormulaCard,
   kpi_card: KpiCard,
+  school_dashboard: (props: { title: string; kpis: any[] }) => (
+    <div className="space-y-6">
+        <div className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500/60 mb-2">{props.title || "Operations Analytics"}</div>
+        <div className="grid grid-cols-2 gap-4">
+            {props.kpis?.map((kpi, i) => (
+                <KpiCard key={i} title={kpi.title} value={kpi.value} trend={kpi.trend?.includes('+') ? 'up' : 'down'} />
+            ))}
+        </div>
+    </div>
+  ),
   table: SmartTable,
   molecule_canvas: (props: { molecules: string[], title: string }) => (
     <div className={`${GLASS_BG} rounded-[2rem] p-8 my-4 text-center`}>
@@ -140,9 +150,9 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   ),
   checklist: (props) => (
     <div className={`${GLASS_BG} rounded-[2rem] p-6 my-4`}>
-        <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-5 pl-1">{props.title}</div>
+        <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500/60 mb-5 pl-1">{props.title || "Action Items"}</div>
         <div className="space-y-3">
-            {props.items.map((item: any, i: number) => (
+            {props.items?.map((item: any, i: number) => (
                 <motion.div 
                    key={i} 
                    whileHover={{ x: 5 }}
@@ -253,7 +263,7 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> =
             <motion.div 
               key={i} 
               variants={item} 
-              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline','simulation_canvas','step_ladder','formula_card','molecule_canvas','narrative_timeline'].includes(comp.type) ? 'col-span-2' : ''}
+              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline','simulation_canvas','step_ladder','formula_card','molecule_canvas','narrative_timeline','school_dashboard'].includes(comp.type) ? 'col-span-2' : ''}
             >
               <Comp {...comp} />
             </motion.div>
