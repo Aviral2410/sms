@@ -353,9 +353,11 @@ export const AiAssistantChat: React.FC = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.1 }}
                     onClick={() => sendMessage(prompt)}
-                    className="w-full p-4 rounded-2xl bg-white/[0.02] border border-white/5 text-left text-[13px] text-white/50 font-bold hover:bg-white/[0.04] transition-all flex items-center gap-3 group"
+                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 text-left text-[12px] text-white/70 font-bold hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all flex items-center gap-3 group"
                   >
-                    <ChevronRight size={14} style={{ color: `${themeConfig.primary}40` }} className="group-hover:translate-x-1 transition-all" />
+                    <div className="w-8 h-8 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:bg-emerald-500/20">
+                        <ChevronRight size={14} style={{ color: themeConfig.primary }} className="group-hover:translate-x-1 transition-all" />
+                    </div>
                     {prompt}
                   </motion.button>
                 ))}
