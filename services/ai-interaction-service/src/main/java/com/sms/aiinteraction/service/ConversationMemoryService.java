@@ -36,7 +36,7 @@ public class ConversationMemoryService {
             // Derive a stable UUID from the guestId for anonymous storage
             return UUID.nameUUIDFromBytes(user.guestId().getBytes());
         }
-        return user.userId();
+        return user.userId() != null ? user.userId() : new UUID(0L, 0L);
     }
 
     public WorkspaceRecord createWorkspace(UserContext user, String name) {
