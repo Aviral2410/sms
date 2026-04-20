@@ -23,6 +23,7 @@ import RegistrationWizardPage from './pages/RegistrationWizardPage';
 import JoinSchoolPage from './pages/JoinSchoolPage';
 import ActivationJourneyPage from './pages/ActivationJourneyPage';
 import AiAssistantPage from "./pages/AiAssistantPage";
+import AuraNeuralWorkspace from "./pages/AuraNeuralWorkspace";
 
 // Protected pages (lazy)
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -141,7 +142,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/join" element={!isAuthenticated ? <JoinSchoolPage /> : <Navigate to="/dashboard" />} />
         <Route path="/activate" element={<ActivationJourneyPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/ai-assistant" element={<AiAssistantPage />} />
+        <Route path="/ai-assistant" element={<AuraNeuralWorkspace />} />
 
         {/* ── Protected (Base) ── */}
         <Route element={isAuthenticated ? (
@@ -201,7 +202,7 @@ export const AppRoutes: React.FC = () => {
             <Route path="/admin/logs" element={<Wrap><SystemLogs /></Wrap>} />
             <Route path="/admin/schools" element={<Wrap><AllSchools /></Wrap>} />
             <Route path="/admin/analytics" element={<Wrap><PlatformAnalytics /></Wrap>} />
-            <Route path="/admin/ai-briefing" element={<Wrap><AiBriefingPage /></Wrap>} />
+            <Route path="/admin/ai-briefing" element={<Wrap><AuraNeuralWorkspace /></Wrap>} />
             <Route path="/admin/ai-governance" element={<Wrap><AiGovernancePage /></Wrap>} />
             <Route path="/admin/inquiries" element={<Wrap><PublicInquiryInboxPage /></Wrap>} />
             <Route path="/admin/pricing" element={<Wrap><PricingControlPage /></Wrap>} />

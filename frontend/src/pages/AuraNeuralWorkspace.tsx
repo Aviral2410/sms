@@ -6,15 +6,40 @@ import {
   ChevronRight, MoreHorizontal, Maximize2, 
   Mic, Paperclip, Send, Sparkles, Brain,
   Trash2, GripVertical, FileText, BarChart3,
-  Globe, Code
+  Globe, Code, UserCircle2, RefreshCcw, Command, X
 } from 'lucide-react';
-import { SmartUiRenderer } from "./SmartUiRenderer";
-import { useStore } from '../../store/useStore';
+import { SmartUiRenderer } from "../components/ai/SmartUiRenderer";
+import { useStore } from '../store/useStore';
 import { v4 as uuidv4 } from 'uuid';
+
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+interface Workspace {
+    id: string;
+    name: string;
+    color: string;
+}
+
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text?: string;
+  response?: any;
+  ts: number;
+  thought?: string;
+}
+
+interface SidebarProps {
+    workspaces: Workspace[];
+    chats: any[];
+    onNewChat: () => void;
+    activeWorkspace: string | null;
+    onSelectChat: (id: string) => void;
+}
 
 // ─── AURA v5.0 Components ───────────────────────────────────────────────────
 
-const NeuralSidebar = ({ workspaces, chats, onNewChat, activeWorkspace, onSelectChat }) => (
+const NeuralSidebar: React.FC<SidebarProps> = ({ workspaces, chats, onNewChat, activeWorkspace, onSelectChat }) => (
   <aside className="w-72 h-full border-r border-white/5 bg-black/40 backdrop-blur-3xl flex flex-col z-30">
     <div className="p-8 pb-4">
       <div className="flex items-center gap-3 mb-8">
@@ -48,7 +73,10 @@ const NeuralSidebar = ({ workspaces, chats, onNewChat, activeWorkspace, onSelect
             </div>
             <div className="space-y-1">
                 {workspaces.map(ws => (
-                    <button key={ws.id} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 text-white/30 hover:text-white transition-all text-xs font-bold">
+                    <button 
+                        key={ws.id} 
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all text-xs font-bold ${activeWorkspace === ws.id ? 'bg-white/5 text-white' : 'text-white/30'}`}
+                    >
                         <Folder size={14} style={{ color: ws.color }} />
                         {ws.name}
                     </button>
@@ -62,13 +90,13 @@ const NeuralSidebar = ({ workspaces, chats, onNewChat, activeWorkspace, onSelect
         <div className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white/10">Registry Timeline</div>
         {chats.map(chat => (
             <button 
-                key={chat.id}
-                onClick={() => onSelectChat(chat.id)}
+                key={chat.conversationId}
+                onClick={() => onSelectChat(chat.conversationId)}
                 className="w-full p-4 rounded-2xl border border-transparent hover:border-white/5 hover:bg-white/[0.02] transition-all text-left flex flex-col gap-1 group"
             >
                 <div className="text-[12px] font-bold text-white/60 group-hover:text-white truncate">{chat.title || "Neural Session"}</div>
                 <div className="text-[10px] text-white/10 font-black uppercase tracking-widest group-hover:text-emerald-500/40 transition-colors">
-                    {new Date(chat.ts).toLocaleDateString()}
+                    {new Date(chat.updatedAt || chat.createdAt).toLocaleDateString()}
                 </div>
             </button>
         ))}
@@ -83,7 +111,7 @@ const NeuralSidebar = ({ workspaces, chats, onNewChat, activeWorkspace, onSelect
   </aside>
 );
 
-const IntelligenceLens = ({ memory, metrics }) => (
+const IntelligenceLens: React.FC<{ memory: number; tools: number }> = ({ memory, tools }) => (
   <aside className="w-80 h-full border-l border-white/5 bg-black/40 backdrop-blur-3xl flex flex-col p-8 z-30">
     <div className="mb-10">
         <div className="flex items-center gap-2 mb-6">
@@ -95,12 +123,12 @@ const IntelligenceLens = ({ memory, metrics }) => (
             <div className="p-5 rounded-3xl bg-white/[0.02] border border-white/5">
                 <div className="flex justify-between items-center mb-3">
                     <span className="text-[11px] font-bold text-white/40">Context Window</span>
-                    <span className="text-[11px] font-black text-emerald-500">84% Capacity</span>
+                    <span className="text-[11px] font-black text-emerald-500">{memory}% Capacity</span>
                 </div>
                 <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
                     <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: '84%' }}
+                        animate={{ width: `${memory}%` }}
                         className="h-full bg-gradient-to-r from-emerald-500 to-sky-500"
                     />
                 </div>
@@ -109,7 +137,7 @@ const IntelligenceLens = ({ memory, metrics }) => (
             <div className="grid grid-cols-2 gap-4">
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                     <div className="text-[10px] font-black text-white/20 uppercase mb-1">Tools</div>
-                    <div className="text-lg font-black text-white">12 <span className="text-xs text-sky-500 underline underline-offset-4">Active</span></div>
+                    <div className="text-lg font-black text-white">{tools} <span className="text-xs text-sky-500 underline underline-offset-4">Active</span></div>
                 </div>
                 <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/5">
                     <div className="text-[10px] font-black text-white/20 uppercase mb-1">Latency</div>
@@ -153,14 +181,27 @@ const IntelligenceLens = ({ memory, metrics }) => (
 export const AuraNeuralWorkspace: React.FC = () => {
   const { session } = useStore();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [workspaces] = useState([
+  const [workspaces] = useState<Workspace[]>([
     { id: 'ws1', name: 'Elite Operations', color: '#10b981' },
     { id: 'ws2', name: 'Strategic KPI Bank', color: '#8b5cf6' }
   ]);
-  
+  const [chats, setChats] = useState<any[]>([]);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const loadChats = useCallback(async () => {
+    if (!session.token) return;
+    try {
+      const res = await fetch('/api/v1/ai-interaction/chats', {
+        headers: { 'Authorization': `Bearer ${session.token}` }
+      });
+      if (res.ok) setChats(await res.json());
+    } catch(e) {}
+  }, [session.token]);
+
+  useEffect(() => { loadChats(); }, [loadChats]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -170,12 +211,12 @@ export const AuraNeuralWorkspace: React.FC = () => {
 
   const onSend = async () => {
     if (!input.trim() || loading) return;
-    const msg = { id: uuidv4(), role: 'user', text: input, ts: Date.now() };
+    const msg: ChatMessage = { id: uuidv4(), role: 'user', text: input, ts: Date.now() };
     setMessages(prev => [...prev, msg]);
     setInput('');
     setLoading(true);
     
-    // Synthesis Logic triggered here...
+    // UI Synthesis Logic Simulation
     setTimeout(() => {
         setMessages(prev => [...prev, {
             id: uuidv4(),
@@ -202,7 +243,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-500/10 blur-[120px] rounded-full" />
       </div>
 
-      <NeuralSidebar workspaces={workspaces} chats={[]} onNewChat={() => {}} activeWorkspace="ws1" onSelectChat={() => {}} />
+      <NeuralSidebar workspaces={workspaces} chats={chats} onNewChat={() => setMessages([])} activeWorkspace="ws1" onSelectChat={() => {}} />
 
       {/* Main Synthesis Arena */}
       <main className="flex-1 flex flex-col relative z-10 bg-gradient-to-b from-transparent to-black/20">
@@ -214,12 +255,18 @@ export const AuraNeuralWorkspace: React.FC = () => {
             </div>
             <div className="flex items-center gap-6">
                 <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10">
-                    <button className="px-4 py-1.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest">Active tab</button>
+                    <button className="px-4 py-1.5 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest">Active Core</button>
                     <button className="px-4 py-1.5 rounded-full text-white/40 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors">Workspace</button>
                 </div>
                 <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
                     <UserCircle2 size={24} className="text-emerald-500" />
                 </div>
+                <button 
+                  onClick={() => window.history.back()}
+                  className="p-2 rounded-xl hover:bg-white/5 text-white/40"
+                >
+                  <X size={20} />
+                </button>
             </div>
         </header>
 
@@ -244,7 +291,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
                     </motion.div>
                 )}
 
-                {messages.map((m, idx) => (
+                {messages.map((m) => (
                     <motion.div 
                         key={m.id} 
                         initial={{ opacity: 0, x: m.role === 'user' ? 20 : -20 }}
@@ -316,7 +363,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
                             <button className="p-4 rounded-2xl bg-white/5 text-white/40 hover:bg-white/10 transition-all"><Mic size={20} /></button>
                             <button 
                                 onClick={onSend}
-                                className="w-16 h-16 rounded-[1.8rem] bg-emerald-500 text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)]"
+                                className="w-12 h-12 rounded-2xl bg-emerald-500 text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)]"
                             >
                                 <Send size={24} />
                             </button>
@@ -337,7 +384,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
         </div>
       </main>
 
-      <IntelligenceLens memory={84} metrics={{}} />
+      <IntelligenceLens memory={84} tools={12} />
     </div>
   );
 };
