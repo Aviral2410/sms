@@ -353,8 +353,8 @@ services:
       - name: SPRING_PROFILES_ACTIVE
         value: "docker"
       - name: OLLAMA_BASE_URL
-  ollama:
-    enabled: false
+  mcpServer:
+    enabled: true
     replicaCount: 1
     resources:
       requests:

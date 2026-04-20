@@ -4,9 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sms.aiinteraction.security.UserContext;
 import com.sms.aiinteraction.security.UserContextResolver;
 import com.sms.aiinteraction.service.ConversationOrchestrator;
-import com.sms.aiinteraction.service.AuditTrailStore;
 import com.sms.aiinteraction.service.ConversationMemoryService;
-import com.sms.aiinteraction.service.RateLimitPolicyService;
 import com.sms.aiinteraction.service.ToolCatalogService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -24,8 +22,6 @@ public class AiInteractionController {
     private final ConversationOrchestrator orchestrator;
     private final UserContextResolver userContextResolver;
     private final ToolCatalogService toolCatalogService;
-    private final AuditTrailStore auditTrailStore;
-    private final RateLimitPolicyService rateLimitPolicyService;
     private final ConversationMemoryService conversationMemoryService;
     private final ObjectMapper objectMapper;
 
@@ -33,16 +29,12 @@ public class AiInteractionController {
             ConversationOrchestrator orchestrator,
             UserContextResolver userContextResolver,
             ToolCatalogService toolCatalogService,
-            AuditTrailStore auditTrailStore,
-            RateLimitPolicyService rateLimitPolicyService,
             ConversationMemoryService conversationMemoryService,
             ObjectMapper objectMapper
     ) {
         this.orchestrator = orchestrator;
         this.userContextResolver = userContextResolver;
         this.toolCatalogService = toolCatalogService;
-        this.auditTrailStore = auditTrailStore;
-        this.rateLimitPolicyService = rateLimitPolicyService;
         this.conversationMemoryService = conversationMemoryService;
         this.objectMapper = objectMapper;
     }
