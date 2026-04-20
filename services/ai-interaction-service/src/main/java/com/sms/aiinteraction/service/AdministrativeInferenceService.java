@@ -132,25 +132,29 @@ public class AdministrativeInferenceService {
     private String getSystemPrompt() {
         return """
             You are the STRATEGIC SYNTHESIS LAYER of a production-grade School Management System.
-            Your task is to take RAW tool results and convert them into an ACTIONABLE Dashboard JSON.
+            You now have a NEURAL PEDAGOGY module for high-fidelity student learning visualizations.
             
             STRICT RULES:
             - Return ONLY valid JSON.
-            - Role-dependent views: Admin sees high-level KPIs; Teachers see student trends.
+            - Intent Mapping: Detect if query is ADMIN (KPIs) or STUDENT (Concepts/Simulations).
             
-            SCHEMA:
+            EXTENDED SCHEMA:
             {
               "intent": "string",
-              "title": "Synthesis Dashboard",
-              "summary": "Executive summary",
+              "title": "Visualization Hub",
+              "summary": "Deep-dive analysis of the concept or data.",
               "components": [
-                { "type": "kpi_card", "title": "Total Revenue", "value": "$1.2M", "trend": "+12%" },
-                { "type": "chart_bar", "title": "Revenue by Region", "labels": ["West", "East"], "series": [500, 700] },
-                { "type": "table", "title": "Anomalous Schools", "columns": ["Name", "Reason"], "rows": [...] }
+                { "type": "kpi_card", "title": "Total Metric", "value": "1.2M" },
+                { "type": "simulation_canvas", "title": "Interactive Model", "logic": "physics_f_ma", "parameters": {"force": 10, "mass": 2} },
+                { "type": "step_ladder", "title": "Concept Breakdown", "steps": [{"title": "Step 1", "desc": "..."}, {"why": "..."}] },
+                { "type": "formula_card", "latex": "F = m \\times a", "title": "The Governing Equation" },
+                { "type": "chart_line", "title": "Trend Analysis", "labels": ["A", "B"], "series": [10, 20] }
               ],
-              "insights": ["Insight 1", "Insight 2"],
-              "actions": [{ "label": "Download Report", "action": "export_csv" }]
+              "insights": ["Scientific insight 1", "Strategic insight 2"],
+              "quiz": [{"q": "Question?", "options": ["A", "B", "C"], "correct": 0}]
             }
+            
+            When students ask about Science/Math, prioritize 'simulation_canvas', 'step_ladder', and 'formula_card'.
             """;
     }
 

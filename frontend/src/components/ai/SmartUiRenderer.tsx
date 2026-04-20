@@ -96,8 +96,14 @@ const SmartTable: React.FC<{ title: string; columns: string[]; rows: any[] }> = 
 import { ProfessionalBarChart, ProfessionalAreaChart, ProfessionalPieChart } from './ProfessionalCharts';
 import { FormReview } from './FormReview';
 import { ProfilePanel, Timeline, Kanban, Heatmap } from './AiVisuals';
+import { SimulationCanvas } from './visualizers/SimulationCanvas';
+import { StepLadder } from './visualizers/StepLadder';
+import { FormulaCard } from './visualizers/FormulaCard';
 
 const ComponentRegistry: Record<string, React.FC<any>> = {
+  simulation_canvas: SimulationCanvas,
+  step_ladder: StepLadder,
+  formula_card: FormulaCard,
   kpi_card: KpiCard,
   table: SmartTable,
   checklist: (props) => (
@@ -188,7 +194,7 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> =
             <motion.div 
               key={i} 
               variants={item} 
-              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline'].includes(comp.type) ? 'col-span-2' : ''}
+              className={['table','chart_bar','chart_line','chart_pie','form_prefill','profile_panel','heatmap','timeline','simulation_canvas','step_ladder','formula_card'].includes(comp.type) ? 'col-span-2' : ''}
             >
               <Comp {...comp} />
             </motion.div>
