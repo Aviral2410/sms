@@ -183,6 +183,7 @@ export const AuraNeuralWorkspace: React.FC = () => {
                     </motion.div>
                 </div>
             ) : (
+                <div className="flex-1 flex overflow-hidden">
                     {/* LEFT Panel: Chat List - Fixed Width to prevent distortion */}
                     <div className="w-[500px] flex flex-col border-r border-white/5 bg-[#050505]/40 backdrop-blur-3xl shadow-2xl relative z-20">
                         <div ref={scrollRef} className="flex-1 overflow-y-auto p-10 space-y-10 no-scrollbar scroll-smooth">
