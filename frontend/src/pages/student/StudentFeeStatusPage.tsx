@@ -1,26 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CreditCard, Download, Loader } from 'lucide-react';
-import { useStore } from '../../store/useStore';
-import { schoolOpsApi, type FeeRecordResponse } from '../../lib/api';
+import { studentPortalApi, type StudentFeeRecordResponse } from '../../lib/schoolPortalApi';
 import { PortalPageHeader, PortalSection, PortalStatePanel, PortalStatCard } from '../../components/portal/PortalPagePrimitives';
 
 export default function StudentFeeStatusPage() {
-  const { session } = useStore();
-  const [records, setRecords] = useState<FeeRecordResponse[]>([]);
+  const [records, setRecords] = useState<StudentFeeRecordResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     let active = true;
-    if (!session.schoolId) {
-      setLoading(false);
-      return;
-    }
-    schoolOpsApi.listFeeRecords(session.schoolId)
+    studentPortalApi.getFeeRecords()
       .then((response) => {
-        if (!active) return;
-        const mine = response.filter((item) => item.studentUserId === session.userId);
-        setRecords(mine);
+        if (active) setRecords(response);
       })
       .catch((error: any) => {
         if (active) setMessage(error?.message || 'Unable to load fee records.');
@@ -31,12 +23,33 @@ export default function StudentFeeStatusPage() {
     return () => {
       active = false;
     };
-  }, [session.schoolId, session.userId]);
+  }, []);
 
   const totals = useMemo(() => ({
     due: records.reduce((sum, item) => sum + item.amountDue, 0),
     paid: records.reduce((sum, item) => sum + item.amountPaid, 0),
   }), [records]);
+
+  const downloadReceipt = (item: StudentFeeRecordResponse) => {
+    const receipt = [
+      'Student Fee Receipt',
+      `Fee record: ${item.feeRecordId}`,
+      `Category: ${item.feeCategory}`,
+      `Due date: ${item.dueDate}`,
+      `Amount due: ${item.amountDue}`,
+      `Amount paid: ${item.amountPaid}`,
+      `Status: ${item.paymentStatus}`,
+      `Created at: ${item.createdAt}`,
+    ].join('\n');
+
+    const blob = new Blob([receipt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `fee-receipt-${item.feeRecordId}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (loading) {
     return <PortalStatePanel icon={Loader} title="Loading fee status" description="Fetching student fee records and payment history." accent="#ffb663" />;
@@ -51,7 +64,7 @@ export default function StudentFeeStatusPage() {
       <PortalPageHeader
         eyebrow="Fee status"
         title="Paid, pending, and overdue fee summary"
-        description="This student-facing fee page surfaces only the current learner’s records instead of exposing the wider finance workspace."
+        description="This page now loads only the signed-in student’s fee records from the student module and keeps the receipt action functional."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -72,7 +85,9 @@ export default function StudentFeeStatusPage() {
                 <div style={{ color: 'var(--text-dim)' }}>Due {item.amountDue}</div>
                 <div style={{ color: 'var(--text-dim)' }}>Paid {item.amountPaid}</div>
                 <div style={{ color: item.paymentStatus === 'PAID' ? '#34d399' : '#fbbf24', fontWeight: 800 }}>{item.paymentStatus}</div>
-                <button type="button" className="secondary-button"><Download size={16} /> Receipt</button>
+                <button type="button" className="secondary-button" onClick={() => downloadReceipt(item)}>
+                  <Download size={16} /> Receipt
+                </button>
               </div>
             </div>
           ))}

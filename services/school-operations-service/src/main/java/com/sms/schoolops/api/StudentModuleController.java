@@ -124,6 +124,17 @@ public class StudentModuleController {
         return studentModuleService.getResults(new PermissionActor(userId, schoolId, tenantId, email, role, ""));
     }
 
+    @GetMapping("/fees")
+    public List<StudentFeeRecordResponse> getFeeRecords(
+            @RequestHeader("X-User-ID") UUID userId,
+            @RequestHeader("X-School-ID") UUID schoolId,
+            @RequestHeader("X-Tenant-ID") UUID tenantId,
+            @RequestHeader("X-User-Role") String role,
+            @RequestHeader("X-User-Email") String email
+    ) {
+        return studentModuleService.getFeeRecords(new PermissionActor(userId, schoolId, tenantId, email, role, ""));
+    }
+
     @PostMapping("/communication")
     public void sendVoiceMessage(
             @RequestHeader("X-User-ID") UUID userId,

@@ -15,6 +15,7 @@ const SESSION_STORAGE_KEYS = [
   'sms-school-session',
   'sms-saas-v2-state',
 ] as const;
+const AI_GUEST_ID_STORAGE_KEY = 'sms-ai-guest-id';
 
 function readJsonStorageItem(key: string): unknown {
   const raw = window.localStorage.getItem(key);
@@ -70,6 +71,19 @@ function resolveSession(): AuthSessionLike {
   return session;
 }
 
+export function resolveAiGuestId(): string {
+  const existing = window.localStorage.getItem(AI_GUEST_ID_STORAGE_KEY);
+  if (existing?.trim()) {
+    return existing;
+  }
+
+  const generated = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `guest-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  window.localStorage.setItem(AI_GUEST_ID_STORAGE_KEY, generated);
+  return generated;
+}
+
 function looksLikeUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -93,6 +107,7 @@ export async function request<T>(path: string, options?: RequestInit & { skipDef
   headers.set('Content-Type', 'application/json');
 
   if (!options?.skipAuth && session.token) headers.set('Authorization', `Bearer ${session.token}`);
+  if (!session.token) headers.set('X-Guest-ID', resolveAiGuestId());
 
   // Never send X-User-* / X-Tenant-ID / X-School-ID from the browser.
   // The gateway injects trusted values from the JWT, and client-sent values are spoofable.
@@ -128,6 +143,7 @@ export async function requestForm<T>(path: string, body: FormData, options?: Req
   const headers = new Headers(options?.headers);
 
   if (!options?.skipAuth && session.token) headers.set('Authorization', `Bearer ${session.token}`);
+  if (!session.token) headers.set('X-Guest-ID', resolveAiGuestId());
 
   const url = options?.skipDefaultBase ? path : `${BASE}${path}`;
   const res = await fetch(url, {
@@ -899,6 +915,7 @@ export interface StudentReportCardResponse {
   overallGrade: string;
   entries: {
     subjectId: string;
+    subjectName: string;
     marksObtained: number;
     maxMarks: number;
     percentage: number;
@@ -1953,7 +1970,7 @@ export const subscriptionApi = {
 
 // Public (no auth) endpoints under auth-service.
 export const authPublicApi = {
-  joinSchool: (body: { schoolCode: string; adminEmail: string; roleName: string; fullName: string; email: string; password: string }) =>
+  joinSchool: (body: { schoolCode: string; adminEmail: string; roleName: string; fullName: string; email: string; password: string; guardianName?: string; guardianPhone?: string }) =>
     request<{ status: string; message: string }>('/auth/public/join', { method: 'POST', body: JSON.stringify(body), skipAuth: true }),
 
   forgotPassword: (body: { schoolCode: string; email: string }) =>
@@ -2137,6 +2154,7 @@ export interface AiChatMessageResponse {
   content: string;
   payload?: Record<string, unknown> | null;
   timestamp: string;
+  thought?: string | null;
 }
 
 export const aiInteractionApi = {
@@ -2147,11 +2165,25 @@ export const aiInteractionApi = {
     request<AiRateLimitPolicyResponse>('/ai-interaction/admin/rate-limits', { method: 'POST', body: JSON.stringify({ limits }) }),
   createWorkspace: (name: string) =>
     request<AiWorkspaceResponse>('/ai-interaction/workspaces', { method: 'POST', body: JSON.stringify({ name }) }),
+  renameWorkspace: (workspaceId: string, name: string) =>
+    request<AiWorkspaceResponse>(`/ai-interaction/workspaces/${workspaceId}`, { method: 'PUT', body: JSON.stringify({ name }) }),
+  deleteWorkspace: (workspaceId: string) =>
+    request<void>(`/ai-interaction/workspaces/${workspaceId}`, { method: 'DELETE' }),
   listWorkspaces: () => request<AiWorkspaceResponse[]>('/ai-interaction/workspaces'),
+  listAllChats: () => request<AiChatSummaryResponse[]>('/ai-interaction/chats'),
   createChat: (workspaceId: string, title?: string) =>
     request<AiChatSummaryResponse>(`/ai-interaction/workspaces/${workspaceId}/chats`, { method: 'POST', body: JSON.stringify({ title }) }),
   listChats: (workspaceId: string) =>
     request<AiChatSummaryResponse[]>(`/ai-interaction/workspaces/${workspaceId}/chats`),
+  moveChat: (conversationId: string, workspaceId: string) =>
+    request<AiChatSummaryResponse>(`/ai-interaction/chats/${conversationId}/move`, { method: 'POST', body: JSON.stringify({ workspaceId }) }),
+  deleteChat: (conversationId: string) =>
+    request<void>(`/ai-interaction/chats/${conversationId}`, { method: 'DELETE' }),
   listChatMessages: (conversationId: string, limit = 50) =>
     request<AiChatMessageResponse[]>(`/ai-interaction/chats/${conversationId}/messages?limit=${limit}`),
+  confirmAction: (confirmationToken: string) =>
+    request<{ workspaceId: string | null; conversationId: string; response: Record<string, unknown> }>(`/ai-interaction/actions/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmationToken }),
+    }),
 };

@@ -96,28 +96,28 @@ export default function EnrollmentWizard() {
 
   if (isSuccess) {
     return (
-      <div className="max-w-2xl mx-auto pt-20 px-6 text-center">
+      <div className="mx-auto max-w-2xl px-4 pt-10 text-center sm:px-6 sm:pt-20">
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }} 
           animate={{ opacity: 1, scale: 1 }}
-          className="p-16 rounded-[48px] bg-slate-900/40 border border-emerald-500/20 backdrop-blur-3xl shadow-[0_0_80px_rgba(16,185,129,0.1)]"
+          className="rounded-[28px] border border-emerald-500/20 bg-slate-900/40 p-6 shadow-[0_0_80px_rgba(16,185,129,0.1)] backdrop-blur-3xl sm:rounded-[48px] sm:p-10 lg:p-16"
         >
-          <div className="w-28 h-28 bg-emerald-500/10 rounded-[36px] flex items-center justify-center border-2 border-emerald-500/50 mx-auto mb-10 relative">
-            <CheckCircle2 className="w-14 h-14 text-emerald-400" />
+          <div className="relative mx-auto mb-8 flex h-20 w-20 items-center justify-center rounded-[28px] border-2 border-emerald-500/50 bg-emerald-500/10 sm:mb-10 sm:h-28 sm:w-28 sm:rounded-[36px]">
+            <CheckCircle2 className="h-10 w-10 text-emerald-400 sm:h-14 sm:w-14" />
             <motion.div 
                animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                transition={{ duration: 2, repeat: Infinity }}
                className="absolute inset-0 bg-emerald-500/20 rounded-[36px]"
             />
           </div>
-          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">Enrollment Finalized</h2>
-          <p className="text-slate-400 text-lg mb-12 max-w-md mx-auto">
+          <h2 className="mb-4 text-3xl font-black tracking-tight text-white sm:text-4xl">Enrollment Finalized</h2>
+          <p className="mx-auto mb-8 max-w-md text-base text-slate-400 sm:mb-12 sm:text-lg">
             <span className="text-white font-bold">{formData.studentFullName}</span> has been successfully added to the system. You can now assign them to a class in the student management dashboard.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button 
               onClick={() => navigate('/admissions')}
-              className="px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-2xl transition-all shadow-xl shadow-emerald-500/20 hover:scale-[1.02] active:scale-95"
+              className="rounded-2xl bg-emerald-500 px-6 py-4 font-black text-slate-900 shadow-xl shadow-emerald-500/20 transition-all hover:scale-[1.02] hover:bg-emerald-400 active:scale-95 sm:px-10 sm:py-5"
             >
               View Pipeline
             </button>
@@ -138,7 +138,7 @@ export default function EnrollmentWizard() {
                 });
                 refreshAdmissionNo();
               }}
-              className="px-10 py-5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold rounded-2xl transition-all hover:scale-[1.02] active:scale-95"
+              className="rounded-2xl border border-white/10 bg-white/5 px-6 py-4 font-bold text-white transition-all hover:scale-[1.02] hover:bg-white/10 active:scale-95 sm:px-10 sm:py-5"
             >
               Enroll Another
             </button>
@@ -149,9 +149,9 @@ export default function EnrollmentWizard() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pt-10 pb-24 px-6">
+    <div className="mx-auto max-w-4xl px-4 pb-16 pt-6 sm:px-6 sm:pb-24 sm:pt-10">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-16">
+      <div className="mb-10 flex flex-col gap-6 md:mb-16 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-3 mb-3">
              <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-full text-cyan-400 text-[10px] font-black uppercase tracking-widest">
@@ -160,11 +160,11 @@ export default function EnrollmentWizard() {
              <div className="w-1 h-1 bg-slate-700 rounded-full" />
              <div className="text-slate-500 text-[10px] font-bold uppercase tracking-widest">Step 1: Record Identity</div>
           </div>
-          <h1 className="text-5xl font-black text-white tracking-tighter flex items-center gap-4">
+          <h1 className="flex items-center gap-3 text-3xl font-black tracking-tighter text-white sm:gap-4 sm:text-5xl">
             New Enrollment
-            <Sparkles className="w-10 h-10 text-yellow-400" />
+            <Sparkles className="h-7 w-7 text-yellow-400 sm:h-10 sm:w-10" />
           </h1>
-          <p className="text-slate-400 mt-4 text-xl font-medium max-w-lg leading-relaxed">
+          <p className="mt-4 max-w-lg text-base font-medium leading-relaxed text-slate-400 sm:text-xl">
             Record core student and guardian details. Class and transport routing will be finalized during onboarding.
           </p>
         </div>
@@ -181,8 +181,8 @@ export default function EnrollmentWizard() {
       <form onSubmit={handleSubmit} className="space-y-10">
         {/* Section 1: Identity Card */}
         <section className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/20 to-violet-500/20 rounded-[40px] blur opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-          <div className="relative p-10 rounded-[40px] bg-slate-900/60 border border-white/10 backdrop-blur-2xl shadow-3xl">
+          <div className="absolute -inset-0.5 rounded-[28px] bg-gradient-to-r from-cyan-500/20 to-violet-500/20 blur opacity-0 transition duration-1000 group-hover:opacity-100 group-hover:duration-200 sm:rounded-[40px]"></div>
+          <div className="relative rounded-[28px] border border-white/10 bg-slate-900/60 p-5 shadow-3xl backdrop-blur-2xl sm:rounded-[40px] sm:p-8 lg:p-10">
             <div className="flex items-center gap-5 mb-10">
               <div className="w-14 h-14 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg shadow-cyan-500/20">
                 <User className="w-7 h-7 text-white" />
@@ -193,7 +193,7 @@ export default function EnrollmentWizard() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
               <div className="space-y-3">
                 <label className="flex items-center gap-2 text-sm font-bold text-slate-300 ml-1">
                   Full Legal Name
@@ -204,7 +204,7 @@ export default function EnrollmentWizard() {
                   value={formData.studentFullName} 
                   onChange={e => setFormData({...formData, studentFullName: e.target.value})}
                   placeholder="e.g. Alexander Pierce" 
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-cyan-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all placeholder:text-slate-600 shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
               <div className="space-y-3">
@@ -218,7 +218,7 @@ export default function EnrollmentWizard() {
                   value={formData.studentEmail} 
                   onChange={e => setFormData({...formData, studentEmail: e.target.value})}
                   placeholder="alex@example.com" 
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-cyan-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all placeholder:text-slate-600 shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
               <div className="space-y-3">
@@ -227,7 +227,7 @@ export default function EnrollmentWizard() {
                   type="date"
                   value={formData.dateOfBirth} 
                   onChange={e => setFormData({...formData, dateOfBirth: e.target.value})}
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-cyan-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all [color-scheme:dark] shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all [color-scheme:dark] focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
               <div className="space-y-3">
@@ -239,7 +239,7 @@ export default function EnrollmentWizard() {
                   value={formData.studentPhone} 
                   onChange={e => setFormData({...formData, studentPhone: e.target.value})}
                   placeholder="+1 (555) 000-0000" 
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-cyan-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-cyan-500/10 outline-none transition-all placeholder:text-slate-600 shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-cyan-500/50 focus:ring-4 focus:ring-cyan-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
             </div>
@@ -248,8 +248,8 @@ export default function EnrollmentWizard() {
 
         {/* Section 2: Guardian Info Card */}
         <section className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500/20 to-rose-500/20 rounded-[40px] blur opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-          <div className="relative p-10 rounded-[40px] bg-slate-900/60 border border-white/10 backdrop-blur-2xl shadow-3xl">
+          <div className="absolute -inset-0.5 rounded-[28px] bg-gradient-to-r from-orange-500/20 to-rose-500/20 blur opacity-0 transition duration-1000 group-hover:opacity-100 group-hover:duration-200 sm:rounded-[40px]"></div>
+          <div className="relative rounded-[28px] border border-white/10 bg-slate-900/60 p-5 shadow-3xl backdrop-blur-2xl sm:rounded-[40px] sm:p-8 lg:p-10">
             <div className="flex items-center gap-5 mb-10">
               <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
                 <UserPlus className="w-7 h-7 text-white" />
@@ -260,7 +260,7 @@ export default function EnrollmentWizard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
               <div className="space-y-3">
                 <label htmlFor="guardianName" className="text-sm font-bold text-slate-300 ml-1">Guardian Name</label>
                 <input 
@@ -269,7 +269,7 @@ export default function EnrollmentWizard() {
                   value={formData.guardianName} 
                   onChange={e => setFormData({...formData, guardianName: e.target.value})}
                   placeholder="Full name of guardian" 
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-orange-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-slate-600 shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
               <div className="space-y-3">
@@ -280,7 +280,7 @@ export default function EnrollmentWizard() {
                   value={formData.guardianPhone} 
                   onChange={e => setFormData({...formData, guardianPhone: e.target.value})}
                   placeholder="+1 (555) 000-0000" 
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-orange-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-orange-500/10 outline-none transition-all placeholder:text-slate-600 shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
               <div className="md:col-span-2 space-y-3">
@@ -294,7 +294,7 @@ export default function EnrollmentWizard() {
                   onChange={e => setFormData({...formData, address: e.target.value})}
                   placeholder="Complete home address for transport evaluation..." 
                   rows={3}
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-orange-500/50 rounded-[24px] px-6 py-5 text-white font-medium focus:ring-4 focus:ring-orange-500/10 outline-none transition-all resize-none placeholder:text-slate-600 leading-relaxed shadow-inner" 
+                  className="w-full resize-none rounded-[24px] border border-white/5 bg-slate-950/40 px-4 py-4 font-medium leading-relaxed text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
             </div>
@@ -303,8 +303,8 @@ export default function EnrollmentWizard() {
 
         {/* Section 3: Background Card */}
         <section className="relative group">
-          <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 rounded-[40px] blur opacity-0 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-          <div className="relative p-10 rounded-[40px] bg-slate-900/60 border border-white/10 backdrop-blur-2xl shadow-3xl">
+          <div className="absolute -inset-0.5 rounded-[28px] bg-gradient-to-r from-emerald-500/20 to-teal-500/20 blur opacity-0 transition duration-1000 group-hover:opacity-100 group-hover:duration-200 sm:rounded-[40px]"></div>
+          <div className="relative rounded-[28px] border border-white/10 bg-slate-900/60 p-5 shadow-3xl backdrop-blur-2xl sm:rounded-[40px] sm:p-8 lg:p-10">
             <div className="flex items-center gap-5 mb-10">
               <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
                 <ClipboardList className="w-7 h-7 text-white" />
@@ -315,14 +315,14 @@ export default function EnrollmentWizard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-8">
               <div className="space-y-3">
                 <label htmlFor="admissionNo" className="text-sm font-bold text-slate-300 ml-1">Proposed Admission No.</label>
                 <input 
                   id="admissionNo"
                   disabled
                   value={isLoadingAdmissionNo ? 'Allocating admission number...' : formData.admissionNo} 
-                  className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-5 text-slate-500 cursor-not-allowed font-mono text-lg shadow-inner" 
+                  className="w-full cursor-not-allowed rounded-2xl border border-white/5 bg-white/5 px-4 py-4 font-mono text-base text-slate-500 shadow-inner sm:px-6 sm:py-5 sm:text-lg" 
                 />
               </div>
               <div className="space-y-3">
@@ -332,7 +332,7 @@ export default function EnrollmentWizard() {
                   type="date"
                   value={formData.admittedOn} 
                   onChange={e => setFormData({...formData, admittedOn: e.target.value})}
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-emerald-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all [color-scheme:dark] shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all [color-scheme:dark] focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
               <div className="md:col-span-2 space-y-3">
@@ -342,37 +342,37 @@ export default function EnrollmentWizard() {
                   value={formData.previousSchool} 
                   onChange={e => setFormData({...formData, previousSchool: e.target.value})}
                   placeholder="The last educational institution attended" 
-                  className="w-full bg-slate-950/40 border border-white/5 focus:border-emerald-500/50 rounded-2xl px-6 py-5 text-white font-medium focus:ring-4 focus:ring-emerald-500/10 outline-none transition-all placeholder:text-slate-600 shadow-inner" 
+                  className="w-full rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-4 font-medium text-white shadow-inner outline-none transition-all placeholder:text-slate-600 focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 sm:px-6 sm:py-5" 
                 />
               </div>
             </div>
           </div>
         </section>
 
-        <div className="pt-4 flex flex-col items-center">
+        <div className="flex flex-col items-center pt-4">
           <button 
             type="submit"
             disabled={isSubmitting}
-            className="w-full max-w-xl py-6 bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 hover:scale-[1.02] active:scale-95 text-white font-black text-xl rounded-[32px] transition-all shadow-[0_20px_40px_rgba(79,70,229,0.3)] disabled:opacity-50 disabled:grayscale disabled:scale-100 uppercase tracking-[0.2em] relative overflow-hidden group/btn"
+            className="group/btn relative w-full max-w-xl overflow-hidden rounded-[24px] bg-gradient-to-r from-cyan-600 via-indigo-600 to-violet-600 py-4 text-base font-black uppercase tracking-[0.18em] text-white shadow-[0_20px_40px_rgba(79,70,229,0.3)] transition-all hover:scale-[1.02] active:scale-95 disabled:scale-100 disabled:grayscale disabled:opacity-50 sm:rounded-[32px] sm:py-6 sm:text-xl"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-3">
-                <Loader2 className="w-6 h-6 animate-spin" />
+                <Loader2 className="h-5 w-5 animate-spin sm:h-6 sm:w-6" />
                 Processing Enrollment...
               </span>
             ) : (
               <span className="relative z-10 flex items-center justify-center gap-3">
                 Complete Enrollment
-                <ChevronRight className="w-6 h-6 group-hover/btn:translate-x-2 transition-transform" />
+                <ChevronRight className="h-5 w-5 transition-transform group-hover/btn:translate-x-2 sm:h-6 sm:w-6" />
               </span>
             )}
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
           </button>
           
-          <p className="mt-8 text-[10px] text-slate-500 font-bold uppercase tracking-[0.4em] flex items-center gap-4 opacity-70">
-            <span className="w-12 h-px bg-slate-800" />
+          <p className="mt-6 flex items-center gap-3 text-center text-[10px] font-bold uppercase tracking-[0.3em] text-slate-500 opacity-70 sm:mt-8 sm:gap-4 sm:tracking-[0.4em]">
+            <span className="h-px w-8 bg-slate-800 sm:w-12" />
             SECURE ADMISSION REGISTRY
-            <span className="w-12 h-px bg-slate-800" />
+            <span className="h-px w-8 bg-slate-800 sm:w-12" />
           </p>
         </div>
       </form>

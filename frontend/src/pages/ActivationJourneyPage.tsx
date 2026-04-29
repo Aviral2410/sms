@@ -99,7 +99,7 @@ export default function ActivationJourneyPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Manrope','Inter',system-ui,sans-serif", color: TEXT, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 16px 32px', fontFamily: "'Manrope','Inter',system-ui,sans-serif", color: TEXT, position: 'relative', overflow: 'hidden' }}>
       <MotionBackdrop mode="ambient" density={1.02} baseColor={CYAN} />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', maxWidth: 960, position: 'relative', zIndex: 1 }}>
@@ -119,8 +119,8 @@ export default function ActivationJourneyPage() {
             ) : null}
           </div>
         ) : (
-          <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', alignItems: 'start' }}>
-            <div style={{ background: 'linear-gradient(180deg, rgba(8,51,68,0.95), rgba(2,6,23,0.92))', border: '1px solid rgba(6,182,212,0.15)', borderRadius: 28, padding: 32, backdropFilter: 'blur(20px)', display: 'grid', gap: 20 }}>
+          <div style={{ display: 'grid', gap: 24, gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', alignItems: 'start' }}>
+            <div style={{ background: 'linear-gradient(180deg, rgba(8,51,68,0.95), rgba(2,6,23,0.92))', border: '1px solid rgba(6,182,212,0.15)', borderRadius: 28, padding: 'clamp(20px, 5vw, 32px)', backdropFilter: 'blur(20px)', display: 'grid', gap: 20 }}>
               <div style={{ width: 60, height: 60, borderRadius: 18, background: 'linear-gradient(135deg, #0e7490, #22d3ee)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 32px rgba(6,182,212,0.25)' }}>
                 <Key size={26} color="#0b0f14" />
               </div>
@@ -154,7 +154,7 @@ export default function ActivationJourneyPage() {
               </div>
             </div>
 
-            <form onSubmit={handleActivate} style={{ background: 'linear-gradient(180deg, rgba(8,51,68,0.95), rgba(2,6,23,0.9))', border: '1px solid rgba(6,182,212,0.15)', borderRadius: 28, padding: 32, backdropFilter: 'blur(20px)', display: 'grid', gap: 20 }}>
+            <form onSubmit={handleActivate} style={{ background: 'linear-gradient(180deg, rgba(8,51,68,0.95), rgba(2,6,23,0.9))', border: '1px solid rgba(6,182,212,0.15)', borderRadius: 28, padding: 'clamp(20px, 5vw, 32px)', backdropFilter: 'blur(20px)', display: 'grid', gap: 20 }}>
               <Field label="School code" icon={Hash} type="text" placeholder="GTA01" value={form.schoolCode} onChange={(event) => up('schoolCode', event.target.value.toUpperCase())} />
               <Field label="Admin email" icon={Mail} type="email" placeholder="admin@school.edu" value={form.email} onChange={(event) => up('email', event.target.value)} />
               <Field label="Activation code" icon={Key} type="text" placeholder="Code from your email" value={form.activationCode} onChange={(event) => up('activationCode', event.target.value)} />

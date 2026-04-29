@@ -214,17 +214,17 @@ export default function LearningModePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.25 }}
       >
-        <div className="mb-10 px-4">
+        <div className="mb-8 px-2 sm:mb-10 sm:px-4">
           <div className="flex items-center gap-4 mb-2">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.15)]">
               <BrainCircuit size={28} />
             </div>
             <div>
               <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/60 leading-none mb-2">Interactive Neural Workspace</h1>
-              <h2 className="text-3xl font-black text-white tracking-tighter">LUMINA <span className="text-emerald-500">Neural Canvas</span></h2>
+              <h2 className="text-2xl font-black tracking-tighter text-white sm:text-3xl">LUMINA <span className="text-emerald-500">Neural Canvas</span></h2>
             </div>
           </div>
-          <p className="text-white/30 text-sm font-medium ml-16 max-w-2xl leading-relaxed">
+          <p className="ml-0 max-w-2xl text-sm font-medium leading-relaxed text-white/30 sm:ml-16">
             Generating high-fidelity visualizations and interactive simulations for complex pedagogical concepts.
           </p>
         </div>
@@ -283,7 +283,7 @@ export default function LearningModePage() {
                         {streamStatus}
                       </div>
                     ) : null}
-                    <div className="min-h-[500px]">
+                    <div className="min-h-[320px] sm:min-h-[420px] lg:min-h-[500px]">
                         <SmartUiRenderer response={visualizeData} />
                     </div>
                   </motion.div>
@@ -296,12 +296,12 @@ export default function LearningModePage() {
             </div>
           </section>
 
-          <form onSubmit={handleProcess} className="learning-mode-composer max-w-4xl w-full mx-auto mt-10">
+          <form onSubmit={handleProcess} className="learning-mode-composer mx-auto mt-6 w-full max-w-4xl sm:mt-10">
             <div className="relative group">
                 {/* Visual Depth Glow */}
                 <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-sky-500/20 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                 
-                <div className="relative flex items-center gap-4 p-2 rounded-3xl bg-black/40 backdrop-blur-2xl border border-white/10 group-focus-within:border-emerald-500/30 transition-all">
+                <div className="relative flex items-end gap-3 rounded-3xl border border-white/10 bg-black/40 p-2 backdrop-blur-2xl transition-all group-focus-within:border-emerald-500/30 max-sm:flex-col max-sm:items-stretch">
                     <textarea
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
@@ -312,11 +312,11 @@ export default function LearningModePage() {
                             }
                         }}
                         placeholder="What would you like to visualize? (e.g. How does Newtonian physics work?)"
-                        className="flex-1 bg-transparent border-none outline-none text-white placeholder-white/20 p-4 resize-none h-[64px] text-lg font-medium custom-scrollbar"
+                        className="custom-scrollbar min-h-[56px] flex-1 resize-none bg-transparent p-4 text-base font-medium text-white outline-none placeholder:text-white/20 sm:min-h-[64px] sm:text-lg"
                     />
                     
                     <button 
-                        className="w-12 h-12 rounded-2xl bg-emerald-500 text-black flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-[0_0_30px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:grayscale" 
+                        className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-black shadow-[0_0_30px_rgba(16,185,129,0.3)] transition-all hover:scale-110 active:scale-95 disabled:grayscale disabled:opacity-50 max-sm:w-full" 
                         type="submit" 
                         disabled={loading}
                     >
@@ -325,7 +325,7 @@ export default function LearningModePage() {
                 </div>
             </div>
             
-            <div className="mt-4 flex items-center justify-center gap-6">
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/40">
                     <Zap size={12} /> Neural Synthesis Active
                 </div>

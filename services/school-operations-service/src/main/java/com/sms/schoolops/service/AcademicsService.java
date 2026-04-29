@@ -6,11 +6,13 @@ import com.sms.schoolops.domain.ExamMarkEntity;
 import com.sms.schoolops.domain.ExamScheduleItemEntity;
 import com.sms.schoolops.domain.GradingBandEntity;
 import com.sms.schoolops.domain.GradingSchemeEntity;
+import com.sms.schoolops.domain.SubjectEntity;
 import com.sms.schoolops.repository.ExamMarkRepository;
 import com.sms.schoolops.repository.ExamRepository;
 import com.sms.schoolops.repository.ExamScheduleItemRepository;
 import com.sms.schoolops.repository.GradingBandRepository;
 import com.sms.schoolops.repository.GradingSchemeRepository;
+import com.sms.schoolops.repository.SubjectRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
@@ -34,19 +36,22 @@ public class AcademicsService {
     private final ExamMarkRepository examMarkRepository;
     private final GradingSchemeRepository gradingSchemeRepository;
     private final GradingBandRepository gradingBandRepository;
+    private final SubjectRepository subjectRepository;
 
     public AcademicsService(
             ExamRepository examRepository,
             ExamScheduleItemRepository examScheduleItemRepository,
             ExamMarkRepository examMarkRepository,
             GradingSchemeRepository gradingSchemeRepository,
-            GradingBandRepository gradingBandRepository
+            GradingBandRepository gradingBandRepository,
+            SubjectRepository subjectRepository
     ) {
         this.examRepository = examRepository;
         this.examScheduleItemRepository = examScheduleItemRepository;
         this.examMarkRepository = examMarkRepository;
         this.gradingSchemeRepository = gradingSchemeRepository;
         this.gradingBandRepository = gradingBandRepository;
+        this.subjectRepository = subjectRepository;
     }
 
     public List<ExamResponse> listExams(UUID schoolId) {
@@ -191,6 +196,7 @@ public class AcademicsService {
         List<ReportCardEntry> entries = marks.stream()
                 .map(m -> new ReportCardEntry(
                         m.getSubjectId(),
+                        subjectRepository.findById(m.getSubjectId()).map(SubjectEntity::getSubjectName).orElse("Unknown Subject"),
                         m.getMarksObtained(),
                         m.getMaxMarks(),
                         computePct(m.getMarksObtained(), m.getMaxMarks()),
@@ -309,4 +315,3 @@ public class AcademicsService {
         return trimmed.isBlank() ? null : trimmed;
     }
 }
-

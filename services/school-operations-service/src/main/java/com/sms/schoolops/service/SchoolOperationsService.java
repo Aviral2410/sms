@@ -448,6 +448,10 @@ public class SchoolOperationsService {
                     });
             enrollment.setClassId(request.classId());
             this.studentClassEnrollmentRepository.save(enrollment);
+        } else {
+            this.studentClassEnrollmentRepository.findBySchoolId(request.schoolId()).stream()
+                    .filter(item -> studentUserId.equals(item.getStudentUserId()))
+                    .forEach(this.studentClassEnrollmentRepository::delete);
         }
 
         if (request.routeId() == null) {
@@ -1988,4 +1992,3 @@ public class SchoolOperationsService {
                 .toList();
     }
 }
-

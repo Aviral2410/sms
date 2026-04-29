@@ -18,6 +18,9 @@ import org.springframework.stereotype.Service;
 public class ConversationMemoryService {
     private static final int MAX_MESSAGES_PER_CHAT = 200;
     private static final int MAX_CONTEXT_MESSAGES = 20;
+    private static final int MAX_WORKSPACES_PER_USER = 12;
+    private static final int MAX_PUBLIC_WORKSPACES_PER_USER = 4;
+    private static final int MAX_CHATS_PER_WORKSPACE = 80;
 
     private final ObjectMapper objectMapper;
     private final StringRedisTemplate redisTemplate;
@@ -40,6 +43,10 @@ public class ConversationMemoryService {
     }
 
     public WorkspaceRecord createWorkspace(UserContext user, String name) {
+        int limit = user.guestId() != null ? MAX_PUBLIC_WORKSPACES_PER_USER : MAX_WORKSPACES_PER_USER;
+        if (listWorkspaces(user).size() >= limit) {
+            throw new IllegalArgumentException("Workspace limit reached.");
+        }
         Instant now = Instant.now();
         WorkspaceRecord workspace = new WorkspaceRecord(
                 UUID.randomUUID(),
@@ -79,6 +86,9 @@ public class ConversationMemoryService {
 
     public ChatRecord createChat(UserContext user, UUID workspaceId, String title) {
         WorkspaceRecord workspace = requireWorkspaceOwnedByUser(user, workspaceId);
+        if (listChats(user, workspaceId).size() >= MAX_CHATS_PER_WORKSPACE) {
+            throw new IllegalArgumentException("Chat limit reached for this workspace.");
+        }
         Instant now = Instant.now();
         ChatRecord chat = new ChatRecord(
                 UUID.randomUUID(),
@@ -132,6 +142,82 @@ public class ConversationMemoryService {
         }
         chatsFallback.remove(chat.conversationId());
         messagesFallback.remove(chat.conversationId());
+    }
+
+    public WorkspaceRecord renameWorkspace(UserContext user, UUID workspaceId, String name) {
+        WorkspaceRecord workspace = requireWorkspaceOwnedByUser(user, workspaceId);
+        WorkspaceRecord updated = new WorkspaceRecord(
+                workspace.workspaceId(),
+                workspace.userId(),
+                workspace.tenantId(),
+                workspace.schoolId(),
+                sanitizeName(name, workspace.name()),
+                workspace.createdAt(),
+                Instant.now()
+        );
+        if (!saveWorkspaceRedis(updated)) {
+            workspacesFallback.put(updated.workspaceId(), updated);
+        }
+        return updated;
+    }
+
+    public void deleteWorkspace(UserContext user, UUID workspaceId) {
+        WorkspaceRecord workspace = requireWorkspaceOwnedByUser(user, workspaceId);
+        List<WorkspaceRecord> workspaces = listWorkspaces(user);
+        if (workspaces.size() <= 1) {
+            throw new IllegalArgumentException("At least one workspace must remain.");
+        }
+
+        WorkspaceRecord targetWorkspace = workspaces.stream()
+                .filter(candidate -> !candidate.workspaceId().equals(workspaceId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("A replacement workspace is required."));
+
+        List<ChatRecord> chatsToMove = listChats(user, workspaceId);
+        if (listChats(user, targetWorkspace.workspaceId()).size() + chatsToMove.size() > MAX_CHATS_PER_WORKSPACE) {
+            throw new IllegalArgumentException("Move or delete some chats before deleting this workspace.");
+        }
+        for (ChatRecord chat : chatsToMove) {
+            moveChat(user, chat.conversationId(), targetWorkspace.workspaceId());
+        }
+
+        if (redisTemplate != null) {
+            redisTemplate.delete("ai:workspace:" + workspace.workspaceId());
+            redisTemplate.delete("ai:workspace:" + workspace.workspaceId() + ":chats");
+            redisTemplate.opsForSet().remove("ai:user:" + workspace.userId() + ":workspaces", workspace.workspaceId().toString());
+        }
+        workspacesFallback.remove(workspace.workspaceId());
+    }
+
+    public ChatRecord moveChat(UserContext user, UUID conversationId, UUID targetWorkspaceId) {
+        ChatRecord chat = requireChatOwnedByUser(user, conversationId);
+        WorkspaceRecord targetWorkspace = requireWorkspaceOwnedByUser(user, targetWorkspaceId);
+        if (chat.workspaceId().equals(targetWorkspace.workspaceId())) {
+            return chat;
+        }
+
+        if (listChats(user, targetWorkspace.workspaceId()).size() >= MAX_CHATS_PER_WORKSPACE) {
+            throw new IllegalArgumentException("Target workspace has reached the chat limit.");
+        }
+
+        ChatRecord updated = new ChatRecord(
+                chat.conversationId(),
+                targetWorkspace.workspaceId(),
+                chat.userId(),
+                chat.title(),
+                chat.createdAt(),
+                Instant.now()
+        );
+
+        if (redisTemplate != null) {
+            redisTemplate.opsForSet().remove("ai:workspace:" + chat.workspaceId() + ":chats", chat.conversationId().toString());
+        }
+
+        if (!saveChatRedis(updated)) {
+            chatsFallback.put(updated.conversationId(), updated);
+        }
+
+        return updated;
     }
 
     public void addUserMessage(UserContext user, UUID conversationId, String message) {

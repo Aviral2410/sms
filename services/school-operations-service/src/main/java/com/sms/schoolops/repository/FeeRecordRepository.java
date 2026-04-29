@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface FeeRecordRepository extends JpaRepository<FeeRecordEntity, UUID> {
     List<FeeRecordEntity> findBySchoolIdOrderByDueDateDesc(UUID schoolId);
+    List<FeeRecordEntity> findBySchoolIdAndStudentUserIdOrderByDueDateDesc(UUID schoolId, UUID studentUserId);
 }

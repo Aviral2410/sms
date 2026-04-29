@@ -111,6 +111,40 @@ public class PublicJoinService {
                     schoolCode, email, provisioned.accountId(), ex);
         }
 
+        if ("STUDENT".equalsIgnoreCase(request.roleName())) {
+            String guardianName = request.guardianName() == null || request.guardianName().isBlank()
+                    ? request.fullName().trim()
+                    : request.guardianName().trim();
+            String guardianPhone = request.guardianPhone() == null ? "" : request.guardianPhone().trim();
+
+            if (!guardianPhone.isBlank()) {
+                try {
+                    schoolOpsClient.post()
+                            .uri("/api/v1/school-ops/admissions")
+                            .body(Map.ofEntries(
+                                    Map.entry("schoolId", schoolId),
+                                    Map.entry("tenantId", tenantId),
+                                    Map.entry("schoolCode", schoolCode),
+                                    Map.entry("studentUserId", provisioned.accountId()),
+                                    Map.entry("studentFullName", request.fullName().trim()),
+                                    Map.entry("studentEmail", email),
+                                    Map.entry("admissionNo", ""),
+                                    Map.entry("admittedOn", java.time.LocalDate.now().toString()),
+                                    Map.entry("guardianName", guardianName),
+                                    Map.entry("guardianPhone", guardianPhone),
+                                    Map.entry("address", ""),
+                                    Map.entry("previousSchool", ""),
+                                    Map.entry("admissionStatus", "APPLICATION")
+                            ))
+                            .retrieve()
+                            .toBodilessEntity();
+                } catch (Exception ex) {
+                    logger.warn("Failed to create student admission application for public join. schoolCode={} email={} accountId={}",
+                            schoolCode, email, provisioned.accountId(), ex);
+                }
+            }
+        }
+
         return new JoinSchoolPublicResponse("OK", "Account created successfully. Please log in.");
     }
 
@@ -122,4 +156,3 @@ public class PublicJoinService {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
     }
 }
-

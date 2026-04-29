@@ -465,11 +465,12 @@ export interface ClassroomDetailResponse {
   className: string;
   sectionName: string;
   classTeacherName?: string | null;
+  classTeacherEmail?: string | null;
   subjects: {
     subjectId: string;
     subjectName: string;
     teacherName: string;
-    teacherEmail: string;
+    teacherEmail?: string | null;
   }[];
   classmates: {
     userId: string;
@@ -505,15 +506,24 @@ export interface StudentAttendanceAnalyticsResponse {
     detail: string;
     trend: string;
   }[];
+  recentAbsences: {
+    attendanceId: string;
+    attendanceDate: string;
+    attendanceStatus: string;
+    reasonStatus: string;
+    submittedReason?: string | null;
+  }[];
 }
 
 export interface StudentHomeworkResponse {
   homeworkId: string;
   subjectName: string;
+  teacherName: string;
   title: string;
   description: string;
   dueDate: string;
   status: string;
+  studentNote?: string | null;
   teacherRemarks?: string | null;
   attachments: string[];
 }
@@ -524,12 +534,24 @@ export interface HomeworkStatusUpdateRequest {
 }
 
 export interface StudentResultResponse {
+  examId?: string | null;
   examName: string;
   subjectName: string;
   marksObtained: number;
   maxMarks: number;
   grade?: string | null;
   academicYear?: string | null;
+}
+
+export interface StudentFeeRecordResponse {
+  feeRecordId: string;
+  studentUserId: string;
+  feeCategory: string;
+  amountDue: number;
+  amountPaid: number;
+  dueDate: string;
+  paymentStatus: string;
+  createdAt: string;
 }
 
 export interface StudentCommunicationRequest {
@@ -751,6 +773,7 @@ export const studentPortalApi = {
   submitAbsenceReason: (body: AbsenceReasonRequest) =>
     request<void>('/school-ops/student/attendance/absence-reason', { method: 'PUT', body: JSON.stringify(body) }),
   getResults: () => request<StudentResultResponse[]>('/school-ops/student/results'),
+  getFeeRecords: () => request<StudentFeeRecordResponse[]>('/school-ops/student/fees'),
   sendCommunication: (body: StudentCommunicationRequest) =>
     request<void>('/school-ops/student/communication', { method: 'POST', body: JSON.stringify(body) }),
   reserveLibraryResource: (resourceId: string) =>

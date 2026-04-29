@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConversationMemoryServiceTest {
@@ -36,6 +37,38 @@ class ConversationMemoryServiceTest {
         assertTrue(service.listMessages(user, chat.conversationId(), 50).isEmpty());
     }
 
+    @Test
+    void moveChatTransfersConversationToTargetWorkspace() {
+        ObjectProvider<StringRedisTemplate> provider = Mockito.mock(ObjectProvider.class);
+        Mockito.when(provider.getIfAvailable()).thenReturn(null);
+
+        ConversationMemoryService service = new ConversationMemoryService(new ObjectMapper(), provider);
+        UserContext user = user(UserRole.SCHOOL_ADMIN);
+
+        ConversationMemoryService.WorkspaceRecord source = service.createWorkspace(user, "Source");
+        ConversationMemoryService.WorkspaceRecord target = service.createWorkspace(user, "Target");
+        ConversationMemoryService.ChatRecord chat = service.createChat(user, source.workspaceId(), "Chat");
+
+        ConversationMemoryService.ChatRecord moved = service.moveChat(user, chat.conversationId(), target.workspaceId());
+
+        assertEquals(target.workspaceId(), moved.workspaceId());
+        assertTrue(service.listChats(user, source.workspaceId()).isEmpty());
+        assertEquals(1, service.listChats(user, target.workspaceId()).size());
+    }
+
+    @Test
+    void deleteWorkspaceRejectsWhenItIsTheLastWorkspace() {
+        ObjectProvider<StringRedisTemplate> provider = Mockito.mock(ObjectProvider.class);
+        Mockito.when(provider.getIfAvailable()).thenReturn(null);
+
+        ConversationMemoryService service = new ConversationMemoryService(new ObjectMapper(), provider);
+        UserContext user = user(UserRole.SCHOOL_ADMIN);
+
+        ConversationMemoryService.WorkspaceRecord workspace = service.createWorkspace(user, "Only");
+
+        assertThrows(IllegalArgumentException.class, () -> service.deleteWorkspace(user, workspace.workspaceId()));
+    }
+
     private UserContext user(UserRole role) {
         return new UserContext(
                 UUID.fromString("4f2f9e5a-43e0-4fb6-8652-2a9f2c819c83"),
@@ -50,4 +83,3 @@ class ConversationMemoryServiceTest {
         );
     }
 }
-

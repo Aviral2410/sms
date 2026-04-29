@@ -135,6 +135,37 @@ public class AiInteractionController {
                 .toList());
     }
 
+    @PostMapping("/workspaces")
+    public ResponseEntity<AiInteractionDtos.WorkspaceResponse> createWorkspace(
+            @Valid @RequestBody AiInteractionDtos.WorkspaceCreateRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        ConversationMemoryService.WorkspaceRecord workspace = conversationMemoryService.createWorkspace(user, request.name());
+        return ResponseEntity.ok(toWorkspaceResponse(workspace));
+    }
+
+    @PutMapping("/workspaces/{workspaceId}")
+    public ResponseEntity<AiInteractionDtos.WorkspaceResponse> renameWorkspace(
+            @PathVariable java.util.UUID workspaceId,
+            @Valid @RequestBody AiInteractionDtos.WorkspaceUpdateRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        ConversationMemoryService.WorkspaceRecord workspace = conversationMemoryService.renameWorkspace(user, workspaceId, request.name());
+        return ResponseEntity.ok(toWorkspaceResponse(workspace));
+    }
+
+    @DeleteMapping("/workspaces/{workspaceId}")
+    public ResponseEntity<Void> deleteWorkspace(
+            @PathVariable java.util.UUID workspaceId,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        conversationMemoryService.deleteWorkspace(user, workspaceId);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/workspaces/{workspaceId}/chats")
     public ResponseEntity<List<AiInteractionDtos.ChatSummaryResponse>> listWorkspaceChats(
             @PathVariable java.util.UUID workspaceId,
@@ -144,6 +175,21 @@ public class AiInteractionController {
         return ResponseEntity.ok(conversationMemoryService.listChats(user, workspaceId).stream()
                 .map(this::toChatSummary)
                 .toList());
+    }
+
+    @PostMapping("/workspaces/{workspaceId}/chats")
+    public ResponseEntity<AiInteractionDtos.ChatSummaryResponse> createWorkspaceChat(
+            @PathVariable java.util.UUID workspaceId,
+            @RequestBody(required = false) AiInteractionDtos.ChatCreateRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        ConversationMemoryService.ChatRecord chat = conversationMemoryService.createChat(
+                user,
+                workspaceId,
+                request == null ? null : request.title()
+        );
+        return ResponseEntity.ok(toChatSummary(chat));
     }
 
     @GetMapping("/chats")
@@ -162,6 +208,17 @@ public class AiInteractionController {
         UserContext user = userContextResolver.resolve(servletRequest);
         conversationMemoryService.deleteChat(user, conversationId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/chats/{conversationId}/move")
+    public ResponseEntity<AiInteractionDtos.ChatSummaryResponse> moveChat(
+            @PathVariable java.util.UUID conversationId,
+            @RequestBody AiInteractionDtos.ChatMoveRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        UserContext user = userContextResolver.resolve(servletRequest);
+        ConversationMemoryService.ChatRecord chat = conversationMemoryService.moveChat(user, conversationId, request.workspaceId());
+        return ResponseEntity.ok(toChatSummary(chat));
     }
 
     @GetMapping("/chats/{conversationId}/messages")
@@ -196,13 +253,17 @@ public class AiInteractionController {
     }
 
     private AiInteractionDtos.ChatMessageResponse toChatMessage(ConversationMemoryService.ChatMessageRecord message) {
+        String thought = null;
+        if (message.payload() != null && message.payload().hasNonNull("thought")) {
+            thought = message.payload().get("thought").asText();
+        }
         return new AiInteractionDtos.ChatMessageResponse(
                 message.messageId(),
                 message.role(),
                 message.content(),
                 message.payload(),
                 message.timestamp().toString(),
-                null 
+                thought
         );
     }
 }

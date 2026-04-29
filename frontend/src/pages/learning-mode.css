@@ -303,6 +303,26 @@
     grid-template-columns: 1fr;
   }
 
+  .learning-mode-stage {
+    gap: 14px;
+  }
+
+  .learning-mode-stage__panel {
+    min-height: auto;
+  }
+
+  .learning-mode-stage__output {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .learning-mode-composer {
+    bottom: 10px;
+    padding: 10px;
+    border-radius: 22px;
+  }
+
   .learning-mode-composer__row {
     grid-template-columns: 1fr;
   }
@@ -310,5 +330,9 @@
   .learning-mode-composer__controls {
     grid-template-columns: 1fr 52px;
   }
-}
 
+  .learning-mode-tab {
+    padding: 9px 12px;
+    font-size: 0.8rem;
+  }
+}

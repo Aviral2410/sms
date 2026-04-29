@@ -1,17 +1,24 @@
-import { layoutWithLines, prepareWithSegments } from '@chenglou/pretext';
 import type { CSSProperties } from 'react';
 import type { TextLayoutConfig, TextLayoutResult, TextWhiteSpace, TextWordBreak } from '../types';
 
+type PreparedToken = {
+  text: string;
+  width: number;
+};
+
+type PreparedParagraph = {
+  tokens: PreparedToken[];
+};
+
 type PreparedTextHandle = {
-  prepared: ReturnType<typeof prepareWithSegments>;
+  prepared: PreparedParagraph[];
   cacheKey: string;
 };
 
-type PrepareTextConfig = Pick<TextLayoutConfig, 'text' | 'font' | 'whiteSpace' | 'wordBreak'>;
-
 const preparedTextCache = new Map<string, PreparedTextHandle>();
+const textMeasureCache = new Map<string, number>();
 
-function getCacheKey({ text, font, whiteSpace = 'normal', wordBreak = 'normal' }: PrepareTextConfig) {
+function getCacheKey({ text, font, whiteSpace = 'normal', wordBreak = 'normal' }: Pick<TextLayoutConfig, 'text' | 'font' | 'whiteSpace' | 'wordBreak'>) {
   return JSON.stringify([text, font, whiteSpace, wordBreak]);
 }
 
@@ -39,19 +46,105 @@ export function parseLineHeight(lineHeight: string, fontSize: string, fallbackMu
   return 0;
 }
 
-export function prepareText(config: PrepareTextConfig) {
-  const cacheKey = getCacheKey(config);
-  const cached = preparedTextCache.get(cacheKey);
-  if (cached) {
-    return cached;
+function getApproxCharacterWidth(font: string) {
+  const match = font.match(/(\d+(?:\.\d+)?)px/);
+  const fontSize = match ? Number.parseFloat(match[1]) : 16;
+  return fontSize * 0.62;
+}
+
+function measureTextWidth(text: string, font: string) {
+  const cacheKey = `${font}::${text}`;
+  const cached = textMeasureCache.get(cacheKey);
+  if (cached != null) return cached;
+
+  let width = text.length * getApproxCharacterWidth(font);
+
+  if (typeof document !== 'undefined') {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (context) {
+      context.font = font;
+      width = context.measureText(text).width;
+    }
   }
 
-  const prepared = prepareWithSegments(config.text, config.font, {
-    whiteSpace: config.whiteSpace,
-    wordBreak: config.wordBreak,
-  });
+  textMeasureCache.set(cacheKey, width);
+  return width;
+}
 
-  const handle = { prepared, cacheKey };
+function tokenizeParagraph(text: string, font: string, whiteSpace: TextWhiteSpace, wordBreak: TextWordBreak): PreparedToken[] {
+  if (!text) return [];
+
+  if (whiteSpace === 'pre-wrap') {
+    const regex = wordBreak === 'keep-all' ? /(\s+)/ : /(\s+|(?<=-))/;
+    return text.split(regex).filter(Boolean).map((token) => ({
+      text: token,
+      width: measureTextWidth(token, font),
+    }));
+  }
+
+  if (wordBreak === 'keep-all') {
+    return text.split(/\s+/).filter(Boolean).map((token, index, source) => ({
+      text: index < source.length - 1 ? `${token} ` : token,
+      width: measureTextWidth(index < source.length - 1 ? `${token} ` : token, font),
+    }));
+  }
+
+  return text.split(/(\s+)/).filter(Boolean).map((token) => ({
+    text: token,
+    width: measureTextWidth(token, font),
+  }));
+}
+
+function forceBreakToken(token: PreparedToken, maxWidth: number, font: string) {
+  if (!token.text) return [];
+
+  const segments: PreparedToken[] = [];
+  let current = '';
+
+  for (const character of token.text) {
+    const candidate = `${current}${character}`;
+    const candidateWidth = measureTextWidth(candidate, font);
+
+    if (current && candidateWidth > maxWidth) {
+      segments.push({
+        text: current,
+        width: measureTextWidth(current, font),
+      });
+      current = character;
+      continue;
+    }
+
+    current = candidate;
+  }
+
+  if (current) {
+    segments.push({
+      text: current,
+      width: measureTextWidth(current, font),
+    });
+  }
+
+  return segments;
+}
+
+export function prepareText(config: Pick<TextLayoutConfig, 'text' | 'font' | 'whiteSpace' | 'wordBreak'>) {
+  const cacheKey = getCacheKey(config);
+  const cached = preparedTextCache.get(cacheKey);
+  if (cached) return cached;
+
+  const whiteSpace = config.whiteSpace ?? 'normal';
+  const wordBreak = config.wordBreak ?? 'normal';
+  const paragraphs = (whiteSpace === 'pre-wrap' ? config.text.split('\n') : [config.text])
+    .map((paragraph) => ({
+      tokens: tokenizeParagraph(paragraph, config.font, whiteSpace, wordBreak),
+    }));
+
+  const handle = {
+    prepared: paragraphs,
+    cacheKey,
+  };
+
   preparedTextCache.set(cacheKey, handle);
   return handle;
 }
@@ -71,20 +164,80 @@ export function measureTextBlock(config: TextLayoutConfig): TextLayoutResult {
     };
   }
 
+  const whiteSpace = config.whiteSpace ?? 'normal';
+  const wordBreak = config.wordBreak ?? 'normal';
   const { prepared } = prepareText(config);
-  const { height, lineCount, lines } = layoutWithLines(prepared, maxWidth, lineHeight);
-  const normalizedLines = lines.map((line) => line.text);
-  const maxLineWidth = lines.reduce((widest, line) => Math.max(widest, line.width), 0);
-  const isOverflowing = config.maxLines != null
-    ? lineCount > config.maxLines
-    : maxLineWidth > maxWidth + 0.5;
+  const lines: string[] = [];
+  const lineWidths: number[] = [];
+
+  for (const paragraph of prepared) {
+    let currentLine = '';
+    let currentWidth = 0;
+
+    const pushLine = (lineText: string, width: number) => {
+      lines.push(whiteSpace === 'normal' ? lineText.trim() : lineText.replace(/\s+$/, ''));
+      lineWidths.push(width);
+    };
+
+    for (const token of paragraph.tokens) {
+      if (!token.text.trim()) {
+        if (whiteSpace === 'pre-wrap' && currentLine) {
+          currentLine += token.text;
+          currentWidth += token.width;
+        }
+        continue;
+      }
+
+      const candidate = `${currentLine}${token.text}`;
+      const candidateWidth = currentWidth + token.width;
+
+      if (!currentLine || candidateWidth <= maxWidth) {
+        currentLine = candidate;
+        currentWidth = candidateWidth;
+        continue;
+      }
+
+      pushLine(currentLine, currentWidth);
+
+      if (token.width <= maxWidth || wordBreak === 'keep-all') {
+        currentLine = token.text;
+        currentWidth = token.width;
+        continue;
+      }
+
+      const forcedSegments = forceBreakToken(token, maxWidth, config.font);
+      currentLine = '';
+      currentWidth = 0;
+
+      forcedSegments.forEach((segment, index) => {
+        const isLast = index === forcedSegments.length - 1;
+        if (isLast) {
+          currentLine = segment.text;
+          currentWidth = segment.width;
+          return;
+        }
+        pushLine(segment.text, segment.width);
+      });
+    }
+
+    if (currentLine) {
+      pushLine(currentLine, currentWidth);
+    } else if (whiteSpace === 'pre-wrap' && !paragraph.tokens.length) {
+      lines.push('');
+      lineWidths.push(0);
+    }
+  }
+
+  const normalizedLines = lines.length ? lines : [text];
+  const maxLineWidth = lineWidths.length ? Math.max(...lineWidths) : measureTextWidth(text, config.font);
+  const lineCount = normalizedLines.length;
 
   return {
-    height,
+    height: lineCount * lineHeight,
     lineCount,
     lines: normalizedLines,
     maxLineWidth,
-    isOverflowing,
+    isOverflowing: config.maxLines != null ? lineCount > config.maxLines : maxLineWidth > maxWidth + 0.5,
   };
 }
 
@@ -94,6 +247,7 @@ export function checkTextFit(config: TextLayoutConfig) {
 
 export function clearTextLayoutCache() {
   preparedTextCache.clear();
+  textMeasureCache.clear();
 }
 
 export function getTextLayoutCacheSize() {

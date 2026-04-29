@@ -10,7 +10,15 @@ const BG = 'var(--public-page-bg)'; const BORDER = 'var(--public-border)';
 const TEXT = 'var(--public-text-main)'; const DIM = 'var(--public-text-muted)';
 
 type Role = 'STUDENT' | 'TEACHER' | 'STAFF';
-interface JoinState { schoolCode: string; role: Role | ''; fullName: string; email: string; password: string; }
+interface JoinState {
+  schoolCode: string;
+  role: Role | '';
+  fullName: string;
+  email: string;
+  password: string;
+  guardianName: string;
+  guardianPhone: string;
+}
 
 
 
@@ -35,7 +43,15 @@ export default function JoinSchoolPage() {
   );
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
-  const [data, setData] = useState<JoinState>({ schoolCode: '', role: '', fullName: '', email: '', password: '' });
+  const [data, setData] = useState<JoinState>({
+    schoolCode: '',
+    role: '',
+    fullName: '',
+    email: '',
+    password: '',
+    guardianName: '',
+    guardianPhone: '',
+  });
   const [adminEmail, setAdminEmail] = useState('');
   const [schoolContext, setSchoolContext] = useState<{ schoolName: string; schoolId: string; tenantId: string } | null>(null);
   const [error, setError] = useState('');
@@ -46,6 +62,10 @@ export default function JoinSchoolPage() {
 
   const handleSubmit = async () => {
     if (!data.fullName || !data.email || !data.password) { setError('All fields are required.'); return; }
+    if (data.role === 'STUDENT' && (!data.guardianName.trim() || !data.guardianPhone.trim())) {
+      setError('Guardian name and phone are required for student applications.');
+      return;
+    }
     if (!schoolContext) { setError('Verify school code before continuing.'); return; }
     setLoading(true); setError('');
     try {
@@ -56,6 +76,8 @@ export default function JoinSchoolPage() {
         fullName: data.fullName.trim(),
         email: data.email.trim(),
         password: data.password,
+        guardianName: data.role === 'STUDENT' ? data.guardianName.trim() : undefined,
+        guardianPhone: data.role === 'STUDENT' ? data.guardianPhone.trim() : undefined,
       });
       setStep(4); // success
     } catch (err: any) {
@@ -95,24 +117,24 @@ export default function JoinSchoolPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, fontFamily: "'Manrope','Inter',system-ui,sans-serif", color: TEXT, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px 16px 32px', fontFamily: "'Manrope','Inter',system-ui,sans-serif", color: TEXT, position: 'relative', overflow: 'hidden' }}>
       <MotionBackdrop mode="ambient" density={1.04} />
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ width: '100%', maxWidth: 520, position: 'relative', zIndex: 1 }}>
-        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate('/signup')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: DIM, cursor: 'pointer', marginBottom: 32, fontFamily: 'inherit' }}>
+        <button onClick={() => step > 1 ? setStep(s => s - 1) : navigate('/signup')} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', color: DIM, cursor: 'pointer', marginBottom: 24, fontFamily: 'inherit' }}>
           <ArrowLeft size={16} /> {step > 1 ? 'Back' : 'Back to signup'}
         </button>
 
         {/* Progress dots */}
         {step < 4 && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 32 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
             {[1, 2, 3].map(s => (
               <div key={s} style={{ height: 4, flex: 1, borderRadius: 99, background: step >= s ? VIOLET : 'rgba(255,255,255,0.1)', transition: 'background 0.3s' }} />
             ))}
           </div>
         )}
 
-        <div style={{ background: 'linear-gradient(180deg, rgba(16,14,40,0.97), rgba(2,6,23,0.95))', border: `1px solid ${BORDER}`, borderRadius: 24, padding: 36, backdropFilter: 'blur(20px)' }}>
+        <div style={{ background: 'linear-gradient(180deg, rgba(16,14,40,0.97), rgba(2,6,23,0.95))', border: `1px solid ${BORDER}`, borderRadius: 24, padding: 'clamp(20px, 5vw, 36px)', backdropFilter: 'blur(20px)' }}>
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="s1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -139,7 +161,7 @@ export default function JoinSchoolPage() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {roles.map(r => (
-                    <div key={r.id} onClick={() => up('role', r.id)} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', borderRadius: 16, border: `1px solid ${data.role === r.id ? r.color + '55' : BORDER}`, background: data.role === r.id ? `${r.color}10` : 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <div key={r.id} onClick={() => up('role', r.id)} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px', borderRadius: 16, border: `1px solid ${data.role === r.id ? r.color + '55' : BORDER}`, background: data.role === r.id ? `${r.color}10` : 'rgba(255,255,255,0.02)', cursor: 'pointer', transition: 'all 0.2s' }}>
                       <div style={{ width: 40, height: 40, borderRadius: 12, background: `${r.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><r.icon size={20} color={r.color} /></div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: '0.95rem', color: TEXT }}>{r.label}</div>
@@ -160,11 +182,20 @@ export default function JoinSchoolPage() {
               <motion.div key="s3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div>
                   <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: 6 }}>Create Your Account</h2>
-                  <p style={{ color: DIM, fontSize: '0.88rem' }}>Joining as <strong style={{ color: VIOLET }}>{data.role}</strong></p>
+                  <p style={{ color: DIM, fontSize: '0.88rem' }}>
+                    Joining as <strong style={{ color: VIOLET }}>{data.role}</strong>
+                    {data.role === 'STUDENT' ? ' with an admission application linked to your account.' : ''}
+                  </p>
                 </div>
                 <Field label="Full Name" icon={User} placeholder="Your full name" value={data.fullName} onChange={e => up('fullName', e.target.value)} />
                 <Field label="Email" icon={Mail} type="email" placeholder="you@email.com" value={data.email} onChange={e => up('email', e.target.value)} />
                 <Field label="Password" icon={Lock} type="password" placeholder="Choose a password" value={data.password} onChange={e => up('password', e.target.value)} />
+                {data.role === 'STUDENT' ? (
+                  <>
+                    <Field label="Guardian Name" icon={Users} placeholder="Parent or guardian full name" value={data.guardianName} onChange={e => up('guardianName', e.target.value)} />
+                    <Field label="Guardian Phone" icon={Hash} placeholder="+91 98XXXXXXX" value={data.guardianPhone} onChange={e => up('guardianPhone', e.target.value)} />
+                  </>
+                ) : null}
                 {error && <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 10, background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.25)', color: '#fb7185', fontSize: '0.82rem' }}><AlertCircle size={14} />{error}</div>}
                 <button onClick={handleSubmit} disabled={loading} style={{ padding: '13px', borderRadius: 14, background: loading ? '#374151' : VIOLET, border: 'none', color: '#fff', fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   {loading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <><span>Join School</span><ArrowRight size={18} /></>}
@@ -178,7 +209,12 @@ export default function JoinSchoolPage() {
                   <CheckCircle2 size={36} color="#fff" />
                 </div>
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 800, marginBottom: 12 }}>Account Created</h2>
-                <p style={{ color: DIM, fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 28 }}>Your account has been created for <strong style={{ color: TEXT }}>{data.schoolCode.toUpperCase()}</strong> as <strong style={{ color: VIOLET }}>{data.role}</strong>. You can now log in.</p>
+                <p style={{ color: DIM, fontSize: '0.9rem', lineHeight: 1.6, marginBottom: 28 }}>
+                  Your account has been created for <strong style={{ color: TEXT }}>{data.schoolCode.toUpperCase()}</strong> as <strong style={{ color: VIOLET }}>{data.role}</strong>.
+                  {data.role === 'STUDENT'
+                    ? ' Your admission application is now visible to the school for review, so your profile can move from sign-up to classroom access cleanly.'
+                    : ' You can now log in.'}
+                </p>
                 <button onClick={() => navigate('/login')} style={{ padding: '12px 28px', borderRadius: 14, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: TEXT, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Go to Login
                 </button>

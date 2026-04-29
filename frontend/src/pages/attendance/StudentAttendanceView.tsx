@@ -112,14 +112,14 @@ export default function StudentAttendanceView() {
   }
 
   return (
-    <div className="space-y-8 pb-12">
-      <section className="rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.2),_transparent_28%),linear-gradient(145deg,rgba(17,24,39,0.95),rgba(30,41,59,0.85))] p-8 text-white">
+    <div className="space-y-6 pb-12 sm:space-y-8">
+      <section className="rounded-[24px] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.2),_transparent_28%),linear-gradient(145deg,rgba(17,24,39,0.95),rgba(30,41,59,0.85))] p-5 text-white sm:rounded-[32px] sm:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-4 py-1 text-[11px] font-black uppercase tracking-[0.24em] text-amber-200">
               <CalendarDays size={14} /> My Attendance
             </div>
-            <h1 className="mt-4 text-4xl font-black tracking-[-0.04em]">{summary.studentName}</h1>
+            <h1 className="mt-4 text-3xl font-black tracking-[-0.04em] sm:text-4xl">{summary.studentName}</h1>
             <p className="mt-2 text-sm text-slate-300">{summary.className} {summary.sectionName} · {summary.fromDate} to {summary.toDate}</p>
           </div>
           <div className={`rounded-[24px] border px-5 py-4 ${levelTone}`}>
@@ -130,20 +130,20 @@ export default function StudentAttendanceView() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <Metric title="Present Days" value={summary.presentDays} accent="text-emerald-300" icon={<LineChart size={16} />} />
         <Metric title="Absent Days" value={summary.absentDays} accent="text-rose-300" icon={<AlertTriangle size={16} />} />
         <Metric title="Late Days" value={summary.lateDays} accent="text-amber-300" icon={<Flame size={16} />} />
         <Metric title="Excused Days" value={summary.excusedDays} accent="text-cyan-300" icon={<FileText size={16} />} />
       </section>
 
-      <section className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+      <section className="rounded-[24px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:rounded-[28px] sm:p-6">
         <div className="mb-5 flex flex-wrap items-center gap-3">
           {PRESETS.map((preset) => (
             <button key={preset} onClick={() => setFilters((current) => ({ ...current, preset }))} className={`rounded-full border px-4 py-2 text-xs font-black uppercase tracking-[0.18em] transition ${filters.preset === preset ? 'border-cyan-400/30 bg-cyan-500/10 text-cyan-200' : 'border-white/10 text-slate-300'}`}>{preset}</button>
           ))}
           {filters.preset === 'CUSTOM' && (
-            <div className="ml-auto flex flex-wrap gap-3">
+            <div className="flex w-full flex-wrap gap-3 lg:ml-auto lg:w-auto">
               <input type="date" value={filters.from} onChange={(event) => setFilters((current) => ({ ...current, from: event.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-2 text-sm text-white outline-none" />
               <input type="date" value={filters.to} onChange={(event) => setFilters((current) => ({ ...current, to: event.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-2 text-sm text-white outline-none" />
             </div>
@@ -152,21 +152,25 @@ export default function StudentAttendanceView() {
         <div className="grid gap-6 lg:grid-cols-[1.15fr,0.85fr]">
           <div>
             <h2 className="text-lg font-black text-white">Monthly Calendar</h2>
-            <div className="mt-4 grid grid-cols-7 gap-2">
+            <div className="mt-4 overflow-x-auto pb-2">
+              <div className="grid min-w-[30rem] grid-cols-7 gap-2">
               {summary.calendar.map((day) => (
                 <div key={day.date} className={`rounded-2xl border p-3 text-center ${day.status === 'ABSENT' ? 'border-rose-400/20 bg-rose-500/10' : day.status === 'LATE' ? 'border-amber-400/20 bg-amber-500/10' : day.status === 'PRESENT' ? 'border-emerald-400/20 bg-emerald-500/10' : 'border-white/10 bg-slate-950/30'}`}>
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{new Date(day.date).getDate()}</div>
                   <div className="mt-2 text-[11px] font-bold text-white">{day.status === 'NO_DATA' ? '--' : day.status}</div>
                 </div>
               ))}
+              </div>
             </div>
           </div>
           <div>
             <h2 className="text-lg font-black text-white">Attendance Heatmap</h2>
-            <div className="mt-4 grid grid-cols-6 gap-2">
+            <div className="mt-4 overflow-x-auto pb-2">
+              <div className="grid min-w-[20rem] grid-cols-6 gap-2">
               {summary.heatmap.map((item) => (
                 <div key={item.date} title={`${item.date} · ${item.score}`} className={`h-12 rounded-2xl border ${item.color === 'red' ? 'border-rose-400/20 bg-rose-500/20' : item.color === 'yellow' ? 'border-amber-400/20 bg-amber-500/20' : 'border-emerald-400/20 bg-emerald-500/20'}`} />
               ))}
+              </div>
             </div>
             <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/30 p-4 text-sm text-slate-300">
               <div className="font-bold text-white">Progress bar</div>
@@ -178,7 +182,7 @@ export default function StudentAttendanceView() {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr,0.9fr]">
-        <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-[24px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:rounded-[28px] sm:p-6">
           <h2 className="text-lg font-black text-white">Daily Timeline</h2>
           <div className="mt-4 space-y-3">
             {summary.daily.map((item, index) => (
@@ -196,7 +200,7 @@ export default function StudentAttendanceView() {
           </div>
         </div>
 
-        <div className="rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-xl">
+        <div className="rounded-[24px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:rounded-[28px] sm:p-6">
           <h2 className="text-lg font-black text-white">Submit Absence Reason</h2>
           <p className="mt-2 text-sm text-slate-400">If you were absent, send a reason for review.</p>
           <div className="mt-4 space-y-4">
@@ -221,13 +225,12 @@ export default function StudentAttendanceView() {
 
 function Metric({ title, value, accent, icon }: { title: string; value: number; accent: string; icon: React.ReactNode }) {
   return (
-    <div className="rounded-[24px] border border-white/10 bg-white/5 p-5">
+    <div className="rounded-[20px] border border-white/10 bg-white/5 p-4 sm:rounded-[24px] sm:p-5">
       <div className="flex items-center justify-between text-slate-400">
         <div className="text-[11px] font-black uppercase tracking-[0.18em]">{title}</div>
         {icon}
       </div>
-      <div className={`mt-3 text-3xl font-black ${accent}`}>{value}</div>
+      <div className={`mt-3 text-2xl font-black sm:text-3xl ${accent}`}>{value}</div>
     </div>
   );
 }
-

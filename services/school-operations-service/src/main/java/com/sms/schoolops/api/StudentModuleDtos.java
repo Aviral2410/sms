@@ -3,6 +3,7 @@ package com.sms.schoolops.api;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -40,6 +41,7 @@ public class StudentModuleDtos {
             String className,
             String sectionName,
             String classTeacherName,
+            String classTeacherEmail,
             List<SubjectTeacherResponse> subjects,
             List<ClassmateResponse> classmates
     ) {}
@@ -87,7 +89,8 @@ public class StudentModuleDtos {
             Integer absentCount,
             Integer lateCount,
             Integer excusedCount,
-            List<AttendanceInsight> insights
+            List<AttendanceInsight> insights,
+            List<AttendanceRecordSummary> recentAbsences
     ) {}
 
     public record AttendanceInsight(
@@ -96,15 +99,25 @@ public class StudentModuleDtos {
             String trend // UP, DOWN, STABLE
     ) {}
 
+    public record AttendanceRecordSummary(
+            UUID attendanceId,
+            LocalDate attendanceDate,
+            String attendanceStatus,
+            String reasonStatus,
+            String submittedReason
+    ) {}
+
     // --- Homework ---
 
     public record StudentHomeworkResponse(
             UUID homeworkId,
             String subjectName,
+            String teacherName,
             String title,
             String description,
             LocalDate dueDate,
             String status, // PENDING, IN_PROGRESS, COMPLETED
+            String studentNote,
             String teacherRemarks,
             List<String> attachments
     ) {}
@@ -128,12 +141,24 @@ public class StudentModuleDtos {
     ) {}
 
     public record StudentResultResponse(
+            UUID examId,
             String examName,
             String subjectName,
             java.math.BigDecimal marksObtained,
             java.math.BigDecimal maxMarks,
             String grade,
             String academicYear
+    ) {}
+
+    public record StudentFeeRecordResponse(
+            UUID feeRecordId,
+            UUID studentUserId,
+            String feeCategory,
+            java.math.BigDecimal amountDue,
+            java.math.BigDecimal amountPaid,
+            LocalDate dueDate,
+            String paymentStatus,
+            Instant createdAt
     ) {}
 
     // --- Library & Forum ---

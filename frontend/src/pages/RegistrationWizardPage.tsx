@@ -220,7 +220,7 @@ export default function RegistrationWizardPage() {
     background: 'linear-gradient(180deg, rgba(8,51,68,0.68), rgba(2,6,23,0.96))',
     border: `1px solid ${BORDER}`,
     borderRadius: 24,
-    padding: 36,
+    padding: 'clamp(20px, 4vw, 36px)',
     backdropFilter: 'blur(20px)',
     width: '100%',
     maxWidth: 940,
@@ -239,7 +239,7 @@ export default function RegistrationWizardPage() {
   ];
 
   return (
-    <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px', fontFamily: "'Manrope','Inter',system-ui,sans-serif", color: TEXT, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: BG, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 16px 40px', fontFamily: "'Manrope','Inter',system-ui,sans-serif", color: TEXT, position: 'relative', overflow: 'hidden' }}>
       <MotionBackdrop mode="ambient" density={1.04} baseColor={CYAN} />
 
       <div style={{ width: '100%', maxWidth: 940, marginBottom: 32 }}>
@@ -252,7 +252,7 @@ export default function RegistrationWizardPage() {
       </div>
 
       {step < 6 ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 40, width: '100%', maxWidth: 940 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 32, width: '100%', maxWidth: 940, flexWrap: 'wrap' }}>
           {STEPS.map((label, index) => {
             const s = index + 1;
             const done = step > s;
@@ -522,7 +522,7 @@ export default function RegistrationWizardPage() {
 
       {step < 5 ? (
         <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', maxWidth: 940, marginTop: 24 }}>
-          <button onClick={handleNext} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 28px', borderRadius: 14, background: step === 2 ? VIOLET : step === 4 ? '#d97706' : CYAN, border: 'none', color: step === 2 ? '#fff' : '#0b0f14', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={handleNext} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '12px 28px', borderRadius: 14, background: step === 2 ? VIOLET : step === 4 ? '#d97706' : CYAN, border: 'none', color: step === 2 ? '#fff' : '#0b0f14', fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', width: 'min(100%, 260px)' }}>
             {step === 5 ? 'Submit registration' : 'Continue'} <ArrowRight size={18} />
           </button>
         </div>

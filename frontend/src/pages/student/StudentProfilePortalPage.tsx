@@ -73,8 +73,8 @@ export default function StudentProfilePortalPage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <PortalStatCard label="Admission No." value={profile.admissionNo} icon={ShieldCheck} accent="#22d3ee" />
-        <PortalStatCard label="Class" value={profile.className || 'Pending'} icon={User} accent="#ffb663" />
-        <PortalStatCard label="Section" value={profile.sectionName || 'Pending'} icon={User} accent="#a78bfa" />
+        <PortalStatCard label="Class" value={profile.className || 'Not assigned yet'} icon={User} accent="#ffb663" />
+        <PortalStatCard label="Section" value={profile.sectionName || 'Not assigned yet'} icon={User} accent="#a78bfa" />
         <PortalStatCard label="Status" value={profile.status || 'Active'} icon={Lock} accent="#34d399" />
       </div>
 
@@ -85,9 +85,9 @@ export default function StudentProfilePortalPage() {
               ['Full name', profile.fullName],
               ['Email', profile.email],
               ['Admission number', profile.admissionNo],
-              ['Roll number', profile.rollNo || 'Not assigned'],
-              ['Admitted on', profile.admittedOn || 'Pending'],
-              ['Classroom', [profile.className, profile.sectionName].filter(Boolean).join(' - ') || 'Pending assignment'],
+              ['Roll number', profile.rollNo || 'Not issued yet'],
+              ['Admitted on', profile.admittedOn || 'Admission date not recorded'],
+              ['Classroom', [profile.className, profile.sectionName].filter(Boolean).join(' - ') || 'Class assignment in progress'],
             ].map(([label, value]) => (
               <div key={label} className="glass-panel" style={{ padding: 18, display: 'grid', gap: 8 }}>
                 <div style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 800 }}>{label}</div>
@@ -126,21 +126,21 @@ export default function StudentProfilePortalPage() {
             <User size={18} color="#22d3ee" />
             <div>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>Guardian</div>
-              <div style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{profile.guardianName || 'Not added yet'}</div>
+              <div style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{profile.guardianName || 'Add guardian information above'}</div>
             </div>
           </div>
           <div className="glass-panel" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
             <Phone size={18} color="#ffb663" />
             <div>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>Phone</div>
-              <div style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{profile.guardianPhone || 'Not added yet'}</div>
+              <div style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{profile.guardianPhone || 'Add a guardian phone number above'}</div>
             </div>
           </div>
           <div className="glass-panel" style={{ padding: 18, display: 'flex', alignItems: 'center', gap: 12 }}>
             <MapPin size={18} color="#a78bfa" />
             <div>
               <div style={{ color: 'var(--text-dim)', fontSize: '0.75rem' }}>Address</div>
-              <div style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{profile.address || 'Not added yet'}</div>
+              <div style={{ color: 'var(--text-strong)', fontWeight: 700 }}>{profile.address || 'Add an address above for emergency contact accuracy'}</div>
             </div>
           </div>
         </div>

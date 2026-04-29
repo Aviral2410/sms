@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { motion } from 'framer-motion';
 import { schoolOpsApi, type StudentWorkspaceResponse } from '../../lib/api';
-import { GraduationCap, Users, BookOpen, AlertCircle, CheckCircle2, Clock, Loader, Brain } from 'lucide-react';
+import { GraduationCap, Users, BookOpen, AlertCircle, CheckCircle2, Clock, Loader, Brain, CalendarRange, FileBarChart2, Wallet, UserCircle2 } from 'lucide-react';
 
 const CYAN = '#22d3ee'; const DIM = '#8b95a2'; const BORDER = 'rgba(255,255,255,0.07)';
 const V = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.07 } } };
 const I = { hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } };
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
   const { session } = useStore();
   const [data, setData] = useState<StudentWorkspaceResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,8 @@ export default function StudentDashboard() {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 20
+          gap: 20,
+          flexWrap: 'wrap'
         }}
       >
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
@@ -115,8 +118,45 @@ export default function StudentDashboard() {
         <div style={{ padding: '8px 16px', borderRadius: 12, background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', fontWeight: 800, color: '#fff', textTransform: 'uppercase', border: '1px solid rgba(255,255,255,0.1)' }}>Go Learn</div>
       </motion.div>
 
+      <motion.div variants={I} style={{ padding: '24px', borderRadius: 20, background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}` }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', margin: '0 0 16px' }}>Student flows</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 12 }}>
+          {[
+            { label: 'Attendance', path: '/student/attendance', icon: CalendarRange, color: '#34d399' },
+            { label: 'Timetable', path: '/student/timetable', icon: Clock, color: '#22d3ee' },
+            { label: 'Homework', path: '/student/homework', icon: BookOpen, color: '#a78bfa' },
+            { label: 'Exams & Results', path: '/student/results', icon: FileBarChart2, color: '#fbbf24' },
+            { label: 'Fees', path: '/student/fees', icon: Wallet, color: '#fb7185' },
+            { label: 'Profile', path: '/student/profile', icon: UserCircle2, color: '#93c5fd' },
+          ].map((item) => (
+            <button
+              key={item.path}
+              type="button"
+              onClick={() => navigate(item.path)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: '14px 16px',
+                borderRadius: 16,
+                border: `1px solid ${BORDER}`,
+                background: 'rgba(255,255,255,0.03)',
+                color: '#e2e8f0',
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <div style={{ width: 40, height: 40, borderRadius: 14, background: `${item.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <item.icon size={18} color={item.color} />
+              </div>
+              <div style={{ fontWeight: 700 }}>{item.label}</div>
+            </button>
+          ))}
+        </div>
+      </motion.div>
+
       {/* Schedule status */}
-      <motion.div variants={I} style={{ padding: '18px 22px', borderRadius: 14, background: data?.scheduleStatus === 'COMPLETE' ? 'rgba(52,211,153,0.06)' : 'rgba(251,191,36,0.06)', border: `1px solid ${data?.scheduleStatus === 'COMPLETE' ? 'rgba(52,211,153,0.2)' : 'rgba(251,191,36,0.2)'}`, display: 'flex', gap: 10, alignItems: 'center' }}>
+      <motion.div variants={I} style={{ padding: '18px 22px', borderRadius: 14, background: data?.scheduleStatus === 'COMPLETE' ? 'rgba(52,211,153,0.06)' : 'rgba(251,191,36,0.06)', border: `1px solid ${data?.scheduleStatus === 'COMPLETE' ? 'rgba(52,211,153,0.2)' : 'rgba(251,191,36,0.2)'}`, display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         {data?.scheduleStatus === 'COMPLETE' ? <CheckCircle2 size={18} color="#34d399" /> : <Clock size={18} color="#fbbf24" />}
         <div style={{ fontSize: '0.83rem', color: '#94a3b8' }}>Schedule: <strong style={{ color: '#fff' }}>{data?.scheduleStatus}</strong> - {data?.scheduleMessage}</div>
       </motion.div>

@@ -11,12 +11,15 @@ export default function StudentHomeworkPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let active = true;
     studentPortalApi.getHomework()
       .then((response) => {
-        if (active) setItems(response);
+        if (!active) return;
+        setItems(response);
+        setNoteDrafts(Object.fromEntries(response.map((item) => [item.homeworkId, item.studentNote || ''])));
       })
       .catch((error: any) => {
         if (active) setMessage(error?.message || 'Unable to load homework.');
@@ -35,17 +38,25 @@ export default function StudentHomeworkPage() {
     completed: items.filter((item) => item.status === 'COMPLETED').length,
   }), [items]);
 
-  const updateStatus = async (homeworkId: string, status: string) => {
+  const persistHomeworkState = async (homeworkId: string, status: string, note: string) => {
     setSavingId(homeworkId);
     setMessage('');
     try {
-      await studentPortalApi.updateHomeworkStatus(homeworkId, { status });
-      setItems((current) => current.map((item) => (item.homeworkId === homeworkId ? { ...item, status } : item)));
+      await studentPortalApi.updateHomeworkStatus(homeworkId, { status, notes: note.trim() || undefined });
+      setItems((current) => current.map((item) => (item.homeworkId === homeworkId ? { ...item, status, studentNote: note } : item)));
     } catch (error: any) {
       setMessage(error?.message || 'Unable to update homework status.');
     } finally {
       setSavingId(null);
     }
+  };
+
+  const updateStatus = async (homeworkId: string, status: string) => {
+    await persistHomeworkState(homeworkId, status, noteDrafts[homeworkId] || '');
+  };
+
+  const saveNote = async (item: StudentHomeworkResponse) => {
+    await persistHomeworkState(item.homeworkId, item.status, noteDrafts[item.homeworkId] || '');
   };
 
   if (loading) {
@@ -81,10 +92,21 @@ export default function StudentHomeworkPage() {
                     {item.subjectName}
                   </div>
                   <div style={{ marginTop: 8, color: 'var(--text-strong)', fontWeight: 800, fontSize: '1.1rem' }}>{item.title}</div>
+                  <div style={{ marginTop: 6, color: 'var(--text-dim)', fontSize: '0.82rem' }}>Assigned by {item.teacherName}</div>
                 </div>
                 <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem' }}>Due {item.dueDate}</div>
               </div>
               <div style={{ color: 'var(--text-dim)', lineHeight: 1.65 }}>{item.description}</div>
+              <label className="grid gap-2">
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>My progress note</span>
+                <textarea
+                  className="input-field"
+                  rows={3}
+                  value={noteDrafts[item.homeworkId] || ''}
+                  onChange={(event) => setNoteDrafts((current) => ({ ...current, [item.homeworkId]: event.target.value }))}
+                  placeholder="Add what you finished, where you are stuck, or what you still need to revise."
+                />
+              </label>
               {item.teacherRemarks ? (
                 <div style={{ padding: '12px 14px', borderRadius: 16, background: 'rgba(255,255,255,0.03)', color: 'var(--text-dim)' }}>
                   Teacher note: {item.teacherRemarks}
@@ -110,6 +132,9 @@ export default function StudentHomeworkPage() {
                     {status.replace('_', ' ')}
                   </Button>
                 ))}
+                <Button variant="secondary" onClick={() => saveNote(item)} disabled={savingId === item.homeworkId}>
+                  Save note
+                </Button>
               </div>
             </div>
           ))}

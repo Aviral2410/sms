@@ -57,6 +57,10 @@ public class AiInteractionDtos {
             @NotBlank String name
     ) {}
 
+    public record WorkspaceUpdateRequest(
+            @NotBlank String name
+    ) {}
+
     public record WorkspaceResponse(
             UUID workspaceId,
             String name,
@@ -66,6 +70,10 @@ public class AiInteractionDtos {
 
     public record ChatCreateRequest(
             String title
+    ) {}
+
+    public record ChatMoveRequest(
+            UUID workspaceId
     ) {}
 
     public record ChatSummaryResponse(

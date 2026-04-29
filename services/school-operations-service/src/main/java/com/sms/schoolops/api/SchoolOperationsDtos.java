@@ -320,6 +320,7 @@ public class SchoolOperationsDtos {
 
     public record ReportCardEntry(
             UUID subjectId,
+            String subjectName,
             BigDecimal marksObtained,
             BigDecimal maxMarks,
             BigDecimal percentage,

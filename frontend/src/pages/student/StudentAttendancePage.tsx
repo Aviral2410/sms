@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { CalendarRange, CheckCircle2, Clock3, Loader, MessageSquarePlus, XCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { CalendarRange, CheckCircle2, Clock3, Loader, MessageSquarePlus, SendHorizontal, XCircle } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { PortalPageHeader, PortalSection, PortalStatePanel, PortalStatCard } from '../../components/portal/PortalPagePrimitives';
 import { studentPortalApi, type StudentAttendanceAnalyticsResponse } from '../../lib/schoolPortalApi';
@@ -8,7 +8,7 @@ export default function StudentAttendancePage() {
   const [attendance, setAttendance] = useState<StudentAttendanceAnalyticsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
-  const [absenceId, setAbsenceId] = useState('');
+  const [selectedAbsenceId, setSelectedAbsenceId] = useState('');
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,17 +29,28 @@ export default function StudentAttendancePage() {
     };
   }, []);
 
+  const selectedAbsence = useMemo(
+    () => attendance?.recentAbsences.find((item) => item.attendanceId === selectedAbsenceId) ?? null,
+    [attendance?.recentAbsences, selectedAbsenceId],
+  );
+
   const handleSubmit = async () => {
-    if (!absenceId.trim() || !reason.trim()) {
-      setMessage('Enter an attendance record id and a reason.');
+    if (!selectedAbsenceId.trim() || !reason.trim()) {
+      setMessage('Pick an attendance item and add the reason you want the school to review.');
       return;
     }
     setSubmitting(true);
     setMessage('');
     try {
-      await studentPortalApi.submitAbsenceReason({ attendanceId: absenceId.trim(), reason: reason.trim() });
-      setAbsenceId('');
+      await studentPortalApi.submitAbsenceReason({ attendanceId: selectedAbsenceId.trim(), reason: reason.trim() });
+      setAttendance((current) => current ? ({
+        ...current,
+        recentAbsences: current.recentAbsences.map((item) => item.attendanceId === selectedAbsenceId
+          ? { ...item, reasonStatus: 'SUBMITTED', submittedReason: reason.trim() }
+          : item),
+      }) : current);
       setReason('');
+      setSelectedAbsenceId('');
       setMessage('Absence reason submitted for review.');
     } catch (error: any) {
       setMessage(error?.message || 'Unable to submit absence reason.');
@@ -61,11 +72,11 @@ export default function StudentAttendancePage() {
       <PortalPageHeader
         eyebrow="Attendance"
         title="Attendance summary and absence notes"
-        description="The student attendance view keeps summary cards up front, then offers a simple absence-reason flow instead of a cluttered workflow."
+        description="The student attendance flow now keeps actionable absence items visible, so students can submit or update notes without hunting for raw record ids."
       />
 
       <div className="grid gap-4 md:grid-cols-5">
-        <PortalStatCard label="Attendance %" value={`${attendance.attendancePercentage}%`} icon={CheckCircle2} accent="#34d399" />
+        <PortalStatCard label="Attendance %" value={`${attendance.attendancePercentage.toFixed(1)}%`} icon={CheckCircle2} accent="#34d399" />
         <PortalStatCard label="Working days" value={attendance.totalWorkingDays} icon={CalendarRange} accent="#22d3ee" />
         <PortalStatCard label="Present" value={attendance.presentCount} icon={CheckCircle2} accent="#34d399" />
         <PortalStatCard label="Absent" value={attendance.absentCount} icon={XCircle} accent="#fb7185" />
@@ -86,21 +97,71 @@ export default function StudentAttendancePage() {
         </div>
       </PortalSection>
 
-      <PortalSection title="Add absence reason" description="Students can send a reason or note against a known attendance record id.">
-        <div className="grid gap-4 xl:grid-cols-[0.6fr_1fr_auto]">
-          <label className="grid gap-2">
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>Attendance record id</span>
-            <input className="input-field" value={absenceId} onChange={(event) => setAbsenceId(event.target.value)} placeholder="ATT-..." />
-          </label>
-          <label className="grid gap-2">
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>Reason / comment</span>
-            <textarea className="input-field" rows={3} value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Add your explanation or supporting note." />
-          </label>
-          <div className="flex items-end">
-            <Button onClick={handleSubmit} isLoading={submitting}>
+      <PortalSection title="Recent absence actions" description="Tap the card that needs a note instead of manually searching for an attendance record id.">
+        <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-3">
+            {attendance.recentAbsences.length ? attendance.recentAbsences.map((item) => {
+              const isSelected = item.attendanceId === selectedAbsenceId;
+              const statusColor = item.reasonStatus === 'SUBMITTED' ? '#34d399' : item.reasonStatus === 'APPROVED' ? '#22d3ee' : '#fbbf24';
+              return (
+                <button
+                  key={item.attendanceId}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAbsenceId(item.attendanceId);
+                    setReason(item.submittedReason || '');
+                    setMessage('');
+                  }}
+                  className="glass-panel"
+                  style={{
+                    padding: 18,
+                    display: 'grid',
+                    gap: 8,
+                    textAlign: 'left',
+                    border: isSelected ? '1px solid rgba(34,211,238,0.45)' : undefined,
+                    background: isSelected ? 'rgba(34,211,238,0.08)' : undefined,
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div style={{ color: 'var(--text-strong)', fontWeight: 800 }}>{item.attendanceDate}</div>
+                    <div style={{ color: statusColor, fontWeight: 800, fontSize: '0.76rem' }}>{item.reasonStatus.replace('_', ' ')}</div>
+                  </div>
+                  <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Status: {item.attendanceStatus}</div>
+                  <div style={{ color: 'var(--text-dim)', fontSize: '0.82rem', lineHeight: 1.55 }}>
+                    {item.submittedReason || 'No supporting note submitted yet.'}
+                  </div>
+                </button>
+              );
+            }) : (
+              <div className="glass-panel" style={{ padding: 18, color: 'var(--text-dim)' }}>
+                No recent absence or late attendance items need action right now.
+              </div>
+            )}
+          </div>
+
+          <div className="glass-panel" style={{ padding: 20, display: 'grid', gap: 14, alignContent: 'start' }}>
+            <div>
+              <div style={{ fontSize: '0.72rem', color: '#22d3ee', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 800 }}>
+                {selectedAbsence ? 'Selected attendance item' : 'Choose an attendance item'}
+              </div>
+              <div style={{ marginTop: 8, color: 'var(--text-strong)', fontWeight: 800 }}>
+                {selectedAbsence ? `${selectedAbsence.attendanceDate} · ${selectedAbsence.attendanceStatus}` : 'Pick a card from the left'}
+              </div>
+            </div>
+            <label className="grid gap-2">
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', fontWeight: 700 }}>Reason / comment</span>
+              <textarea
+                className="input-field"
+                rows={5}
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="Add the explanation or supporting note the school should review."
+              />
+            </label>
+            <Button onClick={handleSubmit} isLoading={submitting} disabled={!selectedAbsence}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <MessageSquarePlus size={16} />
-                Submit
+                {selectedAbsence?.submittedReason ? <SendHorizontal size={16} /> : <MessageSquarePlus size={16} />}
+                {selectedAbsence?.submittedReason ? 'Update note' : 'Submit note'}
               </span>
             </Button>
           </div>

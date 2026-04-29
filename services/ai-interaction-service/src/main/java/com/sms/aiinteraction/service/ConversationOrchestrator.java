@@ -153,8 +153,21 @@ public class ConversationOrchestrator {
         List<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);
         
         if (plan.isEmpty()) {
-            if (thoughtConsumer != null) thoughtConsumer.accept("No automated tools identified. Formulating clarification...");
-            return responseRenderer.clarificationResponse("I'm here to help with your school management platform. Could you be more specific about whether you want analytics, growth reports, or status checks?");
+            if (thoughtConsumer != null) thoughtConsumer.accept("No direct platform tool matched. Attempting model-native reasoning...");
+            JsonNode directReasoning = inferenceService.infer(message, userContext, objectMapper.createObjectNode());
+            if (isMeaningfulDirectReasoning(directReasoning)) {
+                return responseRenderer.renderWithThought(
+                        "smart_ui",
+                        directReasoning,
+                        objectMapper.createObjectNode(),
+                        false,
+                        "direct_reasoning",
+                        "Model-native synthesis without tool execution",
+                        "I could not map this cleanly to a platform action, so I generated a direct reasoning response instead."
+                );
+            }
+            if (thoughtConsumer != null) thoughtConsumer.accept("No confident reasoning path found. Formulating clarification...");
+            return responseRenderer.clarificationResponse("I can help with platform operations, analytics, school workflows, or concept explanations. Tell me the exact report, task, or topic you want.");
         }
 
         StringBuilder thoughtBuilder = new StringBuilder();
@@ -246,12 +259,43 @@ public class ConversationOrchestrator {
         w.put("type", rendered.type());
         w.set("data", rendered.data());
         w.set("meta", rendered.meta());
+        if (rendered.thought() != null && !rendered.thought().isBlank()) {
+            w.put("thought", rendered.thought());
+        }
         return w;
     }
 
     private String summarizeAssistantResponse(AiInteractionDtos.RenderedResponse rendered) {
         if (rendered == null) return "";
         if ("text".equals(rendered.type()) && rendered.data().has("text")) return rendered.data().get("text").asText();
+        if (rendered.data() != null && rendered.data().hasNonNull("summary")) return rendered.data().get("summary").asText();
+        if (rendered.data() != null && rendered.data().hasNonNull("title")) return rendered.data().get("title").asText();
+        if (rendered.thought() != null && !rendered.thought().isBlank()) return rendered.thought();
         return "Intelligence synthesized - Type: " + rendered.type();
+    }
+
+    private boolean isMeaningfulDirectReasoning(JsonNode directReasoning) {
+        if (directReasoning == null || directReasoning.isNull()) {
+            return false;
+        }
+        if (directReasoning.isTextual()) {
+            return !directReasoning.asText("").isBlank();
+        }
+        if (!directReasoning.isObject()) {
+            return true;
+        }
+        if (directReasoning.hasNonNull("summary") || directReasoning.hasNonNull("title") || directReasoning.hasNonNull("text")) {
+            return true;
+        }
+        if (directReasoning.has("components") && directReasoning.get("components").isArray() && directReasoning.get("components").size() > 0) {
+            return true;
+        }
+        if (directReasoning.has("insights") && directReasoning.get("insights").isArray() && directReasoning.get("insights").size() > 0) {
+            return true;
+        }
+        if (directReasoning.has("quiz") && directReasoning.get("quiz").isArray() && directReasoning.get("quiz").size() > 0) {
+            return true;
+        }
+        return false;
     }
 }

@@ -36,7 +36,9 @@ public class PublicAuthDtos {
             @NotBlank String roleName,
             @NotBlank String fullName,
             @Email @NotBlank String email,
-            @NotBlank String password
+            @NotBlank String password,
+            String guardianName,
+            String guardianPhone
     ) {}
 
     public record JoinSchoolPublicResponse(
@@ -44,4 +46,3 @@ public class PublicAuthDtos {
             String message
     ) {}
 }
-
