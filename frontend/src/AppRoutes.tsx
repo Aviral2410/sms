@@ -8,22 +8,21 @@ import { RealtimeHub } from './components/RealtimeHub';
 import { isSchoolPortal } from './lib/subdomain';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
-// Public pages
-import LandingPage from './pages/LandingPage';
-import SchoolPortalLandingPage from './pages/SchoolPortalLandingPage';
-import PricingPage from './pages/PricingPage';
-import ContactPage from './pages/ContactPage';
-import SupportPage from './pages/SupportPage';
-import FoundersMessagePage from './pages/FoundersMessagePage';
-import AuthPortal from './pages/AuthPortal';
-import SchoolPortalLoginPage from './pages/SchoolPortalLoginPage';
-import AdminLoginPage from './pages/AdminLoginPage';
-import SignupChoicePage from './pages/SignupChoicePage';
-import RegistrationWizardPage from './pages/RegistrationWizardPage';
-import JoinSchoolPage from './pages/JoinSchoolPage';
-import ActivationJourneyPage from './pages/ActivationJourneyPage';
-import AiAssistantPage from "./pages/AiAssistantPage";
-import AuraNeuralWorkspace from "./pages/AuraNeuralWorkspace";
+// Public pages (lazy)
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const SchoolPortalLandingPage = lazy(() => import('./pages/SchoolPortalLandingPage'));
+const PricingPage = lazy(() => import('./pages/PricingPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const FoundersMessagePage = lazy(() => import('./pages/FoundersMessagePage'));
+const AuthPortal = lazy(() => import('./pages/AuthPortal'));
+const SchoolPortalLoginPage = lazy(() => import('./pages/SchoolPortalLoginPage'));
+const AdminLoginPage = lazy(() => import('./pages/AdminLoginPage'));
+const SignupChoicePage = lazy(() => import('./pages/SignupChoicePage'));
+const RegistrationWizardPage = lazy(() => import('./pages/RegistrationWizardPage'));
+const JoinSchoolPage = lazy(() => import('./pages/JoinSchoolPage'));
+const ActivationJourneyPage = lazy(() => import('./pages/ActivationJourneyPage'));
+const AuraNeuralWorkspace = lazy(() => import('./pages/AuraNeuralWorkspace'));
 
 // Protected pages (lazy)
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -97,18 +96,30 @@ const Wrap = ({ children }: { children: React.ReactNode }) => (
 );
 
 function LandingPageSwitcher() {
-  return isSchoolPortal() ? <SchoolPortalLandingPage /> : <LandingPage />;
+  return (
+    <Wrap>
+      {isSchoolPortal() ? <SchoolPortalLandingPage /> : <LandingPage />}
+    </Wrap>
+  );
 }
 
 function ContactPageSwitcher() {
-  return isSchoolPortal() ? <SchoolPortalLandingPage initialSection="contact" /> : <ContactPage />;
+  return (
+    <Wrap>
+      {isSchoolPortal() ? <SchoolPortalLandingPage initialSection="contact" /> : <ContactPage />}
+    </Wrap>
+  );
 }
 
 function LoginPageSwitcher({ isAuthenticated }: { isAuthenticated: boolean }) {
   if (isAuthenticated) {
     return <Navigate to="/dashboard" />;
   }
-  return isSchoolPortal() ? <SchoolPortalLoginPage /> : <AuthPortal />;
+  return (
+    <Wrap>
+      {isSchoolPortal() ? <SchoolPortalLoginPage /> : <AuthPortal />}
+    </Wrap>
+  );
 }
 
 export const AppRoutes: React.FC = () => {
@@ -130,19 +141,19 @@ export const AppRoutes: React.FC = () => {
       <Routes>
         {/* ── Public ── */}
         <Route path="/" element={<LandingPageSwitcher />} />
-        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/pricing" element={<Wrap><PricingPage /></Wrap>} />
         <Route path="/contact" element={<ContactPageSwitcher />} />
-        <Route path="/support" element={<SupportPage />} />
-        <Route path="/vision" element={<FoundersMessagePage />} />
-        <Route path="/founders-message" element={<FoundersMessagePage />} />
+        <Route path="/support" element={<Wrap><SupportPage /></Wrap>} />
+        <Route path="/vision" element={<Wrap><FoundersMessagePage /></Wrap>} />
+        <Route path="/founders-message" element={<Wrap><FoundersMessagePage /></Wrap>} />
         <Route path="/login" element={<LoginPageSwitcher isAuthenticated={isAuthenticated} />} />
-        <Route path="/login/admin" element={!isAuthenticated ? <AdminLoginPage /> : <Navigate to="/dashboard" />} />
-        <Route path="/signup" element={!isAuthenticated ? <SignupChoicePage /> : <Navigate to="/dashboard" />} />
-        <Route path="/onboarding" element={!isAuthenticated ? <RegistrationWizardPage /> : <Navigate to="/dashboard" />} />
-        <Route path="/join" element={!isAuthenticated ? <JoinSchoolPage /> : <Navigate to="/dashboard" />} />
-        <Route path="/activate" element={<ActivationJourneyPage />} />
+        <Route path="/login/admin" element={!isAuthenticated ? <Wrap><AdminLoginPage /></Wrap> : <Navigate to="/dashboard" />} />
+        <Route path="/signup" element={!isAuthenticated ? <Wrap><SignupChoicePage /></Wrap> : <Navigate to="/dashboard" />} />
+        <Route path="/onboarding" element={!isAuthenticated ? <Wrap><RegistrationWizardPage /></Wrap> : <Navigate to="/dashboard" />} />
+        <Route path="/join" element={!isAuthenticated ? <Wrap><JoinSchoolPage /></Wrap> : <Navigate to="/dashboard" />} />
+        <Route path="/activate" element={<Wrap><ActivationJourneyPage /></Wrap>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/ai-assistant" element={<AuraNeuralWorkspace />} />
+        <Route path="/ai-assistant" element={<Wrap><AuraNeuralWorkspace /></Wrap>} />
 
         {/* ── Protected (Base) ── */}
         <Route element={isAuthenticated ? (
@@ -269,4 +280,3 @@ export const AppRoutes: React.FC = () => {
     </>
   );
 };
-

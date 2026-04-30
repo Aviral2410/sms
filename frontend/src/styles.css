@@ -3845,8 +3845,8 @@ label span {
 }
 
 .ai-assistant__chips {
-  gridColumn: 2;
-  gridRow: 4;
+  grid-column: 2;
+  grid-row: 4;
   padding: 0 12px 10px;
   display: flex;
   gap: 10px;

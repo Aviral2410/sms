@@ -1,201 +1,154 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, Zap, Brain, Activity, 
-  Target, Info, Command, Layers, Fingerprint
-} from 'lucide-react';
-import { SmartUiRenderer } from './ai/SmartUiRenderer';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Activity, Brain, PlayCircle, Sparkles } from 'lucide-react';
+import { AssistantResponseView } from './ai/AssistantResponseView';
+import { LEARNING_EXAMPLES, type LearningExample } from './ai/ExamplesPanel';
 import { useRealtime } from './RealtimeHub';
-import { NeuralCore } from './ai/NeuralCore';
 
-const GLASS_BG = "bg-white/[0.03] backdrop-blur-3xl border border-white/[0.08]";
+type RenderedResponse = {
+  type: string;
+  data: Record<string, unknown> | null;
+  meta?: Record<string, unknown> | null;
+  thought?: string | null;
+};
+
+function normalizePayload(payload: any): RenderedResponse | null {
+  if (!payload || typeof payload !== 'object') return null;
+  if (typeof payload.type === 'string' && payload.data) {
+    return payload as RenderedResponse;
+  }
+  return {
+    type: 'smart_ui',
+    data: payload,
+  };
+}
 
 export const AiVisualizer: React.FC = () => {
   const { messages } = useRealtime();
-  const [activePayload, setActivePayload] = useState<any>(null);
-  const [isLensActive, setIsLensActive] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const constraintsRef = useRef(null);
+  const [activeExample, setActiveExample] = useState<LearningExample>(LEARNING_EXAMPLES[0]);
+  const [activePayload, setActivePayload] = useState<RenderedResponse | null>(
+    normalizePayload(LEARNING_EXAMPLES[0]?.payload),
+  );
+  const [sourceLabel, setSourceLabel] = useState('Sample loaded');
 
   useEffect(() => {
-    // Listen for AI visualization events
     const lastMsg = messages[messages.length - 1];
-    if (lastMsg?.topic?.includes('ai/visualize')) {
-      try {
-        const payload = JSON.parse(lastMsg.payload);
-        setActivePayload(payload);
-      } catch (e) {
-        console.error('LUMINA Error: Invalid neural payload', e);
+    if (!lastMsg?.topic?.includes('ai/visualize')) return;
+
+    try {
+      const payload = JSON.parse(lastMsg.payload);
+      const normalized = normalizePayload(payload);
+      if (normalized) {
+        setActivePayload(normalized);
+        setSourceLabel('Live response');
       }
+    } catch (e) {
+      console.error('Visualizer payload could not be parsed', e);
     }
   }, [messages]);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    setMousePos({ x: e.clientX, y: e.clientY });
-  };
+  const sampleCards = useMemo(() => LEARNING_EXAMPLES.slice(0, 4), []);
 
   return (
-    <div 
-        ref={constraintsRef}
-        onMouseMove={handleMouseMove}
-        className="relative min-h-screen w-full bg-[#050505] overflow-hidden flex flex-col font-sans selection:bg-emerald-500/30"
-    >
-      <NeuralCore isThinking={false} themeColor="#10b981" />
-
-      {/* --- LUMINA NEURAL MESH BACKGROUND --- */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-          <div className="absolute inset-0" 
-               style={{ 
-                   backgroundImage: `radial-gradient(circle at 2px 2px, rgba(16,185,129,0.15) 1px, transparent 0)`,
-                   backgroundSize: '40px 40px'
-               }} 
-          />
-          <motion.div 
-            animate={{ 
-                background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, rgba(16,185,129,0.06), transparent 80%)` 
-            }}
-            className="absolute inset-0" 
-          />
+    <section className="overflow-hidden rounded-[2.25rem] border border-white/10 bg-[linear-gradient(180deg,rgba(3,7,18,0.96),rgba(2,6,23,0.92))] shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
+      <div className="border-b border-white/10 px-6 py-5">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="text-[0.68rem] font-black uppercase tracking-[0.3em] text-emerald-300/70">AI Visualizer</div>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-white">Response canvas and playable examples</h2>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-[0.72rem] font-black uppercase tracking-[0.22em] text-emerald-200/80">
+            <Activity size={14} />
+            {sourceLabel}
+          </div>
+        </div>
       </div>
 
-      {/* --- HEADER NAVIGATION --- */}
-      <header className="h-20 flex-shrink-0 flex items-center justify-between px-10 border-b border-white/5 relative z-20 backdrop-blur-md bg-black/40">
-        <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.4)]">
-                <Brain size={20} className="text-black" />
-            </div>
+      <div className="grid gap-0 lg:grid-cols-[22rem_minmax(0,1fr)]">
+        <aside className="border-b border-white/10 bg-black/15 lg:border-b-0 lg:border-r">
+          <div className="space-y-4 p-5">
             <div>
-                <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/60 leading-none mb-1">Visual Intelligence Platform</h1>
-                <h2 className="text-xl font-black text-white tracking-tight">LUMINA <span className="text-emerald-500">Neural Canvas</span></h2>
+              <div className="text-sm font-semibold text-white">Visualizer examples</div>
+              <p className="mt-1 text-sm leading-6 text-white/45">Choose a sample to preview its motion and load its canvas structure.</p>
             </div>
-        </div>
 
-        <div className="flex items-center gap-6">
-            <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-white/30">
-                <div className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer group relative">
-                    <Target size={14} /> 
-                    <span>Subject Vault</span>
-                    {/* Dropdown for examples */}
-                    <div className="absolute top-full left-0 mt-4 bg-black/90 border border-white/10 p-4 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto min-w-[200px] shadow-2xl">
-                        <div onClick={() => setActivePayload({
-                            title: "Newtonian Mechanics",
-                            summary: "Real-time physics simulation of Force, Mass, and Acceleration.",
-                            components: [{ type: "simulation_canvas", title: "F=ma Engine", logic: "physics_f_ma", parameters: {force: 25, mass: 5} }]
-                        })} className="p-3 hover:bg-emerald-500/10 rounded-xl transition-all text-white/60 hover:text-emerald-400">Physics: Motion</div>
-                        
-                        <div onClick={() => setActivePayload({
-                            title: "Atomic Synthesis",
-                            summary: "Visualizing molecular structures and metabolic pathways.",
-                            components: [{ type: "molecule_canvas", title: "Glucose Structure", molecules: ["C6", "H12", "O6"] }]
-                        })} className="p-3 hover:bg-cyan-500/10 rounded-xl transition-all text-white/60 hover:text-cyan-400">Chemistry: Glucose</div>
-                        
-                        <div onClick={() => setActivePayload({
-                            title: "Mathematical Logic",
-                            summary: "Step-by-step derivation of fundamental theorems.",
-                            components: [{ type: "step_ladder", title: "Pythagorean Derivation", steps: [{title: "Square the sides", desc: "a² + b²"}, {title: "Equate to Hypotenuse", desc: "c²"}] }]
-                        })} className="p-3 hover:bg-sky-500/10 rounded-xl transition-all text-white/60 hover:text-sky-400">Maths: Geometry</div>
-
-                        <div onClick={() => setActivePayload({
-                            title: "Literary Analysis",
-                            summary: "Mapping the narrative arc of classic literature.",
-                            components: [{ type: "narrative_timeline", events: [{title: "Exposition", impact: "High"}, {title: "Climax", impact: "Max"}] }]
-                        })} className="p-3 hover:bg-violet-500/10 rounded-xl transition-all text-white/60 hover:text-violet-400">English: Narrative</div>
-                    </div>
-                </div>
-                <span className="flex items-center gap-2 hover:text-emerald-400 transition-colors cursor-pointer"><Layers size={14} /> Neural Layers</span>
-            </div>
-            <div className="h-8 w-[1px] bg-white/10" />
-            <button 
-                onClick={() => alert('Quantum Snapshot saved to Neural Library.')}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 text-[11px] font-black uppercase hover:bg-white/10 hover:text-emerald-400 transition-all group"
-            >
-                <Sparkles size={14} className="group-hover:rotate-12 transition-transform" />
-                Snapshot
-            </button>
-            <button 
-                onClick={() => setIsLensActive(!isLensActive)}
-                className={`p-3 rounded-2xl transition-all border ${isLensActive ? 'bg-emerald-500 text-black border-emerald-500' : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10'}`}
-            >
-                <Fingerprint size={18} />
-            </button>
-        </div>
-      </header>
-
-      {/* --- MAIN CONTENT AREA --- */}
-      <main className="flex-1 relative z-10 p-10 overflow-y-auto custom-scrollbar flex flex-col items-center">
-        {!activePayload ? (
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="max-w-2xl text-center py-40 space-y-8"
-            >
-                <div className="w-24 h-24 rounded-[2rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-8 animate-pulse">
-                    <Command size={40} className="text-emerald-400" />
-                </div>
-                <h1 className="text-5xl font-black text-white tracking-tighter">Ready for <span className="text-emerald-500">Stimulation</span>.</h1>
-                <p className="text-xl text-white/30 font-medium leading-relaxed">
-                    AURA is standing by. Give a directive in the assistant to project neural simulations, 
-                    physics models, and high-fidelity data onto the LUMINA canvas.
-                </p>
-                <div className="flex justify-center gap-4 text-[10px] uppercase font-black tracking-widest text-emerald-500/40">
-                    <span className="flex items-center gap-2"><Zap size={12} /> Low Latency Stream</span>
-                    <span className="flex items-center gap-2"><Activity size={12} /> Neural Mesh v2.1</span>
-                </div>
-            </motion.div>
-        ) : (
-            <motion.div 
-                drag
-                dragConstraints={constraintsRef}
-                dragElastic={0.2}
-                dragMomentum={true}
-                className="w-full max-w-6xl cursor-grab active:cursor-grabbing"
-            >
-                <SmartUiRenderer response={activePayload} />
-            </motion.div>
-        )}
-
-        {/* --- DYNAMIC NEURAL LENS OVERLAY --- */}
-        <AnimatePresence>
-            {isLensActive && (
-                <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 pointer-events-none z-50 overflow-hidden"
+            <div className="space-y-3">
+              {sampleCards.map((example) => (
+                <button
+                  key={example.title}
+                  type="button"
+                  onClick={() => {
+                    setActiveExample(example);
+                    setActivePayload(normalizePayload(example.payload));
+                    setSourceLabel('Sample loaded');
+                  }}
+                  className={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                    activeExample.title === example.title
+                      ? 'border-emerald-400/30 bg-emerald-500/[0.08] text-white'
+                      : 'border-white/10 bg-white/[0.03] text-white/75 hover:bg-white/[0.06] hover:text-white'
+                  }`}
                 >
-                    <div className="absolute top-0 right-0 p-10 flex flex-col items-end gap-2">
-                        <div className="bg-emerald-500 text-black px-3 py-1 rounded-full text-[10px] font-black uppercase">Lens Active</div>
-                    </div>
-                    {/* Hover Meta Data following mouse */}
-                    <motion.div 
-                        animate={{ x: mousePos.x + 20, y: mousePos.y + 20 }}
-                        className={`p-4 rounded-2xl ${GLASS_BG} backdrop-blur-md shadow-2xl border-emerald-500/20 min-w-[200px] pointer-events-none`}
-                    >
-                        <div className="flex items-center gap-2 mb-2">
-                            <Info size={12} className="text-emerald-400" />
-                            <span className="text-[9px] font-black uppercase text-emerald-400 tracking-widest">Neural Metadata</span>
-                        </div>
-                        <div className="space-y-1">
-                            <div className="text-[11px] text-white/90 font-bold">Latency: 12ms</div>
-                            <div className="text-[11px] text-white/50 font-medium">Confidence: 0.9982</div>
-                            <div className="text-[11px] text-white/50 font-medium">Model: Gemini 2.0-F</div>
-                        </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-      </main>
+                  <div className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-emerald-200/70">{example.subject}</div>
+                  <div className="mt-2 text-sm font-semibold">{example.title}</div>
+                  <div className="mt-1 text-sm leading-6 text-white/45">{example.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </aside>
 
-      {/* --- FOOTER STATUS --- */}
-      <footer className="h-12 flex-shrink-0 px-10 flex items-center justify-between border-t border-white/5 relative z-20 bg-black/40 text-[9px] font-black uppercase tracking-[0.2em] text-white/20">
-          <div className="flex items-center gap-6">
-              <span className="flex items-center gap-2"><Activity size={10} className="text-emerald-500" /> System: Stable</span>
-              <span className="flex items-center gap-2"><Layers size={10} className="text-sky-400" /> Buffer: Empty</span>
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1.2fr)_minmax(20rem,24rem)]">
+          <div className="min-h-[34rem] p-5">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+              <Brain size={16} className="text-emerald-300" />
+              Response canvas
+            </div>
+            <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-4">
+              {activePayload ? (
+                <AssistantResponseView response={activePayload} />
+              ) : (
+                <div className="flex min-h-[20rem] flex-col items-center justify-center text-center text-white/45">
+                  <Sparkles size={34} className="text-emerald-300/70" />
+                  <div className="mt-4 text-lg font-semibold text-white/75">No visual response yet</div>
+                  <div className="mt-2 max-w-md text-sm leading-6">Load a sample or wait for the next live AI visualization event.</div>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-              <span className="text-emerald-500/40">LUMINA NEURAL CANVAS v1.1.0-λ</span>
-          </div>
-      </footer>
-    </div>
+
+          <aside className="border-t border-white/10 bg-black/10 p-5 xl:border-l xl:border-t-0">
+            <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-white">
+              <PlayCircle size={16} className="text-emerald-300" />
+              Playable preview
+            </div>
+            <motion.div
+              key={activeExample.title}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.03]"
+            >
+              <video
+                className="aspect-video w-full object-cover"
+                src={activeExample.src}
+                poster={activeExample.poster}
+                autoPlay
+                muted
+                loop
+                playsInline
+                controls
+                preload="metadata"
+              />
+              <div className="p-4">
+                <div className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-emerald-200/70">{activeExample.subject}</div>
+                <div className="mt-2 text-base font-semibold text-white">{activeExample.title}</div>
+                <div className="mt-2 text-sm leading-6 text-white/50">{activeExample.prompt}</div>
+              </div>
+            </motion.div>
+          </aside>
+        </div>
+      </div>
+    </section>
   );
 };
+
+export default AiVisualizer;

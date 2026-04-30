@@ -5,16 +5,16 @@ import {
   BrainCircuit,
   Loader,
   Send,
-  X,
   Zap,
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { ExamplesPanel } from '../components/ai/ExamplesPanel';
+import { ExamplesPanel, LEARNING_EXAMPLES, type LearningExample } from '../components/ai/ExamplesPanel';
+import { LearningVisualizerPanel } from '../components/ai/LearningVisualizerPanel';
 import { SmartUiRenderer } from '../components/ai/SmartUiRenderer';
-import { ApiError, schoolOpsApi, subscriptionApi, type ExampleResponse, type VisualizeResponse } from '../lib/api';
+import { ApiError, schoolOpsApi, subscriptionApi, type VisualizeResponse } from '../lib/api';
 import { hasFeature } from '../lib/features';
-import { buildBasicExamples, buildBasicVisualization } from '../lib/learningFallback';
+import { buildBasicVisualization } from '../lib/learningFallback';
 import { readSseStream, tryParseJson } from '../lib/sse';
 import { useStore } from '../store/useStore';
 import '../styles/admin-management.css';
@@ -37,7 +37,8 @@ export default function LearningModePage() {
   const [vizStyle] = useState<'AUTO'>('AUTO');
 
   const [visualizeData, setVisualizeData] = useState<VisualizeResponse | null>(null);
-  const [examplesData, setExamplesData] = useState<ExampleResponse | null>(null);
+  const [previewPayload, setPreviewPayload] = useState<Record<string, unknown> | null>(LEARNING_EXAMPLES[0]?.payload ?? null);
+  const [selectedExample, setSelectedExample] = useState<LearningExample>(LEARNING_EXAMPLES[0]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [streamStatus, setStreamStatus] = useState<string | null>(null);
@@ -52,18 +53,10 @@ export default function LearningModePage() {
       visualizationStyle: vizStyle as any,
     });
 
-  const createLocalExamples = () =>
-    buildBasicExamples({
-      question: question.trim(),
-      context: subject || undefined,
-      count: premiumEntitled ? 3 : 1,
-    });
-
   useEffect(() => {
     setError(null);
     setUpgradeRequired(false);
     setShowAdvanced(false);
-    setStreamStatus(null);
   }, [activeTab]);
 
   const handleProcess = async (e?: React.FormEvent) => {
@@ -79,94 +72,83 @@ export default function LearningModePage() {
     setUpgradeRequired(false);
 
     try {
-      if (activeTab === 'visualize') {
-        setExamplesData(null);
-        const payload = {
-          question: question.trim(),
-          subject: subject || undefined,
-          level,
-          visualizationStyle: vizStyle,
-          premiumRequest: premiumEntitled,
-        };
+      setActiveTab('visualize');
+      setPreviewPayload(null);
+      const payload = {
+        question: question.trim(),
+        subject: subject || undefined,
+        level,
+        visualizationStyle: vizStyle,
+        premiumRequest: premiumEntitled,
+      };
 
-        const streamRes = await fetch('/api/v1/school-ops/ai/visualize/stream', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
-          },
-          body: JSON.stringify(payload),
-        });
+      const streamRes = await fetch('/api/v1/school-ops/ai/visualize/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
 
-        if (!streamRes.ok || !streamRes.body) {
-          const res = await schoolOpsApi.visualize(payload);
-          setVisualizeData({ ...res, generationMode: 'AI' });
-        } else {
-          let final: VisualizeResponse | null = null;
-          await readSseStream(streamRes.body, {
-            onEvent: ({ event, data }) => {
-              if (data === '[DONE]') return;
-              if (event === 'status') {
-                const parsed = tryParseJson<any>(data);
-                const text = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : '';
-                if (text) setStreamStatus(text);
-                return;
-              }
-              if (event === 'token') {
-                const parsed = tryParseJson<any>(data);
-                const chars = parsed.ok && typeof parsed.value?.chars === 'number' ? (parsed.value.chars as number) : null;
-                if (chars != null) {
-                  setStreamStatus(`Drafting visualization... (${chars.toLocaleString()} chars)`);
-                }
-                return;
-              }
-              if (event === 'final') {
-                const parsed = tryParseJson<VisualizeResponse>(data);
-                if (parsed.ok) final = parsed.value;
-                return;
-              }
-              if (event === 'error') {
-                const parsed = tryParseJson<any>(data);
-                const text = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : 'Stream failed.';
-                setError(text);
-                setStreamStatus(null);
-              }
-            },
-          });
-
-          if (!final) {
-            throw new Error('Visualization stream ended before returning a result.');
-          }
-
-          const full = { ...(final as any), generationMode: 'AI' as const } as VisualizeResponse;
-          const steps = Array.isArray(full.steps) ? full.steps : [];
-          setStreamStatus(null);
-
-          if (steps.length <= 1) {
-            setVisualizeData(full);
-          } else {
-            setVisualizeData({ ...full, steps: [steps[0]] });
-            let idx = 1;
-            const id = window.setInterval(() => {
-              setVisualizeData((current) => {
-                if (!current) return current;
-                return { ...current, steps: steps.slice(0, idx + 1) };
-              });
-              idx += 1;
-              if (idx >= steps.length) window.clearInterval(id);
-            }, 650);
-          }
-        }
+      if (!streamRes.ok || !streamRes.body) {
+        const res = await schoolOpsApi.visualize(payload);
+        setVisualizeData({ ...res, generationMode: 'AI' });
       } else {
-        setVisualizeData(null);
-        const premiumRequest = premiumEntitled;
-        const res = await schoolOpsApi.generateExamples({
-          question: question.trim(),
-          context: subject || undefined,
-          count: premiumRequest ? 3 : 1,
-          premiumRequest,
+        let final: VisualizeResponse | null = null;
+        await readSseStream(streamRes.body, {
+          onEvent: ({ event, data }) => {
+            if (data === '[DONE]') return;
+            if (event === 'status') {
+              const parsed = tryParseJson<any>(data);
+              const text = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : '';
+              if (text) setStreamStatus(text);
+              return;
+            }
+            if (event === 'token') {
+              const parsed = tryParseJson<any>(data);
+              const chars = parsed.ok && typeof parsed.value?.chars === 'number' ? (parsed.value.chars as number) : null;
+              if (chars != null) {
+                setStreamStatus(`Drafting visualization... (${chars.toLocaleString()} chars)`);
+              }
+              return;
+            }
+            if (event === 'final') {
+              const parsed = tryParseJson<VisualizeResponse>(data);
+              if (parsed.ok) final = parsed.value;
+              return;
+            }
+            if (event === 'error') {
+              const parsed = tryParseJson<any>(data);
+              const text = parsed.ok && typeof parsed.value?.text === 'string' ? (parsed.value.text as string) : 'Stream failed.';
+              setError(text);
+              setStreamStatus(null);
+            }
+          },
         });
-        setExamplesData({ ...res, generationMode: 'AI' });
+
+        if (!final) {
+          throw new Error('Visualization stream ended before returning a result.');
+        }
+
+        const full = { ...(final as any), generationMode: 'AI' as const } as VisualizeResponse;
+        const steps = Array.isArray(full.steps) ? full.steps : [];
+        setStreamStatus(null);
+
+        if (steps.length <= 1) {
+          setVisualizeData(full);
+        } else {
+          setVisualizeData({ ...full, steps: [steps[0]] });
+          let idx = 1;
+          const id = window.setInterval(() => {
+            setVisualizeData((current) => {
+              if (!current) return current;
+              return { ...current, steps: steps.slice(0, idx + 1) };
+            });
+            idx += 1;
+            if (idx >= steps.length) window.clearInterval(id);
+          }, 650);
+        }
       }
     } catch (err: any) {
       console.error('LearningModePage: generation failed', err);
@@ -174,12 +156,10 @@ export default function LearningModePage() {
         setUpgradeRequired(true);
         setError(err.message || 'Upgrade required.');
         setStreamStatus(null);
-        if (activeTab === 'visualize') setVisualizeData(createLocalVisualization());
-        else setExamplesData(createLocalExamples());
+        setVisualizeData(createLocalVisualization());
         return;
       }
-      if (activeTab === 'visualize') setVisualizeData(createLocalVisualization());
-      else setExamplesData(createLocalExamples());
+      setVisualizeData(createLocalVisualization());
       setStreamStatus(null);
       toast.error('AI unavailable. Showing guided mode.');
     } finally {
@@ -234,7 +214,7 @@ export default function LearningModePage() {
             <div className="learning-mode-stage__header">
               <div className="flex-1">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Interactive Session</p>
-                <p className="text-[13px] text-slate-400 mt-1">Generate visualizations or examples by asking a question below.</p>
+                <p className="text-[13px] text-slate-400 mt-1">Ask a question for a generated explanation, or browse prepared visual examples.</p>
               </div>
               <div className="learning-mode-tabs" role="tablist">
                 {TABS.map((tab) => {
@@ -284,12 +264,90 @@ export default function LearningModePage() {
                       </div>
                     ) : null}
                     <div className="min-h-[320px] sm:min-h-[420px] lg:min-h-[500px]">
-                        <SmartUiRenderer response={visualizeData} />
+                      {visualizeData ? (
+                        <LearningVisualizerPanel data={visualizeData} loading={loading} error={error} />
+                      ) : previewPayload ? (
+                        <div className="space-y-4 rounded-[2rem] border border-white/[0.08] bg-white/[0.02] p-5">
+                          <div>
+                            <div className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400/70">Sample Canvas</div>
+                            <h3 className="mt-2 text-xl font-black text-white">{selectedExample.title}</h3>
+                            <p className="mt-2 text-sm leading-7 text-white/50">This preview stays inside the canvas. Use the prepared prompt below if you want a fresh generated explanation.</p>
+                          </div>
+                          <SmartUiRenderer response={previewPayload} />
+                        </div>
+                      ) : (
+                        <LearningVisualizerPanel data={null} loading={loading} error={error} />
+                      )}
                     </div>
                   </motion.div>
                 ) : (
                   <motion.div key="examples" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                    <ExamplesPanel onSelect={(p) => { setVisualizeData(p); setActiveTab('visualize'); }} />
+                    <div className="space-y-6">
+                      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
+                        <div className="rounded-[2rem] border border-white/[0.08] bg-white/[0.02] p-5">
+                          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400/70">Current preview</div>
+                          <h3 className="mt-2 text-xl font-black text-white">{selectedExample.title}</h3>
+                          <p className="mt-2 text-sm leading-7 text-white/50">{selectedExample.desc}</p>
+                          <div className="mt-4 overflow-hidden rounded-[1.4rem] border border-white/10 bg-black">
+                            <video
+                              className="aspect-video w-full object-cover"
+                              src={selectedExample.src}
+                              poster={selectedExample.poster}
+                              autoPlay
+                              muted
+                              loop
+                              playsInline
+                              controls
+                              preload="metadata"
+                            />
+                          </div>
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setQuestion(selectedExample.prompt);
+                                setPreviewPayload(selectedExample.payload);
+                                setVisualizeData(null);
+                                setActiveTab('visualize');
+                                setStreamStatus('Sample visual loaded into the canvas. Edit the prompt or send it as-is.');
+                              }}
+                              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-emerald-400"
+                            >
+                              Load into canvas
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setQuestion(selectedExample.prompt)}
+                              className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/[0.08] hover:text-white"
+                            >
+                              Use prompt in composer
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="rounded-[2rem] border border-white/[0.08] bg-white/[0.02] p-5">
+                          <div className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400/70">Canvas structure</div>
+                          <div className="mt-4">
+                            <SmartUiRenderer response={selectedExample.payload} />
+                          </div>
+                        </div>
+                      </div>
+
+                      <ExamplesPanel
+                        selectedTitle={selectedExample.title}
+                        onPreview={(example) => {
+                          setSelectedExample(example);
+                        }}
+                        onUse={(example) => {
+                          setSelectedExample(example);
+                          setQuestion(example.prompt);
+                          setPreviewPayload(example.payload);
+                          setVisualizeData(null);
+                          setActiveTab('visualize');
+                          setStreamStatus('Sample visual loaded into the canvas. Edit the prompt or send it as-is.');
+                        }}
+                      />
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -327,11 +385,11 @@ export default function LearningModePage() {
             
             <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:gap-6">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/40">
-                    <Zap size={12} /> Neural Synthesis Active
+                    <Zap size={12} /> Streaming AI available
                 </div>
                 <div className="w-1 h-1 rounded-full bg-white/10" />
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/20">
-                    <Sparkles size={12} /> High-Fidelity Render Engine
+                    <Sparkles size={12} /> Guided fallback ready
                 </div>
             </div>
           </form>

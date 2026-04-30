@@ -22,5 +22,49 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      chunkSizeWarningLimit: 800,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) {
+              return;
+            }
+
+            if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/')) {
+              return 'react-core';
+            }
+
+            if (id.includes('/react-router') || id.includes('/@remix-run/')) {
+              return 'router';
+            }
+
+            if (id.includes('/framer-motion/')) {
+              return 'motion';
+            }
+
+            if (id.includes('/recharts/')) {
+              return 'charts';
+            }
+
+            if (id.includes('/katex/')) {
+              return 'katex';
+            }
+
+            if (id.includes('/mqtt/')) {
+              return 'mqtt';
+            }
+
+            if (id.includes('/lucide-react/')) {
+              return 'icons';
+            }
+
+            if (id.includes('/zustand/') || id.includes('/sonner/') || id.includes('/cmdk/')) {
+              return 'app-support';
+            }
+          },
+        },
+      },
+    },
   };
 });
