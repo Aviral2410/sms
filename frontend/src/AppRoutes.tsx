@@ -153,6 +153,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="/join" element={!isAuthenticated ? <Wrap><JoinSchoolPage /></Wrap> : <Navigate to="/dashboard" />} />
         <Route path="/activate" element={<Wrap><ActivationJourneyPage /></Wrap>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/assistant" element={<Wrap><AuraNeuralWorkspace accessMode="public" /></Wrap>} />
         <Route path="/ai-assistant" element={<Wrap><AuraNeuralWorkspace accessMode="public" /></Wrap>} />
 
         {/* ── Protected (Base) ── */}

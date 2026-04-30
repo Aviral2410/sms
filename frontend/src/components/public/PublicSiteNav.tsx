@@ -9,17 +9,16 @@ interface PublicSiteNavProps {
 }
 
 const LINKS = [
-  { to: '/', label: 'Platform' },
+  { to: '/#product', label: 'Product' },
+  { to: '/#solutions', label: 'Solutions' },
   { to: '/pricing', label: 'Pricing' },
-  { to: '/contact', label: 'Contact Us' },
-  { to: '/#demo-section', label: 'Live Demo' },
-  { to: '/support', label: 'Raise Support' },
-  { to: '/vision', label: 'Vision' },
+  { to: '/#demo', label: 'Demo' },
+  { to: '/contact', label: 'Contact' },
 ];
 
 export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
   const [open, setOpen] = useState(false);
-  const primaryCtaUrl = content?.primaryCtaUrl || '/onboarding';
+  const primaryCtaUrl = '/#demo';
 
   return (
     <nav className={`public-site-nav${open ? ' is-open' : ''}`} data-tour="nav">
@@ -56,10 +55,10 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
 
       <div className="public-site-nav__actions">
         <Link to="/login" className="public-ghost-button public-site-nav__ghost">Sign In</Link>
-        <Link to={primaryCtaUrl} className="public-primary-button public-site-nav__cta" data-tour="primary-cta">
-          {content?.primaryCtaLabel || 'Start onboarding'}
+        <a href={primaryCtaUrl} className="public-primary-button public-site-nav__cta" data-tour="primary-cta">
+          Book Demo
           <ArrowUpRight size={16} />
-        </Link>
+        </a>
         <button
           type="button"
           className="public-site-nav__menu"
@@ -94,10 +93,10 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
         ))}
         <div className="public-site-nav__mobile-actions">
           <Link to="/login" className="public-secondary-button" onClick={() => setOpen(false)}>Sign In</Link>
-          <Link to={primaryCtaUrl} className="public-primary-button" onClick={() => setOpen(false)}>
-            {content?.primaryCtaLabel || 'Start onboarding'}
+          <a href={primaryCtaUrl} className="public-primary-button" onClick={() => setOpen(false)}>
+            Book Demo
             <ArrowUpRight size={16} />
-          </Link>
+          </a>
         </div>
       </div>
     </nav>

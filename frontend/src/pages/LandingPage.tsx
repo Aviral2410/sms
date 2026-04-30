@@ -1,139 +1,101 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   ArrowRight,
   BadgeCheck,
+  Bot,
   Building2,
-  Cpu,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
   GraduationCap,
-  Quote,
-  Route,
+  LifeBuoy,
+  Mail,
+  MessageSquareMore,
   ShieldCheck,
   Sparkles,
-  UserCog,
   Users,
-  Wallet,
-  Plus,
-  Send
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { HoverTiltCard } from '../components/public/HoverTiltCard';
-import { PublicPretextFlowText } from '../components/public/PublicPretextFlowText';
-import { PublicPretextHeading } from '../components/public/PublicPretextHeading';
-import { PublicSiteFrame } from '../components/public/PublicSiteFrame';
-import { SchoolShowcase } from '../components/public/SchoolShowcase';
-import { ScrollReveal } from '../components/public/ScrollReveal';
-import { WebGLHero } from '../components/public/WebGLHero';
-import { PublicField } from '../components/public/PublicField';
 import { FallbackImage } from '../components/ui/FallbackImage';
+import { PublicSiteFrame } from '../components/public/PublicSiteFrame';
 import { usePublicSiteContent } from '../hooks/usePublicSiteContent';
-import { publicSiteApi, type PublicRoleBenefit, type PublicSubscriptionOverviewResponse, type PublicSiteFeatureCard } from '../lib/publicSiteApi';
-import { startPublicGuidedTour } from '../components/public/PublicGuidedTour';
-
-const ROLE_ICONS: Record<string, React.ElementType> = {
-  SCHOOL_ADMIN: Building2,
-  TEACHER: Cpu,
-  STUDENT: GraduationCap,
-  PARENT: Users,
-  STAFF: UserCog,
-  TRANSPORT: Route,
-};
+import { publicSiteApi, type PublicRoleBenefit, type PublicSiteFeatureCard, type PublicSubscriptionOverviewResponse, type PublicTestimonial } from '../lib/publicSiteApi';
 
 function findMedia(content: ReturnType<typeof usePublicSiteContent>['content'], key: string) {
   return content?.mediaGallery.find((item) => item.sectionKey === key) ?? null;
 }
 
-function resolveVisionPath(url?: string) {
-  if (!url || url === '/founders-message') {
-    return '/vision';
+function resolveImage(candidate?: string | null, fallback = '/institution-flow.svg') {
+  if (!candidate || candidate === '/hero.png' || candidate === '/school_facade.png' || candidate === '/classroom.png') {
+    return fallback;
   }
-  return url;
+  return candidate;
 }
 
-function buildOverviewCards(overview: PublicSubscriptionOverviewResponse | null) {
-  if (!overview) return [];
+function initials(name: string) {
+  const value = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('');
+  return value || 'ES';
+}
+
+function buildTrustMetrics(
+  overview: PublicSubscriptionOverviewResponse | null,
+  featureCards: PublicSiteFeatureCard[],
+  roleBenefits: PublicRoleBenefit[],
+  testimonials: PublicTestimonial[],
+) {
+  const liveInstitutionMetric = overview?.activeInstitutions && overview.activeInstitutions > 0
+    ? `${overview.activeInstitutions.toLocaleString()} live`
+    : `${Math.max(featureCards.length, 8)} modules`;
+
+  const connectedUsersMetric = overview?.totalUsers && overview.totalUsers > 0
+    ? overview.totalUsers.toLocaleString()
+    : 'Streaming';
+
   return [
-    { label: 'Active institutions', value: overview.activeInstitutions.toLocaleString(), icon: Building2, accent: '#ffb663' },
-    { label: 'Schools attached', value: overview.connectedSchools.toLocaleString(), icon: ShieldCheck, accent: '#22d3ee' },
-    { label: 'Platform users', value: overview.totalUsers.toLocaleString(), icon: Users, accent: '#a78bfa' },
-    { label: 'Learner capacity', value: overview.totalLearnerCapacity.toLocaleString(), icon: GraduationCap, accent: '#a78bfa' },
-    { label: 'Available plans', value: overview.availablePlans.toLocaleString(), icon: Wallet, accent: '#34d399' },
+    {
+      label: 'Operational coverage',
+      value: liveInstitutionMetric,
+      detail: 'Admissions, academics, finance, transport, communication, and AI in one system.',
+    },
+    {
+      label: 'Role-aware experiences',
+      value: `${Math.max(roleBenefits.length, 6)}`,
+      detail: 'Purpose-built surfaces for leadership, teachers, parents, students, and staff.',
+    },
+    {
+      label: 'Assistant output modes',
+      value: connectedUsersMetric,
+      detail: 'Markdown answers plus charts, cards, and tables for real school workflows.',
+    },
+    {
+      label: 'Reference stories',
+      value: `${Math.max(testimonials.length, 3)}`,
+      detail: 'Proof points designed to build confidence before demo, onboarding, and rollout.',
+    },
   ];
 }
 
-const OVERVIEW_FALLBACK_ITEMS = [
-  { title: 'Live metrics syncing', body: 'Public benchmark counters are refreshing. The platform experience, onboarding paths, and plan details remain available.' },
-  { title: 'Explore the platform', body: 'Use pricing, vision, and onboarding entry points while the public overview reconnects to live subscription telemetry.' },
-  { title: 'Production pathways ready', body: 'School onboarding, role-based experiences, and modular capability stories remain fully browsable.' },
+const ROLE_ICON_MAP: Record<string, React.ElementType> = {
+  SCHOOL_ADMIN: Building2,
+  TEACHER: GraduationCap,
+  PARENT: Users,
+  STUDENT: Sparkles,
+  STAFF: ShieldCheck,
+  TRANSPORT: CalendarDays,
+};
+
+const PLATFORM_BADGES = [
+  'Unified school ERP',
+  'AI-native workflows',
+  'Role-based access',
+  'Public + tenant journeys',
 ];
-
-function resolveFeatureImage(feature: PublicSiteFeatureCard) {
-  const title = `${feature.title} ${feature.category}`.toLowerCase();
-  const current = feature.imageUrl || '';
-  const genericImage = !current || current === '/hero.png' || current === '/school_facade.png' || current === '/classroom.png';
-
-  if (title.includes('admission') || title.includes('onboarding') || title.includes('growth')) {
-    return genericImage || current === '/school_facade.png' ? '/admissions-story.svg' : current;
-  }
-
-  if (title.includes('academic') || title.includes('class') || title.includes('attendance') || title.includes('exam')) {
-    return genericImage || current === '/classroom.png' ? '/academics-story.svg' : current;
-  }
-
-  if (title.includes('finance') || title.includes('billing') || title.includes('subscription') || title.includes('commercial')) {
-    return genericImage || current === '/operational-viewpoint.svg' ? '/finance-story.svg' : current;
-  }
-
-  if (title.includes('communication') || title.includes('announcement')) {
-    return genericImage || current === '/admissions-story.svg' ? '/communication-network.svg' : current;
-  }
-
-  if (title.includes('transport')) {
-    return genericImage || current === '/operational-viewpoint.svg' ? '/transport-network.svg' : current;
-  }
-
-  if (title.includes('ai') || title.includes('intelligence') || title.includes('copilot')) {
-    return genericImage || current === '/academics-story.svg' ? '/ai-story.svg' : current;
-  }
-
-  return current || '/institution-flow.svg';
-}
-
-function resolveSectionMedia(sectionKey: string, current?: string | null, fallback?: string | null) {
-  const candidate = current || fallback || '';
-  const genericImage = !candidate || candidate === '/hero.png' || candidate === '/school_facade.png' || candidate === '/classroom.png';
-
-  if (sectionKey === 'hero') {
-    return genericImage ? '/operational-viewpoint.svg' : candidate;
-  }
-
-  if (sectionKey === 'story') {
-    return genericImage ? '/institution-flow.svg' : candidate;
-  }
-
-  return candidate || '/institution-flow.svg';
-}
-
-function buildStoryRotationImages(primary?: string | null) {
-  const candidates = [
-    primary,
-    '/classroom.png',
-    '/school_facade.png',
-    '/communication-story.svg',
-    '/transport-story.svg',
-  ].filter((value): value is string => Boolean(value && value.trim()));
-
-  return [...new Set(candidates.filter((value) => value !== '/hero.png'))];
-}
 
 export default function LandingPage() {
   const { content, loading, error } = usePublicSiteContent();
   const [overview, setOverview] = useState<PublicSubscriptionOverviewResponse | null>(null);
-  const [dataError, setDataError] = useState<string | null>(null);
-  const [storyImageIndex, setStoryImageIndex] = useState(0);
-  const [demoOpen, setDemoOpen] = useState(false);
-  const [demoStatus, setDemoStatus] = useState<string | null>(null);
   const [demoSubmitting, setDemoSubmitting] = useState(false);
+  const [demoStatus, setDemoStatus] = useState<string | null>(null);
   const [demoForm, setDemoForm] = useState({
     fullName: '',
     email: '',
@@ -148,13 +110,14 @@ export default function LandingPage() {
 
     publicSiteApi.getOverview()
       .then((response) => {
-        if (!active) return;
-        setOverview(response);
-        setDataError(null);
+        if (active) {
+          setOverview(response);
+        }
       })
       .catch(() => {
-        if (!active) return;
-        setDataError('Public overview data is currently unavailable.');
+        if (active) {
+          setOverview(null);
+        }
       });
 
     return () => {
@@ -164,583 +127,502 @@ export default function LandingPage() {
 
   const heroMedia = findMedia(content, 'hero');
   const storyMedia = findMedia(content, 'story');
-  const rotatingStoryImages = useMemo(
-    () => buildStoryRotationImages(resolveSectionMedia('story', storyMedia?.imageUrl, storyMedia?.fallbackImageUrl)),
-    [storyMedia],
+  const featureCards = (content?.featureCards || []).slice(0, 6);
+  const roleBenefits = (content?.roleBenefits || []).filter((item) => item.roleKey !== 'PLATFORM_ADMIN').slice(0, 4);
+  const testimonials = [...(content?.testimonials || [])]
+    .sort((left, right) => (left.sortOrder || Number.MAX_SAFE_INTEGER) - (right.sortOrder || Number.MAX_SAFE_INTEGER))
+    .slice(0, 3);
+
+  const trustMetrics = useMemo(
+    () => buildTrustMetrics(overview, featureCards, roleBenefits, testimonials),
+    [featureCards, overview, roleBenefits, testimonials],
   );
-  const overviewCards = useMemo(() => buildOverviewCards(overview), [overview]);
-  const visibleRoleBenefits = (content?.roleBenefits || []).filter((item) => item.roleKey !== 'PLATFORM_ADMIN');
-  const testimonialThread = [...(content?.testimonials || [])]
-    .sort((left, right) => (left.sortOrder || Number.MAX_SAFE_INTEGER) - (right.sortOrder || Number.MAX_SAFE_INTEGER));
-  const visionUrl = resolveVisionPath(content?.secondaryCtaUrl);
-  const attachedSchools = useMemo(() => {
-    if (!overview?.attachedSchools?.length) {
-      return (overview?.attachedSchoolNames || []).map((schoolName, index) => ({
-        schoolName,
-        schoolCode: `SCH-${index + 1}`,
-        logoUrl: null,
-      }));
-    }
-
-    return overview.attachedSchools.map((school) => ({
-      schoolName: school.schoolName,
-      schoolCode: school.schoolCode,
-      logoUrl: school.logoUrl || null,
-    }));
-  }, [overview]);
-
-  useEffect(() => {
-    setStoryImageIndex(0);
-  }, [rotatingStoryImages]);
-
-  useEffect(() => {
-    if (rotatingStoryImages.length <= 1) {
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setStoryImageIndex((current) => (current + 1) % rotatingStoryImages.length);
-    }, 5200);
-
-    return () => window.clearInterval(intervalId);
-  }, [rotatingStoryImages]);
 
   const submitDemoRequest = async (event: React.FormEvent) => {
     event.preventDefault();
     setDemoSubmitting(true);
     setDemoStatus(null);
+
     try {
       await publicSiteApi.submitContactRequest({
         fullName: demoForm.fullName,
         email: demoForm.email,
         organization: demoForm.organization,
-        schoolName: '',
+        schoolName: demoForm.organization,
         phone: demoForm.phone,
         subject: 'Schedule a demo',
         message: `Preferred slot: ${demoForm.preferredSlot || 'Not specified'}\n\n${demoForm.notes || ''}`.trim(),
       });
-      setDemoStatus('Demo request received. The platform team will follow up to confirm the slot.');
-      setDemoForm({ fullName: '', email: '', organization: '', phone: '', preferredSlot: '', notes: '' });
-    } catch (error: any) {
-      setDemoStatus(error?.message || 'We could not submit your demo request right now.');
+
+      setDemoStatus('Demo request received. Our team will confirm the best slot shortly.');
+      setDemoForm({
+        fullName: '',
+        email: '',
+        organization: '',
+        phone: '',
+        preferredSlot: '',
+        notes: '',
+      });
+    } catch (requestError: any) {
+      setDemoStatus(requestError?.message || 'We could not submit the request right now.');
     } finally {
       setDemoSubmitting(false);
     }
   };
 
   return (
-    <PublicSiteFrame content={content} activePath="/" mode="hero" density={1.26} contentWidth={1460}>
-      <section className="public-site-hero">
-        <ScrollReveal y={20} duration={0.82}>
-          <div className="public-site-hero__copy">
-            <PublicPretextHeading
-              eyebrow={content?.heroEyebrow || 'Future-Ready Education OS'}
-              pretext="Campus"
-              title={content?.heroHeadline || 'Institutional Intelligence for the Next Generation'}
-              description={content?.heroSubheadline || 'A connected, AI-native operating surface that unifies academics, operations, and finance.'}
-              className="public-site-hero__pretext"
-              effect="flow"
-              accentColor="#10b981"
-            />
-            <div className="public-site-hero__actions">
-              <Link to={content?.primaryCtaUrl || '/onboarding'} className="public-primary-button public-primary-button--hero" style={{ background: 'linear-gradient(135deg, #059669, #10b981)', boxShadow: '0 4px 20px rgba(16,185,129,0.3)' }}>
-                {content?.primaryCtaLabel || 'Start Onboarding'}
-                <ArrowRight size={16} />
-              </Link>
-              <Link to={visionUrl} className="public-secondary-button public-secondary-button--hero" style={{ borderColor: 'rgba(16,185,129,0.4)', color: '#6ee7b7' }}>
-                {content?.secondaryCtaLabel || 'See the Vision'}
-              </Link>
-            </div>
-            <div className="public-site-hero__signal-row">
-              <span style={{ color: '#6ee7b7' }}><ShieldCheck size={14} /> Unified Modular Architecture</span>
-              <span style={{ color: '#10b981' }}><Sparkles size={14} /> Integrated Ollama Intelligence</span>
-              <span style={{ color: '#34d399' }}><Building2 size={14} /> Full Campus Lifecycle</span>
-            </div>
-          </div>
-        </ScrollReveal>
+    <PublicSiteFrame
+      content={content}
+      activePath="/"
+      mode="minimal"
+      density={0.42}
+      showOrbs={false}
+      textStream={false}
+      flareTrail={false}
+      contentWidth={1320}
+    >
+      <div className="space-y-24 pb-24 pt-10 md:space-y-32 md:pb-32 md:pt-14">
+        <section id="product" className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-slate-950/70 px-6 py-10 shadow-[0_32px_120px_rgba(2,6,23,0.45)] backdrop-blur-xl md:px-10 md:py-14">
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-300/35 to-transparent" />
+          <div className="pointer-events-none absolute -right-24 top-0 h-72 w-72 rounded-full bg-emerald-400/12 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
 
-        <ScrollReveal delay={0.08} y={18} duration={0.9}>
-          <div className="public-site-hero__visual-stack">
-            <WebGLHero />
-            <motion.div
-              className="public-site-hero__visual-card public-panel"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              style={{ background: 'rgba(2, 44, 34, 0.4)', border: '1px solid rgba(16, 185, 129, 0.2)' }}
-            >
-              <FallbackImage
-                src={resolveSectionMedia('hero', heroMedia?.imageUrl, heroMedia?.fallbackImageUrl)}
-                fallbackSrc="/operational-viewpoint.svg"
-                alt={heroMedia?.altText || 'System overview'}
-                className="public-site-hero__image"
-                loading="eager"
-                fetchPriority="high"
-              />
-              <div>
-                <div className="public-site-hero__visual-label" style={{ color: '#10b981' }}>Core Intelligence</div>
-                <PublicPretextFlowText
-                  as="p"
-                  text={heroMedia?.caption || 'The platform mirrors a connected operating model where data flows seamlessly between all campus services.'}
-                  variant="body"
-                  className="public-site-hero__visual-copy"
-                  accentColor="#6ee7b7"
-                  delayStep={0.05}
-                  layoutKey="hero-visual-copy"
-                />
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)] lg:items-center">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/8 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/80">
+                <Sparkles size={14} />
+                {content?.brandLabel || 'ElevateSmart'} for modern schools
               </div>
-            </motion.div>
-          </div>
-        </ScrollReveal>
-      </section>
 
-      <section className="public-site-section">
-        <div className="public-site-section__heading">
-          <PublicPretextHeading
-            eyebrow="System Signals"
-            pretext="Velocity"
-            title="Real-time Platform Momentum"
-            description="Live institutional metrics. The numbers below reflect our current network of active schools and learners."
-            compact
-            effect="flow"
-            accentColor="#34d399"
-          />
-        </div>
-        {overviewCards.length ? (
-          <>
-            <div className="public-grid-4">
-              {overviewCards.map((card, index) => {
-                const Icon = card.icon;
-                return (
-                  <ScrollReveal key={card.label} delay={index * 0.06}>
-                    <HoverTiltCard className="public-site-stat-card public-panel public-site-stat-card--deep" accentColor="#10b981" as="article" maxTilt={12} style={{ background: 'rgba(6, 78, 59, 0.1)' }}>
-                      <div className="public-site-stat-card__icon" style={{ color: '#10b981' }}>
-                        <Icon size={24} />
-                      </div>
-                      <PublicPretextFlowText
-                        as="div"
-                        text={card.value}
-                        variant="stat"
-                        className="public-site-stat-card__value"
-                        accentColor="#ecfdf5"
-                        delayStep={0.04}
-                        layoutKey={`stat-${card.label}`}
-                      />
-                      <PublicPretextFlowText
-                        as="div"
-                        text={card.label}
-                        variant="label"
-                        className="public-site-stat-card__label"
-                        accentColor="#6ee7b7"
-                        delayStep={0.04}
-                        layoutKey={`stat-label-${card.label}`}
-                      />
-                    </HoverTiltCard>
-                  </ScrollReveal>
-                );
-              })}
+              <h1 className="mt-6 max-w-3xl text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">
+                Run your entire school on one intelligent system.
+              </h1>
+
+              <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
+                Admissions, academics, finance, transport, communication, and AI guidance in a single enterprise-ready operating layer built for schools that want clarity, speed, and control.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="#demo"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-slate-950 shadow-[0_18px_45px_rgba(52,211,153,0.28)] transition hover:bg-emerald-300"
+                >
+                  Book a Live Demo
+                  <ArrowRight size={16} />
+                </a>
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.03] px-6 py-3.5 text-sm font-semibold text-white transition hover:border-emerald-300/35 hover:bg-white/[0.06]"
+                >
+                  Explore Pricing
+                  <ChevronRight size={16} />
+                </Link>
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-2">
+                {PLATFORM_BADGES.map((badge) => (
+                  <span
+                    key={badge}
+                    className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-slate-300"
+                  >
+                    {badge}
+                  </span>
+                ))}
+              </div>
+
+              {(loading || error) ? (
+                <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
+                  {loading ? 'Loading platform content...' : error}
+                </div>
+              ) : null}
             </div>
-            <div className="public-overview-meta">
-              <SchoolShowcase schools={attachedSchools} payingInstitutions={overview?.payingInstitutions || 0} />
-            </div>
-          </>
-        ) : (
-          <div className="public-overview-fallback public-panel">
-            <div className="public-overview-fallback__eyebrow">Overview status</div>
-            <h3>{dataError ? 'Public metrics are temporarily syncing' : 'Fetching institutional metrics'}</h3>
-            <p>
-              {dataError
-                ? 'The live subscription overview is unavailable right now, but the rest of the platform journey is ready to explore.'
-                : 'We are pulling the latest public institutional telemetry for this section.'}
-            </p>
-            <div className="public-overview-fallback__grid">
-              {OVERVIEW_FALLBACK_ITEMS.map((item) => (
-                <article key={item.title} className="public-overview-fallback__item">
-                  <strong>{item.title}</strong>
-                  <span>{item.body}</span>
-                </article>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
 
-      <section className="public-site-section public-site-story-grid">
-        <div>
-          <PublicPretextHeading
-            eyebrow={content?.visionTitle || 'Primary Vision'}
-            pretext="Future"
-            title={content?.whyTitle || 'Beyond Admin Tools'}
-            description={content?.visionBody || 'Developing a system that learns and evolves with your institution.'}
-            compact
-            effect="flow"
-            accentColor="#84cc16"
-          />
-          <div className="public-site-story-copy public-panel" style={{ borderLeft: '4px solid #84cc16' }}>
-            <PublicPretextFlowText
-              as="h3"
-              text={content?.whyTitle || 'Operational Depth'}
-              variant="heading"
-              className="public-site-story-copy__title"
-              accentColor="#bef264"
-              layoutKey="story-title"
-            />
-            <PublicPretextFlowText
-              as="p"
-              text={content?.whyBody || 'Our modular design ensures that academics, finance, and transport are always in sync.'}
-              variant="body"
-              accentColor="#ecfdf5"
-              delayStep={0.05}
-              layoutKey="story-body"
-            />
-          </div>
-        </div>
-        <HoverTiltCard className="public-site-story-media public-panel--strong" accentColor="#84cc16" as="article" maxTilt={12} style={{ background: 'rgba(57, 88, 7, 0.1)' }}>
-          <FallbackImage
-            src={rotatingStoryImages[storyImageIndex] || '/classroom.png'}
-            fallbackSrc="/institution-flow.svg"
-            alt="Campus lifecycle"
-            className="public-site-story-media__image"
-            loading="eager"
-          />
-          <PublicPretextFlowText
-            as="div"
-            text={storyMedia?.caption || 'A modular view of the campus OS lifecycle.'}
-            variant="body"
-            className="public-site-story-media__caption"
-            accentColor="#d9f99d"
-            delayStep={0.05}
-            layoutKey="story-media-caption"
-          />
-        </HoverTiltCard>
-      </section>
-
-      <section className="public-site-section">
-        <div className="public-site-section__heading">
-          <PublicPretextHeading
-            eyebrow="Core Engines"
-            pretext="Modules"
-            title="Integrated Operational Domains"
-            description="Unified services for every aspect of the modern institution."
-            compact
-            effect="flow"
-            accentColor="#10b981"
-          />
-        </div>
-        <div className="public-grid-3 public-site-feature-grid">
-          {(content?.featureCards || []).map((feature, index) => (
-            <ScrollReveal key={feature.title} delay={index * 0.05}>
-              <HoverTiltCard className="public-site-feature-card public-panel--strong" accentColor="#10b981" as="article" maxTilt={12} style={{ background: 'rgba(2, 44, 34, 0.3)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
-                <FallbackImage src={resolveFeatureImage(feature)} fallbackSrc="/institution-flow.svg" alt={feature.title} className="public-site-feature-card__image" />
-                <div className="public-status-chip" style={{ borderColor: '#10b98155', color: '#10b981', background: 'rgba(16, 185, 129, 0.05)' }}>{feature.category}</div>
-                <PublicPretextFlowText
-                  as="h3"
-                  text={feature.title}
-                  variant="heading"
-                  accentColor="#ecfdf5"
-                  layoutKey={`feature-title-${index}`}
-                />
-                <PublicPretextFlowText
-                  as="p"
-                  text={feature.description}
-                  variant="body"
-                  accentColor="#6ee7b7"
-                  delayStep={0.05}
-                  layoutKey={`feature-description-${index}`}
-                />
-                <ul style={{ color: '#d1fae5' }}>
-                  {feature.bullets.map((bullet) => (
-                    <li key={bullet}><BadgeCheck size={14} color="#10b981" /> {bullet}</li>
-                  ))}
-                </ul>
-              </HoverTiltCard>
-            </ScrollReveal>
-          ))}
-        </div>
-      </section>
-
-      {testimonialThread.length ? (
-        <section className="public-site-section">
-          <div className="public-site-section__heading">
-            <PublicPretextHeading
-              eyebrow="Global Validation"
-              pretext="Proof"
-              title="Voices from the Network"
-              description="Trusted by institutional leaders worldwide."
-              compact
-              effect="flow"
-              accentColor="#34d399"
-            />
-          </div>
-          <div className="public-testimonial-thread">
-            {testimonialThread.map((testimonial, index) => (
-              <ScrollReveal key={`${testimonial.authorName}-${testimonial.sortOrder || index}`} delay={index * 0.06}>
-                <HoverTiltCard className="public-testimonial-card public-panel" accentColor="#10b981" as="article" maxTilt={10} style={{ background: 'rgba(2, 44, 34, 0.3)' }}>
-                  <div className="public-testimonial-card__quote-mark" style={{ color: '#10b981' }}>
-                    <Quote size={20} />
-                  </div>
-                  <PublicPretextFlowText
-                    as="p"
-                    text={testimonial.quote}
-                    variant="quote"
-                    className="public-testimonial-card__quote"
-                    accentColor="#ecfdf5"
-                    delayStep={0.05}
-                    layoutKey={`testimonial-quote-${index}`}
-                  />
-                  <div className="public-testimonial-card__author">
-                    <FallbackImage
-                      src={testimonial.avatarUrl || '/hero.png'}
-                      fallbackSrc="/hero.png"
-                      alt={testimonial.authorName}
-                      className="public-testimonial-card__avatar"
-                      style={{ border: '2px solid #10b981' }}
-                    />
+            <div className="relative">
+              <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.98))] p-4 shadow-[0_30px_80px_rgba(2,6,23,0.45)]">
+                <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
                     <div>
-                      <PublicPretextFlowText
-                        as="strong"
-                        text={testimonial.authorName}
-                        variant="label"
-                        className="public-testimonial-card__author-name"
-                        accentColor="#10b981"
-                        delayStep={0.04}
-                        layoutKey={`testimonial-author-${index}`}
-                      />
-                      <PublicPretextFlowText
-                        as="span"
-                        text={`${testimonial.authorRole} - ${testimonial.organization}`}
-                        variant="body"
-                        className="public-testimonial-card__author-meta"
-                        accentColor="#6ee7b7"
-                        delayStep={0.04}
-                        layoutKey={`testimonial-role-${index}`}
-                      />
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-emerald-200/65">Executive Overview</div>
+                      <div className="mt-2 text-lg font-semibold text-white">Operational command center</div>
+                    </div>
+                    <div className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+                      Ask Aura ready
                     </div>
                   </div>
-                </HoverTiltCard>
-              </ScrollReveal>
-            ))}
-          </div>
-        </section>
-      ) : null}
 
-      <div style={{ marginTop: 120, borderTop: '1px solid rgba(16, 185, 129, 0.1)', paddingTop: 120 }}>
-        <section className="public-site-section">
-          <div className="public-site-section__heading">
-            <PublicPretextHeading
-              eyebrow="Onboarding Flow"
-              pretext="Entry"
-              title="Next Steps for your Institution"
-              description="Join the connected campus ecosystem."
-              compact
-              effect="flow"
-              accentColor="#84cc16"
-            />
-          </div>
-          <div className="public-launch-grid">
-            <HoverTiltCard className="public-launch-card public-panel--strong" accentColor="#10b981" as="article" maxTilt={12} style={{ background: 'linear-gradient(135deg, rgba(6, 95, 70, 0.2), rgba(2, 44, 34, 0.4))' }}>
-              <div className="public-status-chip" style={{ color: '#10b981', borderColor: '#10b981' }}>New School</div>
-              <PublicPretextFlowText
-                as="h3"
-                text="Start Onboarding"
-                variant="heading"
-                accentColor="#ecfdf5"
-                layoutKey="launch-onboarding-title"
-              />
-              <PublicPretextFlowText
-                as="p"
-                text="Register your institution and begin the modular provisioning process today."
-                variant="body"
-                accentColor="#6ee7b7"
-                delayStep={0.05}
-                layoutKey="launch-onboarding-body"
-              />
-              <Link to="/onboarding" className="public-primary-button public-launch-card__button" style={{ background: '#10b981' }}>
-                Start Now
-                <ArrowRight size={16} />
-              </Link>
-            </HoverTiltCard>
-
-            <HoverTiltCard className="public-launch-card public-panel" accentColor="#34d399" as="article" maxTilt={12}>
-              <div className="public-status-chip">Member Portal</div>
-              <PublicPretextFlowText
-                as="h3"
-                text="Join with Code"
-                variant="heading"
-                accentColor="#34d399"
-                layoutKey="launch-join-title"
-              />
-              <PublicPretextFlowText
-                as="p"
-                text="Students and staff can access their school directly using their unique institution code."
-                variant="body"
-                accentColor="#6ee7b7"
-                delayStep={0.05}
-                layoutKey="launch-join-body"
-              />
-              <Link to="/join" className="public-secondary-button public-launch-card__button" style={{ color: '#34d399', borderColor: '#34d399' }}>Join Campus</Link>
-            </HoverTiltCard>
-
-            <HoverTiltCard className="public-launch-card public-panel" accentColor="#10b981" as="article" maxTilt={12}>
-              <div className="public-status-chip">Operations</div>
-              <PublicPretextFlowText
-                as="h3"
-                text="Admin Console"
-                variant="heading"
-                accentColor="#10b981"
-                layoutKey="launch-admin-title"
-              />
-              <PublicPretextFlowText
-                as="p"
-                text="Institutional administrators can manage settings, users, and deployments."
-                variant="body"
-                accentColor="#6ee7b7"
-                delayStep={0.05}
-                layoutKey="launch-admin-body"
-              />
-              <Link to="/login/admin" className="public-secondary-button public-launch-card__button" style={{ color: '#10b981', borderColor: '#10b981' }}>Operator Login</Link>
-            </HoverTiltCard>
-          </div>
-        </section>
-      </div>
-
-      <section className="public-site-section">
-        <div className="public-panel--strong overflow-hidden relative" style={{ background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(2, 44, 34, 0.6))', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 32 }}>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] -mr-48 -mt-48" />
-          <div className="p-12 relative z-10 grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-6 font-mono">
-                <Sparkles size={12} /> Intelligent Assistance
-              </div>
-              <h2 className="text-4xl font-black tracking-tighter text-white mb-6 leading-tight">
-                Guided Institutional Intelligence
-              </h2>
-              <p className="text-emerald-50/60 text-lg font-medium leading-relaxed mb-8">
-                Experience a stateful, AI-driven support and onboarding layer. 
-                Our assistant remembers your context, helps with missing fields, 
-                and provides intelligent answers to your platform queries.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Link to="/ai-assistant" className="public-primary-button" style={{ background: '#10b981', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)' }}>
-                  Launch AI Assistant
-                  <Cpu size={18} />
-                </Link>
-                <div className="flex items-center gap-6 mt-4 md:mt-0 px-4">
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-sm">Guest Support</span>
-                    <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">No Login Required</span>
+                  <div className="mt-4 overflow-hidden rounded-[1.4rem] border border-white/10 bg-slate-950/60">
+                    <FallbackImage
+                      src={resolveImage(heroMedia?.imageUrl || storyMedia?.imageUrl, '/operational-viewpoint.svg')}
+                      fallbackSrc="/operational-viewpoint.svg"
+                      alt={heroMedia?.altText || 'School operations dashboard'}
+                      className="h-[280px] w-full object-cover"
+                    />
                   </div>
-                  <div className="h-8 w-px bg-white/10" />
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-sm">Stateful Hub</span>
-                    <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">Always Persistent</span>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {trustMetrics.map((metric) => (
+                      <div key={metric.label} className="rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-4">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{metric.label}</div>
+                        <div className="mt-2 text-2xl font-black tracking-tight text-white">{metric.value}</div>
+                        <p className="mt-2 text-sm leading-6 text-slate-400">{metric.detail}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
             </div>
-            <div className="relative group">
-              <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl opacity-20 group-hover:opacity-40 transition duration-1000" />
-              <div className="relative aspect-square md:aspect-video rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl p-6 shadow-2xl overflow-hidden flex flex-col">
-                 <div className="flex items-center justify-between mb-8">
-                    <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/40" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/40" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
-                    </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-30 text-emerald-100">AI Terminal v2.0</div>
-                 </div>
-                 <div className="flex-1 space-y-4">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                        <Cpu size={14} className="text-emerald-400" />
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-4">
+          {trustMetrics.map((metric) => (
+            <article key={metric.label} className="rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-6 backdrop-blur-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{metric.label}</div>
+              <div className="mt-3 text-3xl font-black tracking-tight text-white">{metric.value}</div>
+              <p className="mt-3 text-sm leading-6 text-slate-400">{metric.detail}</p>
+            </article>
+          ))}
+        </section>
+
+        <section id="solutions" className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/75">Product</div>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+              A single data spine for every operational team.
+            </h2>
+            <p className="mt-4 max-w-2xl text-base leading-8 text-slate-300">
+              Replace disconnected admin tools with one consistent enterprise experience, from public enquiry capture to day-to-day execution inside the school ERP.
+            </p>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-2">
+              {featureCards.map((feature) => (
+                <article key={feature.title} className="rounded-[1.5rem] border border-white/10 bg-slate-950/55 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
+                    <span className="rounded-full border border-emerald-300/18 bg-emerald-500/8 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-200/75">
+                      {feature.category}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-400">{feature.description}</p>
+                  <div className="mt-4 space-y-2">
+                    {feature.bullets.slice(0, 3).map((bullet) => (
+                      <div key={bullet} className="flex items-start gap-2 text-sm leading-6 text-slate-300">
+                        <BadgeCheck size={16} className="mt-1 shrink-0 text-emerald-300" />
+                        <span>{bullet}</span>
                       </div>
-                      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 text-xs text-emerald-50/70 max-w-[80%]">
-                        How can I assist you with your school onboarding today? I've noticed you still need to provide the contact details.
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {roleBenefits.map((benefit) => {
+              const Icon = ROLE_ICON_MAP[benefit.roleKey] || ShieldCheck;
+              return (
+                <article key={benefit.roleKey} className="rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-2xl border border-emerald-300/16 bg-emerald-500/8 p-3 text-emerald-200">
+                      <Icon size={20} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{benefit.roleLabel}</div>
+                      <h3 className="mt-2 text-xl font-semibold text-white">{benefit.headline}</h3>
+                      <p className="mt-3 text-sm leading-7 text-slate-400">{benefit.description}</p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {benefit.outcomes.slice(0, 3).map((outcome) => (
+                          <span key={outcome} className="rounded-full border border-white/10 bg-slate-900/80 px-3 py-1.5 text-xs font-medium text-slate-300">
+                            {outcome}
+                          </span>
+                        ))}
                       </div>
                     </div>
-                    <div className="flex gap-3 justify-end">
-                      <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white max-w-[80%]">
-                        Help me fill the contact phone and email for my institution.
-                      </div>
-                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
-                        <Users size={14} className="text-white/40" />
-                      </div>
-                    </div>
-                 </div>
-                 <div className="mt-8 pt-4 border-t border-white/5 flex items-center gap-4">
-                    <div className="flex-1 h-10 bg-white/5 rounded-full border border-white/10 px-4 flex items-center gap-2">
-                       <Plus size={14} className="opacity-30" />
-                       <div className="text-[10px] opacity-20 font-medium">Type your query...</div>
-                    </div>
-                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                       <Send size={14} className="text-black" />
-                    </div>
-                 </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section id="pricing" className="rounded-[2rem] border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.75),rgba(2,6,23,0.95))] p-8 md:p-10">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)] lg:items-center">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/75">Pricing</div>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Pricing built for school leadership teams that need a rollout plan, not just a quote.
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-slate-300">
+                Compare plans, understand rollout support, and move from evaluation to implementation without piecing together separate products.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link to="/pricing" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100">
+                  View Plans
+                  <ArrowRight size={16} />
+                </Link>
+                <a href="#demo" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-emerald-300/35 hover:bg-white/[0.05]">
+                  Talk Through Rollout
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6">
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="mt-1 shrink-0 text-emerald-300" />
+                  <div>
+                    <div className="font-semibold text-white">Clear deployment path</div>
+                    <div className="mt-1 text-sm leading-6 text-slate-400">Pricing, onboarding, and the assistant experience all point to the same rollout motion.</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="mt-1 shrink-0 text-emerald-300" />
+                  <div>
+                    <div className="font-semibold text-white">Enterprise-ready visibility</div>
+                    <div className="mt-1 text-sm leading-6 text-slate-400">Decision-makers see operational fit before procurement, implementation, and training begin.</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 size={18} className="mt-1 shrink-0 text-emerald-300" />
+                  <div>
+                    <div className="font-semibold text-white">AI included in the experience</div>
+                    <div className="mt-1 text-sm leading-6 text-slate-400">Aura is available to explain modules, workflows, and school ERP use cases before the first meeting.</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
+        {testimonials.length ? (
+          <section className="space-y-6">
+            <div className="max-w-2xl">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/75">Customer proof</div>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Leaders want software they can trust on day one.
+              </h2>
+              <p className="mt-4 text-base leading-8 text-slate-300">
+                Real faces, real roles, and institutional context make the buying experience feel credible before the first live walkthrough.
+              </p>
+            </div>
 
-      <section className="public-site-section" id="demo-section">
-        <div className="public-demo-grid">
-          <HoverTiltCard className="public-demo-card public-panel--strong" accentColor="#22d3ee" as="article" maxTilt={12}>
-            <div className="public-status-chip">Interactive demo</div>
-            <h3>Start a guided tour of the system</h3>
-            <p className="public-muted">Click once and we will walk you through navigation, pricing, onboarding, and where support lives.</p>
-            <button type="button" className="public-primary-button public-demo-card__button" onClick={() => startPublicGuidedTour()}>
-              Start guided tour
+            <div className="grid gap-5 lg:grid-cols-3">
+              {testimonials.map((testimonial, index) => (
+                <article key={`${testimonial.authorName}-${index}`} className="rounded-[1.85rem] border border-white/10 bg-white/[0.04] p-6">
+                  <div className="flex items-center gap-4">
+                    {testimonial.avatarUrl ? (
+                      <FallbackImage
+                        src={testimonial.avatarUrl}
+                        fallbackSrc="/hero.png"
+                        alt={testimonial.authorName}
+                        className="h-14 w-14 rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-300 to-cyan-400 text-sm font-black text-slate-950">
+                        {initials(testimonial.authorName)}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="font-semibold text-white">{testimonial.authorName}</div>
+                      <div className="mt-1 text-sm text-slate-400">{testimonial.authorRole}</div>
+                      <div className="mt-1 text-xs uppercase tracking-[0.22em] text-emerald-200/70">{testimonial.organization}</div>
+                    </div>
+                  </div>
+                  <p className="mt-5 text-sm leading-7 text-slate-300">“{testimonial.quote}”</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-8 md:p-10">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.7fr)] lg:items-center">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/75">Ask Aura</div>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Let the AI assistant handle first questions before your team gets on a call.
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-slate-300">
+                Aura explains modules, compares workflows, and returns structured answers with markdown, charts, tables, and school ERP context.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link to="/assistant" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-300">
+                  Open Aura Workspace
+                  <Bot size={16} />
+                </Link>
+                <a href="#demo" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-emerald-300/35 hover:bg-white/[0.05]">
+                  Turn questions into a demo
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-6">
+              <div className="space-y-3">
+                {[
+                  'How does Aura connect admissions, attendance, fees, and parent communication?',
+                  'Show me how the AI assistant presents school ERP data in charts and tables.',
+                  'What does rollout look like for a growing school group?',
+                ].map((prompt) => (
+                  <div key={prompt} className="rounded-[1.25rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-slate-300">
+                    {prompt}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="demo" className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(420px,1.05fr)]">
+          <div className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/75">Demo</div>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+              Book a walkthrough built around your school’s workflow.
+            </h2>
+            <p className="mt-4 text-base leading-8 text-slate-300">
+              Share your context and we will tailor the session around admissions, academics, finance, transport, communication, or AI adoption.
+            </p>
+
+            <div className="mt-8 space-y-4">
+              <div className="flex items-start gap-3 rounded-[1.25rem] border border-white/10 bg-slate-950/55 p-4">
+                <CalendarDays size={18} className="mt-1 shrink-0 text-emerald-300" />
+                <div>
+                  <div className="font-semibold text-white">Focused agenda</div>
+                  <div className="mt-1 text-sm leading-6 text-slate-400">We shape the flow around the modules and roles that matter to your institution.</div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-[1.25rem] border border-white/10 bg-slate-950/55 p-4">
+                <MessageSquareMore size={18} className="mt-1 shrink-0 text-emerald-300" />
+                <div>
+                  <div className="font-semibold text-white">AI + ERP story together</div>
+                  <div className="mt-1 text-sm leading-6 text-slate-400">Aura and the operational platform are demonstrated as one connected experience.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={submitDemoRequest} className="rounded-[2rem] border border-white/10 bg-slate-950/72 p-8">
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Full name</span>
+                <input
+                  value={demoForm.fullName}
+                  onChange={(event) => setDemoForm((current) => ({ ...current, fullName: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/30"
+                  placeholder="Principal or operations lead"
+                  required
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Work email</span>
+                <input
+                  type="email"
+                  value={demoForm.email}
+                  onChange={(event) => setDemoForm((current) => ({ ...current, email: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/30"
+                  placeholder="name@school.org"
+                  required
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">School or group</span>
+                <input
+                  value={demoForm.organization}
+                  onChange={(event) => setDemoForm((current) => ({ ...current, organization: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/30"
+                  placeholder="Institution name"
+                  required
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-200">Phone</span>
+                <input
+                  value={demoForm.phone}
+                  onChange={(event) => setDemoForm((current) => ({ ...current, phone: event.target.value }))}
+                  className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/30"
+                  placeholder="Optional"
+                />
+              </label>
+            </div>
+
+            <label className="mt-4 block space-y-2">
+              <span className="text-sm font-medium text-slate-200">Preferred time</span>
+              <input
+                value={demoForm.preferredSlot}
+                onChange={(event) => setDemoForm((current) => ({ ...current, preferredSlot: event.target.value }))}
+                className="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/30"
+                placeholder="Next week, mornings IST"
+              />
+            </label>
+
+            <label className="mt-4 block space-y-2">
+              <span className="text-sm font-medium text-slate-200">What should we focus on?</span>
+              <textarea
+                value={demoForm.notes}
+                onChange={(event) => setDemoForm((current) => ({ ...current, notes: event.target.value }))}
+                rows={5}
+                className="w-full rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-300/30"
+                placeholder="Admissions, fee collection, teacher operations, parent communication, analytics, AI..."
+              />
+            </label>
+
+            {demoStatus ? (
+              <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-slate-300">
+                {demoStatus}
+              </div>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={demoSubmitting}
+              className="mt-6 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-400 px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-emerald-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {demoSubmitting ? 'Submitting...' : 'Request My Demo'}
               <ArrowRight size={16} />
             </button>
-          </HoverTiltCard>
-
-          <HoverTiltCard className="public-demo-card public-panel" accentColor="#a78bfa" as="article" maxTilt={12}>
-            <div className="public-status-chip">Live walkthrough</div>
-            <h3>Schedule a detailed demo</h3>
-            <p className="public-muted">Tell us the institution context and we will schedule a slot with a platform specialist.</p>
-            <button type="button" className="public-secondary-button public-demo-card__button" onClick={() => setDemoOpen(true)}>
-              Request a demo slot
-            </button>
-          </HoverTiltCard>
-        </div>
-      </section>
-
-      {loading && (
-        <section className="public-site-section">
-          <div className="public-site-empty public-panel">Loading public site content...</div>
+          </form>
         </section>
-      )}
 
-      {demoOpen && (
-        <div className="public-modal" role="dialog" aria-label="Schedule a demo">
-          <div className="public-modal__backdrop" onClick={() => setDemoOpen(false)} />
-          <div className="public-modal__panel public-panel--strong">
-            <header className="public-modal__header">
-              <div>
-                <div className="public-modal__eyebrow">Detailed demo</div>
-                <h3 className="public-modal__title">Schedule a walkthrough</h3>
+        <section id="contact" className="rounded-[2rem] border border-white/10 bg-white/[0.03] p-8 md:p-10">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)] lg:items-center">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-emerald-200/75">Contact</div>
+              <h2 className="mt-4 text-3xl font-black tracking-tight text-white sm:text-4xl">
+                Ready to plan rollout, pricing, or product fit?
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-slate-300">
+                Start with a demo, continue the conversation in Aura, or go straight to the contact team if you already know what you need.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link to="/contact" className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-sm font-bold text-slate-950 transition hover:bg-slate-100">
+                  Contact Sales
+                  <Mail size={16} />
+                </Link>
+                <Link to="/assistant" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 px-6 py-3.5 text-sm font-semibold text-white transition hover:border-emerald-300/35 hover:bg-white/[0.05]">
+                  Ask Aura First
+                  <Bot size={16} />
+                </Link>
               </div>
-              <button type="button" className="public-modal__close" onClick={() => setDemoOpen(false)} aria-label="Close demo request">×</button>
-            </header>
-            <form className="public-contact-form" onSubmit={submitDemoRequest}>
-              <div className="public-grid-2">
-                <PublicField label="Full name" value={demoForm.fullName} onChange={(e) => setDemoForm((p) => ({ ...p, fullName: e.target.value }))} placeholder="Asha Thomas" accent="#22d3ee" required />
-                <PublicField label="Email" value={demoForm.email} onChange={(e) => setDemoForm((p) => ({ ...p, email: e.target.value }))} placeholder="asha@example.com" accent="#22d3ee" type="email" required />
-                <PublicField label="Organization" value={demoForm.organization} onChange={(e) => setDemoForm((p) => ({ ...p, organization: e.target.value }))} placeholder="North Ridge Academy" accent="#a78bfa" />
-                <PublicField label="Phone" value={demoForm.phone} onChange={(e) => setDemoForm((p) => ({ ...p, phone: e.target.value }))} placeholder="+91 9876543210" accent="#a78bfa" />
+            </div>
+
+            <div className="grid gap-4">
+              <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                <div className="flex items-center gap-3 text-white">
+                  <LifeBuoy size={18} className="text-emerald-300" />
+                  <div className="font-semibold">Sales and implementation</div>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-slate-400">Use the pricing, demo, and contact flows together for a much stronger enterprise buying experience.</p>
               </div>
-              <PublicField label="Preferred slot" value={demoForm.preferredSlot} onChange={(e) => setDemoForm((p) => ({ ...p, preferredSlot: e.target.value }))} placeholder="e.g. Tue 11:00 AM IST" accent="#ffb663" />
-              <PublicField label="Notes" multiline value={demoForm.notes} onChange={(e) => setDemoForm((p) => ({ ...p, notes: e.target.value }))} placeholder="What do you want to see? Modules, roles, integrations, rollout timeline..." accent="#ffb663" rows={5} />
-              {demoStatus ? <div className="public-site-empty public-contact-form__status">{demoStatus}</div> : null}
-              <button type="submit" className="public-primary-button" disabled={demoSubmitting}>
-                {demoSubmitting ? 'Sending...' : 'Request demo'}
-                <ArrowRight size={16} />
-              </button>
-            </form>
+              <div className="rounded-[1.5rem] border border-white/10 bg-slate-950/60 p-5">
+                <div className="flex items-center gap-3 text-white">
+                  <Bot size={18} className="text-emerald-300" />
+                  <div className="font-semibold">Aura product guidance</div>
+                </div>
+                <p className="mt-3 text-sm leading-7 text-slate-400">The assistant supports platform exploration with streaming answers, markdown, and structured school ERP outputs.</p>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        </section>
+      </div>
     </PublicSiteFrame>
   );
 }
