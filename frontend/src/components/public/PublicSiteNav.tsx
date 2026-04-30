@@ -32,14 +32,25 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
 
       <div className="public-site-nav__links">
         {LINKS.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`public-site-nav__link${activePath === link.to ? ' is-active' : ''}`}
-            data-tour={link.to === '/pricing' ? 'nav-pricing' : undefined}
-          >
-            {link.label}
-          </Link>
+          link.to.includes('#') ? (
+            <a
+              key={link.to}
+              href={link.to}
+              className={`public-site-nav__link${activePath === link.to ? ' is-active' : ''}`}
+              data-tour={link.to === '/pricing' ? 'nav-pricing' : undefined}
+            >
+              {link.label}
+            </a>
+          ) : (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`public-site-nav__link${activePath === link.to ? ' is-active' : ''}`}
+              data-tour={link.to === '/pricing' ? 'nav-pricing' : undefined}
+            >
+              {link.label}
+            </Link>
+          )
         ))}
       </div>
 
@@ -61,14 +72,25 @@ export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {
 
       <div className={`public-site-nav__mobile${open ? ' is-open' : ''}`}>
         {LINKS.map((link) => (
-          <Link
-            key={link.to}
-            to={link.to}
-            className={`public-site-nav__mobile-link${activePath === link.to ? ' is-active' : ''}`}
-            onClick={() => setOpen(false)}
-          >
-            {link.label}
-          </Link>
+          link.to.includes('#') ? (
+            <a
+              key={link.to}
+              href={link.to}
+              className={`public-site-nav__mobile-link${activePath === link.to ? ' is-active' : ''}`}
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </a>
+          ) : (
+            <Link
+              key={link.to}
+              to={link.to}
+              className={`public-site-nav__mobile-link${activePath === link.to ? ' is-active' : ''}`}
+              onClick={() => setOpen(false)}
+            >
+              {link.label}
+            </Link>
+          )
         ))}
         <div className="public-site-nav__mobile-actions">
           <Link to="/login" className="public-secondary-button" onClick={() => setOpen(false)}>Sign In</Link>
