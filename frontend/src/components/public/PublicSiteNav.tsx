@@ -13,7 +13,7 @@ const LINKS = [
   { to: '/#solutions', label: 'Solutions' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/#demo', label: 'Demo' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/#contact', label: 'Contact' },
 ];
 
 export function PublicSiteNav({ content, activePath }: PublicSiteNavProps) {

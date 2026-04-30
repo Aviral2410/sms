@@ -2,13 +2,15 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
-  Mic,
-  MicOff,
   Brain,
   ChevronRight,
   FolderPlus,
+  GraduationCap,
   History,
+  LayoutGrid,
   MessageSquare,
+  Mic,
+  MicOff,
   PanelLeft,
   Plus,
   Send,
@@ -48,12 +50,20 @@ type ChatMessage = {
   error?: boolean;
 };
 
+type PublicHistoryEntry = {
+  conversationId: string;
+  title: string;
+  updatedAt: string;
+  messages: ChatMessage[];
+};
+
 type Props = {
   variant?: Variant;
   accessMode?: AccessMode;
 };
 
 const DRAWER_WIDTH = 'min(calc(100vw - 2rem), 96rem)';
+const PUBLIC_HISTORY_STORAGE_KEY = 'aura-public-history-v2';
 
 const AUTHENTICATED_EXAMPLE_PROMPTS = [
   'Show me student attendance risk trends for this month.',
@@ -63,10 +73,19 @@ const AUTHENTICATED_EXAMPLE_PROMPTS = [
 ];
 
 const PUBLIC_EXAMPLE_PROMPTS = [
-  'Compare your subscription plans.',
-  'What is on the platform roadmap for 2026?',
-  'How many schools are already on ElevateSmart?',
-  'Tell me about the platform vision.',
+  'How does Aura connect admissions, attendance, fees, and parent communication?',
+  'Show me what the AI workspace can return for school leadership teams.',
+  'How would this platform support a multi-campus school group?',
+  'What does rollout look like from demo to onboarding?',
+];
+
+const ERP_TOOL_LABELS = [
+  'Admissions',
+  'Attendance',
+  'Finance',
+  'Transport',
+  'Communication',
+  'Timetable',
 ];
 
 function buildAssistantSummary(response: RenderedResponse | null | undefined) {
@@ -106,9 +125,9 @@ function normalizeStoredMessage(message: AiChatMessageResponse): ChatMessage {
     id: message.messageId,
     role: message.role === 'assistant' ? 'assistant' : 'user',
     text: message.content || buildAssistantSummary(payload),
-      response: payload,
-      thought: payload?.thought ?? message.thought ?? null,
-      timestamp: message.timestamp,
+    response: payload,
+    thought: payload?.thought ?? message.thought ?? null,
+    timestamp: message.timestamp,
   };
 }
 
@@ -118,14 +137,44 @@ function formatTimestamp(timestamp: string) {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+function loadPublicHistory(): PublicHistoryEntry[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(PUBLIC_HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item && typeof item.conversationId === 'string' && Array.isArray(item.messages));
+  } catch {
+    return [];
+  }
+}
+
+function savePublicHistory(entries: PublicHistoryEntry[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(PUBLIC_HISTORY_STORAGE_KEY, JSON.stringify(entries.slice(0, 12)));
+  } catch {
+    // Ignore storage failures and keep the assistant usable.
+  }
+}
+
+function buildPublicConversationTitle(messages: ChatMessage[], fallbackText?: string) {
+  const firstUserMessage = messages.find((message) => message.role === 'user')?.text || fallbackText || 'New school ERP chat';
+  return firstUserMessage.length > 68 ? `${firstUserMessage.slice(0, 65)}...` : firstUserMessage;
+}
+
 export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticated' }: Props) {
   const { session } = useStore();
   const isPublic = accessMode === 'public';
+  const assistantRoute = variant === 'page' ? (isPublic ? '/assistant' : '/ai-assistant') : '/assistant-drawer';
+
   const [open, setOpen] = useState(variant === 'page');
   const [sidebarOpen, setSidebarOpen] = useState(() => {
-    if (typeof window === 'undefined') return true;
-    if (accessMode === 'public') return false;
+    if (typeof window === 'undefined') return variant === 'page';
     if (variant === 'page') return window.innerWidth >= 1024;
+    if (accessMode === 'public') return false;
     return window.innerWidth >= 1280;
   });
   const [workspaces, setWorkspaces] = useState<AiWorkspaceResponse[]>([]);
@@ -144,6 +193,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const [actionPendingToken, setActionPendingToken] = useState<string | null>(null);
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [publicChats, setPublicChats] = useState<PublicHistoryEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const speechRecognitionRef = useRef<any>(null);
@@ -156,10 +206,38 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   );
 
   const sortChats = useCallback((items: AiChatSummaryResponse[]) => {
-    return [...items].sort((left, right) => {
-      return new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime();
+    return [...items].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+  }, []);
+
+  const persistPublicConversation = useCallback((conversationId: string, nextMessages: ChatMessage[], fallbackTitle?: string) => {
+    const nextEntry: PublicHistoryEntry = {
+      conversationId,
+      title: buildPublicConversationTitle(nextMessages, fallbackTitle),
+      updatedAt: new Date().toISOString(),
+      messages: nextMessages.filter((message) => !message.streaming),
+    };
+
+    setPublicChats((current) => {
+      const next = [nextEntry, ...current.filter((item) => item.conversationId !== conversationId)]
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
+      savePublicHistory(next);
+      return next;
     });
   }, []);
+
+  const deletePublicConversation = useCallback((conversationId: string) => {
+    setPublicChats((current) => {
+      const next = current.filter((item) => item.conversationId !== conversationId);
+      savePublicHistory(next);
+      return next;
+    });
+
+    if (activeConversationId === conversationId) {
+      setActiveConversationId(null);
+      setMessages([]);
+      setStatusText('Fresh draft started');
+    }
+  }, [activeConversationId]);
 
   const loadChats = useCallback(async (workspaceId: string, preferredConversationId?: string | null) => {
     setHistoryLoading(true);
@@ -224,14 +302,32 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   }, [activeWorkspaceId]);
 
   useEffect(() => {
-    if (!open || isPublic) return;
+    if (variant === 'page') {
+      setOpen(true);
+    }
+  }, [variant]);
+
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (isPublic) {
+      const storedHistory = loadPublicHistory();
+      setPublicChats(storedHistory);
+      return;
+    }
+
     void loadWorkspaces();
   }, [isPublic, loadWorkspaces, open]);
 
   useEffect(() => {
     if (!open || !activeWorkspaceId || isPublic) return;
     void loadChats(activeWorkspaceId, activeConversationId);
-  }, [activeWorkspaceId, activeConversationId, isPublic, loadChats, open]);
+  }, [activeConversationId, activeWorkspaceId, isPublic, loadChats, open]);
 
   useEffect(() => {
     if (!open || !activeConversationId || isPublic) return;
@@ -255,17 +351,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       cancelled = true;
     };
   }, [activeConversationId, isPublic, open]);
-
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
-
-  useEffect(() => {
-    if (variant === 'page') {
-      setOpen(true);
-    }
-  }, [variant]);
 
   const handleCreateWorkspace = useCallback(async () => {
     const name = workspaceDraft.trim();
@@ -294,7 +379,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
     try {
       await aiInteractionApi.deleteChat(conversationId);
-
       setChats((current) => current.filter((chat) => chat.conversationId !== conversationId));
 
       if (activeConversationId === conversationId) {
@@ -372,8 +456,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
         await loadChats(activeWorkspaceId, result.conversationId);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'The action could not be confirmed.';
-      setStatusText(message);
+      setStatusText(error instanceof Error ? error.message : 'The action could not be confirmed.');
     } finally {
       setActionPendingToken(null);
     }
@@ -432,7 +515,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       conversationId: currentConversationId,
       message: messageText,
       context: {
-        route: variant === 'page' ? '/ai-assistant' : '/assistant-drawer',
+        route: assistantRoute,
       },
     });
 
@@ -440,8 +523,8 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       conversationId = nextConversationId;
       setStatusText('Response ready');
       setActiveConversationId(nextConversationId);
-      setMessages((current) =>
-        current.map((message) =>
+      setMessages((current) => {
+        const nextMessages = current.map((message) =>
           message.id === assistantId
             ? {
                 ...message,
@@ -451,16 +534,20 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 streaming: false,
               }
             : message,
-        ),
-      );
+        );
+
+        if (isPublic) {
+          persistPublicConversation(nextConversationId, nextMessages, messageText);
+        }
+
+        return nextMessages;
+      });
     };
 
     try {
       const workspaceId = isPublic ? null : await ensureActiveWorkspace();
-      if (!workspaceId) {
-        if (!isPublic) {
-          throw new Error('AURA could not prepare a workspace for this chat.');
-        }
+      if (!workspaceId && !isPublic) {
+        throw new Error('AURA could not prepare a workspace for this chat.');
       }
 
       if (!conversationId && workspaceId) {
@@ -482,7 +569,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
       if (!response.ok || !response.body) {
         const fallback = await aiInteractionApi.chat(workspaceId, conversationId, messageText, {
-          route: variant === 'page' ? '/ai-assistant' : '/assistant-drawer',
+          route: assistantRoute,
         });
         commitFinalResponse(fallback.conversationId, fallback.response as RenderedResponse);
       } else {
@@ -511,12 +598,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               if (!parsed.ok) return;
               commitFinalResponse(parsed.value.conversationId, parsed.value.response);
             }
-
-            if (event === 'error') {
-              const parsed = tryParseJson<{ text?: string }>(data);
-              const text = parsed.ok && parsed.value.text ? parsed.value.text : 'The assistant stream failed.';
-              throw new Error(text);
-            }
           },
         });
       }
@@ -542,7 +623,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     } finally {
       setLoading(false);
     }
-  }, [activeConversationId, ensureActiveWorkspace, input, isPublic, loadChats, loading, session.token, sortChats, variant]);
+  }, [activeConversationId, assistantRoute, ensureActiveWorkspace, input, isPublic, loadChats, loading, persistPublicConversation, session.token, sortChats]);
 
   const startVoiceCapture = useCallback(() => {
     setVoiceError(null);
@@ -588,238 +669,331 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   }, [handleSend]);
 
   const shellTitle = isPublic
-    ? 'AURA Public Assistant'
+    ? 'Aura Workspace'
     : variant === 'page'
       ? 'AURA Strategy Workspace'
       : 'AURA Assistant';
+
   const shellSubtitle = isPublic
-    ? 'Ask about pricing, onboarding, platform capabilities, and roadmap in a polished public-facing assistant.'
+    ? 'A premium school ERP assistant with streaming answers, markdown, structured insights, and suggested prompts built for evaluation workflows.'
     : variant === 'page'
       ? 'Manage workspaces, revisit chats, and work in a focused assistant workspace.'
       : 'Fast insight and operational reasoning without leaving the page.';
 
+  const renderPublicSidebar = () => (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="border-b border-white/10 px-4 py-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Aura History</div>
+            <div className="mt-1 text-sm font-semibold text-white/80">Recent school conversations</div>
+          </div>
+          {variant !== 'page' ? (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-xl border border-white/10 p-2 text-white/60 transition hover:bg-white/5 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleCreateDraftChat}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-400/25 bg-emerald-500/5 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-500/10"
+        >
+          <Plus size={16} />
+          New chat
+        </button>
+      </div>
+
+      <div className="border-b border-white/10 px-4 py-4">
+        <div className="text-[0.68rem] font-black uppercase tracking-[0.24em] text-white/35">Integrated tools</div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {ERP_TOOL_LABELS.map((tool) => (
+            <span key={tool} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-300">
+              {tool}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+        {publicChats.length ? (
+          <div className="space-y-2">
+            {publicChats.map((chat) => (
+              <div
+                key={chat.conversationId}
+                className={`group flex items-center gap-2 rounded-2xl px-3 py-3 transition ${
+                  chat.conversationId === activeConversationId
+                    ? 'bg-white/10 text-white ring-1 ring-white/15'
+                    : 'bg-white/[0.03] text-white/70 hover:bg-white/8 hover:text-white'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConversationId(chat.conversationId);
+                    setMessages(chat.messages);
+                    if (variant !== 'page') setSidebarOpen(false);
+                  }}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <div className="truncate text-sm font-semibold">{chat.title}</div>
+                  <div className="mt-1 text-[0.68rem] uppercase tracking-[0.18em] text-white/35">
+                    {new Date(chat.updatedAt).toLocaleDateString()}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deletePublicConversation(chat.conversationId)}
+                  className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
+                  aria-label={`Delete ${chat.title}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/45">
+            Your public Aura chats will appear here so you can revisit product questions during evaluation.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderAuthenticatedSidebar = () => (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="border-b border-white/10 px-4 py-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">
+              {bootstrapping ? 'Loading' : 'Workspace Hub'}
+            </div>
+            <div className="mt-1 text-sm font-semibold text-white/80">
+              {activeWorkspace?.name || 'Loading workspace'}
+            </div>
+          </div>
+          {variant !== 'page' ? (
+            <button
+              type="button"
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-xl border border-white/10 p-2 text-white/60 transition hover:bg-white/5 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          ) : null}
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {workspaceComposerOpen ? (
+            <div className="space-y-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-3">
+              <input
+                value={workspaceDraft}
+                onChange={(event) => setWorkspaceDraft(event.target.value)}
+                placeholder="New workspace name"
+                className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleCreateWorkspace()}
+                  className="flex-1 rounded-xl bg-emerald-500 px-3 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setWorkspaceComposerOpen(false);
+                    setWorkspaceDraft('');
+                  }}
+                  className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setWorkspaceComposerOpen(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-400/25 bg-emerald-500/5 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-500/10"
+            >
+              <FolderPlus size={16} />
+              New Workspace
+            </button>
+          )}
+
+          <div className="max-h-32 space-y-2 overflow-y-auto pr-1">
+            {workspaces.map((workspace) => (
+              <div
+                key={workspace.workspaceId}
+                onDragOver={(event) => {
+                  if (!draggingConversationId) return;
+                  event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  if (!draggingConversationId) return;
+                  event.preventDefault();
+                  void handleMoveChatToWorkspace(draggingConversationId, workspace.workspaceId);
+                }}
+                className={draggingConversationId ? 'rounded-2xl ring-1 ring-dashed ring-emerald-400/25' : ''}
+              >
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    setActiveWorkspaceId(workspace.workspaceId);
+                    setSidebarOpen(variant === 'page');
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      setActiveWorkspaceId(workspace.workspaceId);
+                    }
+                  }}
+                  className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition ${
+                    workspace.workspaceId === activeWorkspaceId
+                      ? 'bg-emerald-500/12 text-white ring-1 ring-emerald-400/30'
+                      : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-semibold">{workspace.name}</div>
+                    <div className="mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-white/35">
+                      {new Date(workspace.updatedAt).toLocaleDateString()}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {workspaces.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void handleDeleteWorkspace(workspace.workspaceId);
+                        }}
+                        className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
+                        aria-label={`Delete workspace ${workspace.name}`}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    ) : null}
+                    <ChevronRight size={14} className="shrink-0" />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between px-4 py-3">
+        <div className="text-[0.7rem] font-black uppercase tracking-[0.24em] text-white/35">Chat History</div>
+        <button
+          type="button"
+          onClick={handleCreateDraftChat}
+          className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition hover:bg-white/5 hover:text-white"
+        >
+          <Plus size={14} />
+          New chat
+        </button>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+        {historyLoading ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/50">Loading conversations...</div>
+        ) : chats.length ? (
+          <div className="space-y-2">
+            {chats.map((chat) => (
+              <div
+                key={chat.conversationId}
+                draggable
+                onDragStart={() => setDraggingConversationId(chat.conversationId)}
+                onDragEnd={() => setDraggingConversationId(null)}
+                className={`group flex items-center gap-2 rounded-2xl px-3 py-3 transition ${
+                  chat.conversationId === activeConversationId
+                    ? 'bg-white/10 text-white ring-1 ring-white/15'
+                    : 'bg-white/[0.03] text-white/70 hover:bg-white/8 hover:text-white'
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveConversationId(chat.conversationId);
+                    if (variant !== 'page') setSidebarOpen(false);
+                  }}
+                  className="min-w-0 flex-1 text-left"
+                >
+                  <div className="truncate text-sm font-semibold">{chat.title || 'Untitled chat'}</div>
+                  <div className="mt-1 text-[0.68rem] uppercase tracking-[0.18em] text-white/35">
+                    {new Date(chat.updatedAt).toLocaleDateString()}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteChat(chat.conversationId)}
+                  className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
+                  aria-label={`Delete ${chat.title}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/45">
+            No chats in this workspace yet. Start a draft to create one automatically.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const shellBody = (
-    <div className={`relative flex h-full min-h-0 flex-col ${!isPublic ? 'lg:grid lg:grid-cols-[20rem_minmax(0,1fr)]' : ''}`}>
+    <div className={`relative flex h-full min-h-0 flex-col ${sidebarOpen || variant === 'page' ? 'lg:grid lg:grid-cols-[19rem_minmax(0,1fr)]' : ''}`}>
       <AnimatePresence>
-        {!isPublic && (variant === 'page' || sidebarOpen) && (
+        {(variant === 'page' || sidebarOpen) ? (
           <motion.aside
             initial={{ x: -24, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -24, opacity: 0 }}
             className={`${
               variant === 'page'
-                ? `${sidebarOpen ? 'absolute inset-y-0 left-0 z-20 w-[18rem]' : 'hidden'} border-r border-white/10 bg-slate-950/95 shadow-2xl lg:static lg:z-auto lg:block lg:w-auto lg:border-b-0 lg:bg-black/20 lg:shadow-none`
+                ? `${sidebarOpen ? 'absolute inset-y-0 left-0 z-20 w-[18rem]' : 'hidden'} border-r border-white/10 bg-slate-950/95 shadow-2xl lg:static lg:z-auto lg:block lg:w-auto lg:bg-black/20 lg:shadow-none`
                 : 'absolute inset-y-0 left-0 z-20 w-[18rem] border-r border-white/10 bg-slate-950/95 shadow-2xl'
-            } border-white/10`}
+            }`}
           >
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="border-b border-white/10 px-4 py-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">
-                      {isPublic ? 'Saved Chats' : 'Workspace Hub'}
-                    </div>
-                    <div className="mt-1 text-sm font-semibold text-white/80">
-                      {activeWorkspace?.name || 'Loading workspace'}
-                    </div>
-                  </div>
-                  {variant !== 'page' ? (
-                    <button
-                      type="button"
-                      onClick={() => setSidebarOpen(false)}
-                      className="rounded-xl border border-white/10 p-2 text-white/60 transition hover:bg-white/5 hover:text-white"
-                    >
-                      <X size={16} />
-                    </button>
-                  ) : null}
-                </div>
-
-                <div className="mt-4 space-y-2">
-                  {workspaceComposerOpen ? (
-                    <div className="space-y-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-3">
-                      <input
-                        value={workspaceDraft}
-                        onChange={(event) => setWorkspaceDraft(event.target.value)}
-                        placeholder="New workspace name"
-                        className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => void handleCreateWorkspace()}
-                          className="flex-1 rounded-xl bg-emerald-500 px-3 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
-                        >
-                          Save
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setWorkspaceComposerOpen(false);
-                            setWorkspaceDraft('');
-                          }}
-                          className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setWorkspaceComposerOpen(true)}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-400/25 bg-emerald-500/5 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-500/10"
-                    >
-                      <FolderPlus size={16} />
-                      New Workspace
-                    </button>
-                  )}
-
-                  <div className="max-h-32 space-y-2 overflow-y-auto pr-1">
-                    {workspaces.map((workspace) => (
-                      <div
-                        key={workspace.workspaceId}
-                        onDragOver={(event) => {
-                          if (!draggingConversationId) return;
-                          event.preventDefault();
-                        }}
-                        onDrop={(event) => {
-                          if (!draggingConversationId) return;
-                          event.preventDefault();
-                          void handleMoveChatToWorkspace(draggingConversationId, workspace.workspaceId);
-                        }}
-                        className={draggingConversationId ? 'rounded-2xl ring-1 ring-dashed ring-emerald-400/25' : ''}
-                      >
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => {
-                            setActiveWorkspaceId(workspace.workspaceId);
-                            setSidebarOpen(variant === 'page');
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault();
-                              setActiveWorkspaceId(workspace.workspaceId);
-                            }
-                          }}
-                          className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition ${
-                            workspace.workspaceId === activeWorkspaceId
-                              ? 'bg-emerald-500/12 text-white ring-1 ring-emerald-400/30'
-                              : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                          }`}
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate text-sm font-semibold">{workspace.name}</div>
-                            <div className="mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-white/35">
-                              {new Date(workspace.updatedAt).toLocaleDateString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {workspaces.length > 1 ? (
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  void handleDeleteWorkspace(workspace.workspaceId);
-                                }}
-                                className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
-                                aria-label={`Delete workspace ${workspace.name}`}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            ) : null}
-                            <ChevronRight size={14} className="shrink-0" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between px-4 py-3">
-                <div className="text-[0.7rem] font-black uppercase tracking-[0.24em] text-white/35">Chat History</div>
-                <button
-                  type="button"
-                  onClick={handleCreateDraftChat}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition hover:bg-white/5 hover:text-white"
-                >
-                  <Plus size={14} />
-                  New chat
-                </button>
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-                {historyLoading ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/50">Loading conversations...</div>
-                ) : chats.length ? (
-                  <div className="space-y-2">
-                    {chats.map((chat) => (
-                      <div
-                        key={chat.conversationId}
-                        draggable
-                        onDragStart={() => setDraggingConversationId(chat.conversationId)}
-                        onDragEnd={() => setDraggingConversationId(null)}
-                        className={`group flex items-center gap-2 rounded-2xl px-3 py-3 transition ${
-                          chat.conversationId === activeConversationId
-                            ? 'bg-white/10 text-white ring-1 ring-white/15'
-                            : 'bg-white/[0.03] text-white/70 hover:bg-white/8 hover:text-white'
-                        }`}
-                      >
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveConversationId(chat.conversationId);
-                            if (variant !== 'page') setSidebarOpen(false);
-                          }}
-                          className="min-w-0 flex-1 text-left"
-                        >
-                          <div className="truncate text-sm font-semibold">{chat.title || 'Untitled chat'}</div>
-                          <div className="mt-1 text-[0.68rem] uppercase tracking-[0.18em] text-white/35">
-                            {new Date(chat.updatedAt).toLocaleDateString()}
-                          </div>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDeleteChat(chat.conversationId)}
-                          className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
-                          aria-label={`Delete ${chat.title}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/45">
-                    No chats in this workspace yet. Start a draft to create one automatically.
-                  </div>
-                )}
-              </div>
-            </div>
+            {isPublic ? renderPublicSidebar() : renderAuthenticatedSidebar()}
           </motion.aside>
-        )}
+        ) : null}
       </AnimatePresence>
 
-      <section className="min-h-0 border-b border-white/10 lg:border-b-0 lg:border-r">
+      <section className="min-h-0 border-b border-white/10 lg:border-b-0 lg:border-r lg:border-r-white/10">
         <div className="flex h-full min-h-0 flex-col">
-              <div className="border-b border-white/10 px-4 py-4 md:px-5">
+          <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Neural Assistant</div>
-                <h2 className="mt-2 text-xl font-black tracking-tight text-white">{shellTitle}</h2>
-                <p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">{shellSubtitle}</p>
+              <div className="max-w-3xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/14 bg-emerald-500/8 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-200/72">
+                  <Sparkles size={12} />
+                  Neural Assistant
+                </div>
+                <h2 className="mt-3 text-2xl font-black tracking-tight text-white md:text-[2rem]">{shellTitle}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-white/55">{shellSubtitle}</p>
               </div>
+
               <div className="flex items-center gap-2">
-                {!isPublic ? (
-                  <button
-                    type="button"
-                    onClick={() => setSidebarOpen((current) => !current)}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                  >
-                    <PanelLeft size={18} />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen((current) => !current)}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
+                >
+                  <PanelLeft size={18} />
+                </button>
                 {variant === 'drawer' ? (
                   <button
                     type="button"
@@ -832,7 +1006,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               {examplePrompts.map((prompt) => (
                 <button
                   key={prompt}
@@ -848,24 +1022,61 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 </button>
               ))}
             </div>
+
+            {isPublic ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {ERP_TOOL_LABELS.map((tool) => (
+                  <span key={tool} className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1.5 text-[0.7rem] font-medium text-slate-300">
+                    {tool}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
 
-          <div ref={scrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 md:px-5">
+          <div ref={scrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 md:px-6">
             {!messages.length ? (
-              <div className="rounded-[1.75rem] border border-dashed border-white/12 bg-white/[0.03] p-6 text-white/60">
-                <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-emerald-500/12 p-3 text-emerald-300">
-                    <Brain size={20} />
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
+                <div className="rounded-[1.9rem] border border-white/10 bg-white/[0.03] p-6">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-2xl bg-emerald-500/12 p-3 text-emerald-300">
+                      <Brain size={20} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-white">
+                        {isPublic ? 'Start with an evaluation question' : 'Start a new analysis'}
+                      </div>
+                      <div className="mt-1 text-sm text-white/50">
+                        {isPublic
+                          ? 'Aura can explain the platform, compare rollout paths, and return structured school ERP responses.'
+                          : 'Ask for school insights, workflow summaries, policy help, and operational analysis.'}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white">
-                      {isPublic ? 'Ask the platform assistant' : 'Start a new analysis'}
-                    </div>
-                    <div className="mt-1 text-sm text-white/50">
-                      {isPublic
-                        ? 'You can ask about plans, onboarding, vision, roadmap, support, and platform fit without leaving the page.'
-                        : 'Ask for school insights, workflow summaries, policy help, and operational analysis.'}
-                    </div>
+
+                  <div className="mt-6 grid gap-3">
+                    {examplePrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        onClick={() => void handleSend(prompt)}
+                        className="rounded-[1.25rem] border border-white/10 bg-slate-950/55 px-4 py-3 text-left text-sm leading-6 text-slate-300 transition hover:border-emerald-300/30 hover:bg-white/[0.05] hover:text-white"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.35))] p-6">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/16 bg-emerald-500/8 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.24em] text-emerald-200/75">
+                    <LayoutGrid size={12} />
+                    Response formats
+                  </div>
+                  <div className="mt-5 space-y-3">
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Markdown answers with headings, lists, and code-safe formatting.</div>
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Charts, cards, and tables when the assistant has structured data to show.</div>
+                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">School ERP-aware prompts for leadership, operations, and rollout teams.</div>
                   </div>
                 </div>
               </div>
@@ -875,7 +1086,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[92%] sm:max-w-[84%] ${message.role === 'assistant' ? 'w-full' : ''}`}>
                   {message.role === 'assistant' ? (
-                    <div className={`rounded-[1.6rem] border p-4 shadow-lg ${
+                    <div className={`rounded-[1.7rem] border p-4 shadow-lg ${
                       message.error
                         ? 'border-rose-400/20 bg-rose-500/10'
                         : 'border-emerald-400/15 bg-emerald-500/[0.06]'
@@ -917,24 +1128,24 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             ))}
           </div>
 
-          <div className="border-t border-white/10 px-4 py-4 md:px-5">
+          <div className="border-t border-white/10 px-4 py-4 md:px-6">
             <div className="mb-2 flex items-center justify-between gap-3 text-xs text-white/40">
               <div className="flex items-center gap-2">
                 <Sparkles size={14} className="text-emerald-300/70" />
                 <span>{loading ? statusText : isPublic ? 'Public assistant connected' : 'Tool-aware assistant connected'}</span>
               </div>
-              {!isPublic ? (
-                <div className="flex items-center gap-2">
-                  <History size={13} />
-                  <span>{activeConversationId ? 'History saved' : 'Draft mode'}</span>
-                </div>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {isPublic ? <GraduationCap size={13} /> : <History size={13} />}
+                <span>{isPublic ? 'School ERP prompts ready' : activeConversationId ? 'History saved' : 'Draft mode'}</span>
+              </div>
             </div>
+
             {voiceError ? (
               <div className="mb-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-100/85">
                 {voiceError}
               </div>
             ) : null}
+
             <div className="flex items-end gap-3">
               <textarea
                 ref={composerRef}
@@ -947,7 +1158,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                     void handleSend();
                   }
                 }}
-                placeholder={isPublic ? 'Ask about the platform, onboarding, pricing, roadmap, or support...' : 'Ask for insights, explain a concept, or request an operational answer...'}
+                placeholder={isPublic ? 'Ask Aura about school operations, rollout, AI workflows, pricing, or platform fit...' : 'Ask for insights, explain a concept, or request an operational answer...'}
                 className="min-h-[58px] flex-1 resize-none rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-emerald-300/30 focus:bg-white/[0.06]"
               />
               <button
@@ -982,14 +1193,15 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           </div>
         </div>
       </section>
-
     </div>
   );
 
   if (variant === 'page') {
     return (
-      <div className="min-h-[calc(100vh-4rem)] rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.16),_transparent_26%),linear-gradient(180deg,rgba(2,6,23,0.98),rgba(3,7,18,0.94))] text-white shadow-[0_24px_80px_rgba(2,6,23,0.45)]">
-        {shellBody}
+      <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.1),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_100%)] px-3 py-3 text-white md:px-4 md:py-4">
+        <div className="mx-auto h-[calc(100vh-1.5rem)] max-w-[1600px] overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(3,7,18,0.94))] shadow-[0_24px_80px_rgba(2,6,23,0.45)] md:h-[calc(100vh-2rem)]">
+          {shellBody}
+        </div>
       </div>
     );
   }

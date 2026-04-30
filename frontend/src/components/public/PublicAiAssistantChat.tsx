@@ -11,7 +11,7 @@ export function PublicAiAssistantChat() {
       transition={{ duration: 0.45, ease: 'easeOut' }}
       className="fixed bottom-5 right-5 z-50"
     >
-      <div className="absolute inset-0 rounded-[1.75rem] bg-emerald-400/30 blur-xl animate-pulse" aria-hidden="true" />
+      <div className="pointer-events-none absolute inset-0 rounded-[1.75rem] bg-emerald-400/30 blur-xl animate-pulse" aria-hidden="true" />
       <Link
         to="/assistant"
         className="relative inline-flex items-center gap-3 rounded-[1.35rem] border border-emerald-300/30 bg-slate-950/90 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_60px_rgba(2,6,23,0.45)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-emerald-200/45 hover:bg-slate-900"
