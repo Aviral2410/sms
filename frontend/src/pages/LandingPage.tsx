@@ -61,6 +61,12 @@ function buildOverviewCards(overview: PublicSubscriptionOverviewResponse | null)
   ];
 }
 
+const OVERVIEW_FALLBACK_ITEMS = [
+  { title: 'Live metrics syncing', body: 'Public benchmark counters are refreshing. The platform experience, onboarding paths, and plan details remain available.' },
+  { title: 'Explore the platform', body: 'Use pricing, vision, and onboarding entry points while the public overview reconnects to live subscription telemetry.' },
+  { title: 'Production pathways ready', body: 'School onboarding, role-based experiences, and modular capability stories remain fully browsable.' },
+];
+
 function resolveFeatureImage(feature: PublicSiteFeatureCard) {
   const title = `${feature.title} ${feature.category}`.toLowerCase();
   const current = feature.imageUrl || '';
@@ -268,6 +274,8 @@ export default function LandingPage() {
                 fallbackSrc="/operational-viewpoint.svg"
                 alt={heroMedia?.altText || 'System overview'}
                 className="public-site-hero__image"
+                loading="eager"
+                fetchPriority="high"
               />
               <div>
                 <div className="public-site-hero__visual-label" style={{ color: '#10b981' }}>Core Intelligence</div>
@@ -337,8 +345,22 @@ export default function LandingPage() {
             </div>
           </>
         ) : (
-          <div className="public-site-empty public-panel">
-            {dataError || 'Fetching institutional metrics...'}
+          <div className="public-overview-fallback public-panel">
+            <div className="public-overview-fallback__eyebrow">Overview status</div>
+            <h3>{dataError ? 'Public metrics are temporarily syncing' : 'Fetching institutional metrics'}</h3>
+            <p>
+              {dataError
+                ? 'The live subscription overview is unavailable right now, but the rest of the platform journey is ready to explore.'
+                : 'We are pulling the latest public institutional telemetry for this section.'}
+            </p>
+            <div className="public-overview-fallback__grid">
+              {OVERVIEW_FALLBACK_ITEMS.map((item) => (
+                <article key={item.title} className="public-overview-fallback__item">
+                  <strong>{item.title}</strong>
+                  <span>{item.body}</span>
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -379,6 +401,7 @@ export default function LandingPage() {
             fallbackSrc="/institution-flow.svg"
             alt="Campus lifecycle"
             className="public-site-story-media__image"
+            loading="eager"
           />
           <PublicPretextFlowText
             as="div"
