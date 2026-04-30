@@ -8,6 +8,7 @@ import './store/useStore';
 import './styles/design-system.css';
 import './styles/antigravity.css';
 import './styles.css';
+import './styles/public-production-overrides.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
