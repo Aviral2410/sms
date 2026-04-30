@@ -1,7 +1,7 @@
 :root {
   --font-main: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Outfit', sans-serif;
-  
+
   /* Midnight & Neon Palette (Default Dark) */
   --bg-deep: #020617; /* Slate 950 */
   --bg-surface: #0f172a; /* Slate 900 */
@@ -281,25 +281,54 @@ body {
 }
 
 .ai-richtext p,
+.ai-richtext h1,
+.ai-richtext h2,
+.ai-richtext h3,
 .ai-richtext h4,
+.ai-richtext h5,
+.ai-richtext h6,
 .ai-richtext ul,
 .ai-richtext ol,
 .ai-richtext pre {
   margin: 0;
 }
 
+.ai-richtext h1,
+.ai-richtext h2,
+.ai-richtext h3,
 .ai-richtext h4 {
   color: var(--text-strong);
-  font-size: 0.95rem;
+  letter-spacing: -0.03em;
+  line-height: 1.18;
+}
+
+.ai-richtext h1 {
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+  font-weight: 900;
+}
+
+.ai-richtext h2 {
+  font-size: clamp(1.45rem, 2.2vw, 1.95rem);
+  font-weight: 900;
+}
+
+.ai-richtext h3 {
+  font-size: 1.18rem;
+  font-weight: 850;
+}
+
+.ai-richtext h4,
+.ai-richtext h5,
+.ai-richtext h6 {
+  font-size: 1rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
 }
 
 .ai-richtext ul,
 .ai-richtext ol {
   padding-left: 1.15rem;
   display: grid;
-  gap: 0.45rem;
+  gap: 0.55rem;
 }
 
 .ai-richtext li::marker {
@@ -2171,20 +2200,27 @@ label span {
 .public-pretext-flow {
   --pretext-flow-accent: #9eeeff;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16em;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .public-pretext-flow__line {
   position: relative;
   display: block;
-  width: fit-content;
+  width: 100%;
   max-width: 100%;
   overflow: visible;
+  min-width: 0;
 }
 
 .public-pretext-flow__line-base,
 .public-pretext-flow__line-fill {
   display: block;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .public-pretext-flow__line-base {
@@ -2597,6 +2633,7 @@ label span {
   gap: 16px;
   padding: 26px;
   border-radius: 30px;
+  min-width: 0;
 }
 
 .public-launch-card h3 {
@@ -2865,6 +2902,7 @@ label span {
   border-radius: 30px;
   position: relative;
   overflow: hidden;
+  min-width: 0;
 }
 
 .public-testimonial-card::before,
@@ -2934,11 +2972,10 @@ label span {
 }
 
 .public-feature-lattice__header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(0, 1.2fr);
   gap: 18px;
   align-items: start;
-  flex-wrap: wrap;
 }
 
 .public-feature-lattice__header h3 {
@@ -2962,9 +2999,10 @@ label span {
 }
 
 .public-feature-lattice__legend {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(var(--plan-count, 3), minmax(0, 1fr));
   gap: 12px;
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .public-feature-lattice__legend-card,
@@ -2973,12 +3011,13 @@ label span {
 }
 
 .public-feature-lattice__legend-card {
-  min-width: 150px;
+  min-width: 0;
   padding: 14px 16px;
   border-radius: 20px;
   border: 1px solid color-mix(in srgb, var(--plan-accent) 32%, rgba(255,255,255,0.08));
   background: linear-gradient(180deg, rgba(8, 14, 23, 0.92), rgba(8, 14, 23, 0.7));
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  min-height: 100%;
 }
 
 .public-feature-lattice__legend-card span {
@@ -3045,6 +3084,7 @@ label span {
 .public-feature-lattice__plan-cell {
   min-height: 96px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -3225,9 +3265,10 @@ label span {
     grid-template-columns: 1fr;
   }
 
+  .public-feature-lattice__header,
+  .public-feature-lattice__row,
+  .public-feature-lattice__plan-strip,
   .public-feature-lattice__legend {
-    width: 100%;
-    display: grid;
     grid-template-columns: 1fr;
   }
 

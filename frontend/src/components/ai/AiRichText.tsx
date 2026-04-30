@@ -8,7 +8,7 @@ interface AiRichTextProps {
 
 type Block =
   | { type: 'paragraph'; text: string }
-  | { type: 'heading'; text: string }
+  | { type: 'heading'; text: string; level: number }
   | { type: 'list'; items: string[]; ordered: boolean }
   | { type: 'code'; code: string; language: string };
 
@@ -56,7 +56,8 @@ function parseBlocks(content: string): Block[] {
 
     if (line.startsWith('#')) {
       flushParagraph(paragraphBuffer);
-      blocks.push({ type: 'heading', text: line.replace(/^#+\s*/, '').trim() });
+      const level = Math.min(6, Math.max(1, (line.match(/^#+/)?.[0].length ?? 1)));
+      blocks.push({ type: 'heading', text: line.replace(/^#+\s*/, '').trim(), level });
       index += 1;
       continue;
     }
@@ -97,7 +98,8 @@ export const AiRichText: React.FC<AiRichTextProps> = ({ content, className }) =>
     <div className={['ai-richtext', className].filter(Boolean).join(' ')}>
       {blocks.map((block, index) => {
         if (block.type === 'heading') {
-          return <h4 key={index}>{block.text}</h4>;
+          const HeadingTag = `h${block.level}` as any;
+          return <HeadingTag key={index}>{block.text}</HeadingTag>;
         }
 
         if (block.type === 'list') {

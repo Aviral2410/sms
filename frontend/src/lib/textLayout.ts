@@ -173,6 +173,8 @@ export function measureTextBlock(config: TextLayoutConfig): TextLayoutResult {
   for (const paragraph of prepared) {
     let currentLine = '';
     let currentWidth = 0;
+    let pendingWhitespace = '';
+    let pendingWhitespaceWidth = 0;
 
     const pushLine = (lineText: string, width: number) => {
       lines.push(whiteSpace === 'normal' ? lineText.trim() : lineText.replace(/\s+$/, ''));
@@ -184,20 +186,28 @@ export function measureTextBlock(config: TextLayoutConfig): TextLayoutResult {
         if (whiteSpace === 'pre-wrap' && currentLine) {
           currentLine += token.text;
           currentWidth += token.width;
+        } else if (whiteSpace === 'normal' && currentLine) {
+          pendingWhitespace = ' ';
+          pendingWhitespaceWidth = measureTextWidth(' ', config.font);
         }
         continue;
       }
 
-      const candidate = `${currentLine}${token.text}`;
-      const candidateWidth = currentWidth + token.width;
+      const nextSegment = whiteSpace === 'normal' ? `${pendingWhitespace}${token.text}` : token.text;
+      const candidate = `${currentLine}${nextSegment}`;
+      const candidateWidth = currentWidth + pendingWhitespaceWidth + token.width;
 
       if (!currentLine || candidateWidth <= maxWidth) {
         currentLine = candidate;
         currentWidth = candidateWidth;
+        pendingWhitespace = '';
+        pendingWhitespaceWidth = 0;
         continue;
       }
 
       pushLine(currentLine, currentWidth);
+      pendingWhitespace = '';
+      pendingWhitespaceWidth = 0;
 
       if (token.width <= maxWidth || wordBreak === 'keep-all') {
         currentLine = token.text;

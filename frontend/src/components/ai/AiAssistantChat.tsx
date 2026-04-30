@@ -73,13 +73,13 @@ const PUBLIC_EXAMPLE_PROMPTS = [
 const SAMPLE_VIDEO_EXAMPLES = [
   {
     title: 'Physics Motion Storyboard',
-    caption: 'Preview how velocity, force, and acceleration can be visualized for a student question.',
+    caption: 'Velocity, force, and acceleration presented as a playable concept preview.',
     poster: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80',
     src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
   },
   {
     title: 'Biology Process Walkthrough',
-    caption: 'Reference motion language for generated explainers around systems and cycles.',
+    caption: 'Cycle-driven explainer motion for systems, processes, and cause-effect teaching.',
     poster: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&w=1200&q=80',
     src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
   },
@@ -144,6 +144,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const [open, setOpen] = useState(variant === 'page');
   const [sidebarOpen, setSidebarOpen] = useState(() => {
     if (typeof window === 'undefined') return true;
+    if (accessMode === 'public') return false;
     if (variant === 'page') return window.innerWidth >= 1024;
     return window.innerWidth >= 1280;
   });
@@ -226,6 +227,18 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       setBootstrapping(false);
     }
   }, []);
+
+  const ensureActiveWorkspace = useCallback(async () => {
+    if (activeWorkspaceId) {
+      return activeWorkspaceId;
+    }
+
+    const nextWorkspaces = await aiInteractionApi.listWorkspaces();
+    setWorkspaces(nextWorkspaces);
+    const nextWorkspaceId = nextWorkspaces[0]?.workspaceId ?? null;
+    setActiveWorkspaceId(nextWorkspaceId);
+    return nextWorkspaceId;
+  }, [activeWorkspaceId]);
 
   useEffect(() => {
     if (!open) return;
@@ -404,7 +417,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
   const handleSend = useCallback(async (override?: string) => {
     const messageText = (override ?? input).trim();
-    if (!messageText || loading || !activeWorkspaceId) return;
+    if (!messageText || loading) return;
 
     setInput('');
     setLoading(true);
@@ -433,8 +446,13 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     let conversationId = activeConversationId;
 
     try {
+      const workspaceId = await ensureActiveWorkspace();
+      if (!workspaceId) {
+        throw new Error('AURA could not prepare a workspace for this chat.');
+      }
+
       if (!conversationId) {
-        const chat = await aiInteractionApi.createChat(activeWorkspaceId, messageText.slice(0, 64));
+        const chat = await aiInteractionApi.createChat(workspaceId, messageText.slice(0, 64));
         conversationId = chat.conversationId;
         setActiveConversationId(chat.conversationId);
         setChats((current) => sortChats([chat, ...current.filter((item) => item.conversationId !== chat.conversationId)]));
@@ -448,7 +466,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           ...(!session.token ? { 'X-Guest-ID': resolveAiGuestId() } : {}),
         },
         body: JSON.stringify({
-          workspaceId: activeWorkspaceId,
+          workspaceId,
           conversationId,
           message: messageText,
           context: {
@@ -511,7 +529,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       });
 
       if (conversationId) {
-        await loadChats(activeWorkspaceId, conversationId);
+        await loadChats(workspaceId, conversationId);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'The assistant hit an unexpected error.';
@@ -531,7 +549,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     } finally {
       setLoading(false);
     }
-  }, [activeConversationId, activeWorkspaceId, input, loadChats, loading, session.token, sortChats, variant]);
+  }, [activeConversationId, ensureActiveWorkspace, input, loadChats, loading, session.token, sortChats, variant]);
 
   const startVoiceCapture = useCallback(() => {
     setVoiceError(null);
@@ -582,13 +600,13 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       ? 'AURA Strategy Workspace'
       : 'AURA Assistant';
   const shellSubtitle = isPublic
-    ? 'Ask about pricing, onboarding, platform capabilities, and roadmap with the same assistant experience.'
+    ? 'Ask about pricing, onboarding, platform capabilities, and roadmap in a polished public-facing assistant.'
     : variant === 'page'
       ? 'Manage chats, review history, and open generated intelligence next to the conversation.'
       : 'Fast insight, summaries, and visual reasoning without leaving the page.';
 
   const shellBody = (
-    <div className="relative flex h-full min-h-0 flex-col lg:grid lg:grid-cols-[20rem_minmax(0,1fr)_minmax(0,30rem)]">
+    <div className={`relative flex h-full min-h-0 flex-col lg:grid ${isPublic ? 'lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)]' : 'lg:grid-cols-[20rem_minmax(0,1fr)_minmax(0,30rem)]'}`}>
       <AnimatePresence>
         {(variant === 'page' || sidebarOpen) && (
           <motion.aside
@@ -605,7 +623,9 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               <div className="border-b border-white/10 px-4 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Workspace Hub</div>
+                    <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">
+                      {isPublic ? 'Saved Chats' : 'Workspace Hub'}
+                    </div>
                     <div className="mt-1 text-sm font-semibold text-white/80">
                       {activeWorkspace?.name || 'Loading workspace'}
                     </div>
@@ -823,7 +843,11 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                   key={prompt}
                   type="button"
                   onClick={() => void handleSend(prompt)}
-                  className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-semibold text-white/70 transition hover:border-emerald-300/30 hover:bg-emerald-500/10 hover:text-emerald-100"
+                  className={`rounded-full border border-white/10 px-3 py-2 text-xs font-semibold transition ${
+                    isPublic
+                      ? 'bg-white/[0.06] text-white/85 hover:border-emerald-300/35 hover:bg-emerald-500/12 hover:text-white'
+                      : 'bg-white/[0.04] text-white/70 hover:border-emerald-300/30 hover:bg-emerald-500/10 hover:text-emerald-100'
+                  }`}
                 >
                   {prompt}
                 </button>
@@ -839,8 +863,14 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                     <Brain size={20} />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-white">Start a new analysis</div>
-                    <div className="mt-1 text-sm text-white/50">Ask for school insights, operations summaries, or a visual learning explanation.</div>
+                    <div className="text-sm font-semibold text-white">
+                      {isPublic ? 'Ask the platform assistant' : 'Start a new analysis'}
+                    </div>
+                    <div className="mt-1 text-sm text-white/50">
+                      {isPublic
+                        ? 'You can ask about plans, onboarding, vision, roadmap, support, and platform fit without leaving the page.'
+                        : 'Ask for school insights, operations summaries, or a visual learning explanation.'}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -896,7 +926,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             <div className="mb-2 flex items-center justify-between gap-3 text-xs text-white/40">
               <div className="flex items-center gap-2">
                 <Sparkles size={14} className="text-emerald-300/70" />
-                <span>{loading ? statusText : 'Tool-aware assistant connected'}</span>
+                <span>{loading ? statusText : isPublic ? 'Public assistant connected' : 'Tool-aware assistant connected'}</span>
               </div>
               <div className="flex items-center gap-2">
                 <History size={13} />
@@ -945,7 +975,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               <button
                 type="button"
                 onClick={() => void handleSend()}
-                disabled={loading || !input.trim() || !activeWorkspaceId}
+                disabled={loading || !input.trim()}
                 className="inline-flex h-[58px] w-[58px] items-center justify-center rounded-[1.25rem] bg-emerald-500 text-slate-950 shadow-[0_12px_30px_rgba(16,185,129,0.25)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-55"
               >
                 <Send size={18} />
@@ -960,9 +990,11 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
         <div className="flex h-full min-h-0 flex-col">
           <div className="border-b border-white/10 px-4 py-4">
             <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Visualizer</div>
-            <h3 className="mt-2 text-lg font-black text-white">Response canvas</h3>
+            <h3 className="mt-2 text-lg font-black text-white">{isPublic ? 'Live answer canvas' : 'Response canvas'}</h3>
             <p className="mt-1 text-sm leading-6 text-white/50">
-              The latest generated intelligence is shown here, alongside sample motion references for explainers.
+              {isPublic
+                ? 'The latest public answer appears here, with clean sample motion previews that stay playable inside the drawer.'
+                : 'The latest generated intelligence is shown here, alongside sample motion references for explainers.'}
             </p>
           </div>
 
@@ -980,13 +1012,17 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-4">
               <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
                 <Video size={16} className="text-emerald-300" />
-                Motion examples
+                Visualizer examples
               </div>
-              <div className="space-y-4">
+              <div className="grid gap-4">
                 {SAMPLE_VIDEO_EXAMPLES.map((item) => (
-                  <div key={item.title} className="overflow-hidden rounded-[1.4rem] border border-white/8 bg-black/20">
+                  <div
+                    key={item.title}
+                    className="overflow-hidden rounded-[1.4rem] border border-white/8 bg-black/20"
+                    onClick={(event) => event.stopPropagation()}
+                  >
                     <video
-                      className="aspect-video w-full object-cover"
+                      className="aspect-video w-full cursor-auto object-cover"
                       src={item.src}
                       poster={item.poster}
                       muted
@@ -994,10 +1030,11 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                       autoPlay
                       loop
                       controls
+                      preload="metadata"
                     />
                     <div className="p-3">
                       <div className="text-sm font-semibold text-white">{item.title}</div>
-                      <div className="mt-1 text-sm leading-6 text-white/50">{item.caption}</div>
+                      <div className="mt-1 text-[0.82rem] leading-6 text-white/55">{item.caption}</div>
                     </div>
                   </div>
                 ))}
@@ -1025,7 +1062,11 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           initial={{ scale: 0.92, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           onClick={() => setOpen(true)}
-          className="fixed bottom-5 right-5 z-50 inline-flex h-14 w-14 items-center justify-center rounded-[1.5rem] bg-emerald-500 text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.35)] transition hover:scale-105 hover:bg-emerald-400"
+          className={`fixed right-5 z-50 inline-flex items-center justify-center bg-emerald-500 text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.35)] transition hover:scale-105 hover:bg-emerald-400 ${
+            isPublic
+              ? 'bottom-5 h-14 w-14 rounded-[1.5rem] md:bottom-auto md:top-1/2 md:-translate-y-1/2'
+              : 'bottom-5 h-14 w-14 rounded-[1.5rem]'
+          }`}
         >
           <MessageSquare size={22} />
         </motion.button>
@@ -1037,8 +1078,12 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             initial={{ opacity: 0, x: 18 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 18 }}
-            className="fixed bottom-0 right-0 z-50 h-[100dvh] w-full sm:bottom-5 sm:right-5 sm:h-[min(90vh,48rem)]"
-            style={{ maxWidth: DRAWER_WIDTH }}
+            className={`fixed right-0 z-50 w-full ${
+              isPublic
+                ? 'inset-y-0 sm:bottom-4 sm:top-4 sm:right-4 sm:h-auto'
+                : 'bottom-0 h-[100dvh] sm:bottom-5 sm:right-5 sm:h-[min(90vh,48rem)]'
+            }`}
+            style={{ maxWidth: isPublic ? 'min(calc(100vw - 1rem), 88rem)' : DRAWER_WIDTH }}
           >
             <div className="flex h-full flex-col overflow-hidden border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(3,7,18,0.96))] text-white shadow-[0_30px_80px_rgba(2,6,23,0.7)] sm:rounded-[2rem]">
               {shellBody}

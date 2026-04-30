@@ -74,9 +74,9 @@ export default function PricingPage() {
     <PublicSiteFrame content={content} activePath="/pricing" mode="ambient" density={1.12}>
       <section className="public-page-intro public-page-intro--focus">
         <PublicPretextHeading
-          eyebrow="Pricing"
-          pretext="Plans"
-          title={content?.pricingHeadline || 'Commercial plans shaped around rollout depth and operational capacity.'}
+          eyebrow="Launch Options"
+          pretext="Subscription"
+          title={content?.pricingHeadline || 'Commercial plans shaped around rollout depth, capacity, and operational coverage.'}
           description={content?.pricingBody || 'Choose the pricing lane that matches launch speed, user volume, and how much institutional workflow you want connected from day one.'}
           align="center"
         />
@@ -131,8 +131,9 @@ export default function PricingPage() {
                 </div>
                 <div className="public-feature-lattice__legend">
                   {orderedPlans.map((plan, index) => (
-                    <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index), minWidth: 120 } as React.CSSProperties}>
+                    <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index) } as React.CSSProperties}>
                       <span style={{ fontSize: 10 }}>{plan.planCode}</span>
+                      <p style={{ margin: '8px 0 0', color: 'var(--public-text-soft)', fontSize: '0.94rem', fontWeight: 700 }}>{plan.planName}</p>
                       <strong style={{ fontSize: 16 }}>{formatCurrency(Number(plan.monthlyPrice))}</strong>
                     </div>
                   ))}

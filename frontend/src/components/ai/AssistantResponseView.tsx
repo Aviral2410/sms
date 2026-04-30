@@ -26,6 +26,38 @@ function toText(data: Record<string, any> | null | undefined) {
   return '';
 }
 
+function extractSnapshotEntries(data: Record<string, any> | null | undefined) {
+  if (!data) return [];
+
+  return Object.entries(data)
+    .filter(([key, value]) => {
+      if ([
+        'chart',
+        'raw',
+        'result',
+        'text',
+        'message',
+        'summary',
+        'title',
+        'description',
+        'thought',
+        'markdown',
+        'html',
+      ].includes(key)) {
+        return false;
+      }
+
+      if (value == null) return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) return false;
+      return true;
+    })
+    .map(([key, value]) => ({
+      key,
+      value: typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value ?? '—'),
+    }));
+}
+
 function extractTableRows(data: Record<string, any> | null | undefined) {
   if (!data) return [];
   if (Array.isArray(data.rows)) return data.rows;
@@ -44,12 +76,7 @@ function extractColumns(rows: any[]) {
 }
 
 function KeyValueSnapshot({ data }: { data: Record<string, any> }) {
-  const rows = Object.entries(data)
-    .filter(([key]) => !['chart', 'raw', 'result'].includes(key))
-    .map(([key, value]) => ({
-      key,
-      value: typeof value === 'object' && value !== null ? JSON.stringify(value) : String(value ?? '—'),
-    }));
+  const rows = extractSnapshotEntries(data);
 
   if (!rows.length) return null;
 
@@ -108,6 +135,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
   const tableRows = useMemo(() => extractTableRows(response?.data), [response?.data]);
   const tableColumns = useMemo(() => extractColumns(tableRows), [tableRows]);
   const plainText = toText(response?.data);
+  const hasSnapshotData = Boolean(extractSnapshotEntries(response?.data).length);
 
   if (!response) {
     return null;
@@ -176,7 +204,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
           : 'border-white/10 bg-white/[0.03]'
       }`}>
         {plainText ? <AiRichText content={plainText} className="text-sm leading-7 text-white/85" /> : null}
-        {response.data ? <KeyValueSnapshot data={response.data} /> : null}
+        {!plainText && hasSnapshotData && response.data ? <KeyValueSnapshot data={response.data} /> : null}
       </div>
     );
   }
@@ -188,7 +216,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
         Assistant response
       </div>
       {plainText ? <AiRichText content={plainText} className="text-sm leading-7 text-white/85" /> : null}
-      {response.data ? <KeyValueSnapshot data={response.data} /> : null}
+      {!plainText && hasSnapshotData && response.data ? <KeyValueSnapshot data={response.data} /> : null}
       {!plainText && !response.data ? (
         <div className="flex items-center gap-2 text-sm text-white/55">
           <Sparkles size={14} className="text-emerald-300" />
