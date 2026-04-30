@@ -48,7 +48,13 @@ public class SecurityConfig {
                 // Public school profile
                 .pathMatchers("/api/v1/onboarding/schools/public/**").permitAll()
                 // Public AI Interaction
+                .pathMatchers("/api/v1/ai-interaction/chat").permitAll()
                 .pathMatchers("/api/v1/ai-interaction/chat/stream").permitAll()
+                .pathMatchers("/api/v1/ai-interaction/tools").permitAll()
+                .pathMatchers("/api/v1/ai-interaction/workspaces/**").permitAll()
+                .pathMatchers("/api/v1/ai-interaction/chats").permitAll()
+                .pathMatchers("/api/v1/ai-interaction/chats/**").permitAll()
+                .pathMatchers("/api/v1/ai-interaction/actions/confirm").permitAll()
                 .pathMatchers("/api/chat").permitAll()
                 .pathMatchers("/api/v1/ai-interaction/health-check").permitAll()
                 // All other requests require authentication

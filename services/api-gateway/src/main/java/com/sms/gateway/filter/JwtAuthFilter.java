@@ -54,6 +54,10 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
             "/api/v1/auth/public/password/reset",
             "/api/v1/onboarding/schools/status",
             "/api/v1/subscriptions/plans",
+            "/api/v1/ai-interaction/chat",
+            "/api/v1/ai-interaction/tools",
+            "/api/v1/ai-interaction/chats",
+            "/api/v1/ai-interaction/actions/confirm",
             "/api/v1/ai-interaction/chat/stream");
 
     @Override
@@ -147,6 +151,14 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         // `/api/v1/onboarding/schools/{id}/review`, which then hit services without
         // gateway-injected role/tenant headers and fail with 403.
         if (PUBLIC_ENDPOINTS.contains(cleanPath)) {
+            return true;
+        }
+
+        if (cleanPath.startsWith("/api/v1/ai-interaction/workspaces/")) {
+            return true;
+        }
+
+        if (cleanPath.startsWith("/api/v1/ai-interaction/chats/")) {
             return true;
         }
 

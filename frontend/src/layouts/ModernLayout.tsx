@@ -45,7 +45,7 @@ function getNavItems(role: string): NavItem[] {
     { path: '/admin/ai-governance', label: 'AI Governance', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#22d3ee' },
     { path: '/admin/pricing', label: 'Pricing Control', icon: TrendingUp, roles: [...PLATFORM_ROLES], group: 'Operations', color: '#fbbf24' },
     { path: '/admin/inquiries', label: 'Public Inbox', icon: Bell, roles: [...PLATFORM_ROLES], group: 'Operations', color: '#f472b6' },
-    { path: '/learn', label: 'LUMINA Neural Canvas', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#10b981' },
+    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#10b981' },
     { path: '/admin/logs', label: 'System Logs', icon: Activity, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#f87171' },
     { path: '/settings', label: 'Platform Engine', icon: Settings, roles: [...PLATFORM_ROLES], group: 'System', color: '#64748b' },
     // School Admin
@@ -70,7 +70,7 @@ function getNavItems(role: string): NavItem[] {
     { path: '/communication', label: 'Communication', icon: MessageSquare, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TEACHER'], group: 'Resources', color: '#22d3ee' },
     { path: '/billing', label: 'Billing & Fees', icon: CreditCard, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Finance', color: '#ffb663', requiredFeature: 'SCHOOL_OPS' },
     { path: '/school/analytics', label: 'Analytics', icon: TrendingUp, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Intelligence', color: '#c084fc' },
-    { path: '/learn', label: 'AI Visualizer', icon: Brain, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Intelligence', color: '#fbbf24' },
+    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Intelligence', color: '#fbbf24' },
     // Teacher
     { path: '/dashboard', label: 'Workspace', icon: Sparkles, roles: ['TEACHER'], group: 'Overview', color: '#a78bfa', requiredFeature: 'SCHOOL_OPS' },
     { path: '/teacher/profile', label: 'Profile', icon: User, roles: ['TEACHER'], group: 'Overview', color: '#94a3b8', requiredFeature: 'SCHOOL_OPS' },
@@ -82,7 +82,7 @@ function getNavItems(role: string): NavItem[] {
     { path: '/teacher/communication', label: 'Parent Communication', icon: MessageSquare, roles: ['TEACHER'], group: 'Resources', color: '#22d3ee', requiredFeature: 'SCHOOL_OPS' },
     { path: '/library', label: 'Library Resources', icon: Library, roles: ['TEACHER'], group: 'Resources', color: '#34d399' },
     { path: '/notices', label: 'Notices', icon: Bell, roles: ['TEACHER'], group: 'Resources', color: '#fbbf24', requiredFeature: 'SCHOOL_OPS' },
-    { path: '/learn', label: 'AI Visualizer', icon: Brain, roles: ['TEACHER'], group: 'Resources', color: '#fbbf24' },
+    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: ['TEACHER'], group: 'Resources', color: '#fbbf24' },
     // Student
     { path: '/dashboard', label: 'My Portal', icon: LayoutDashboard, roles: ['STUDENT'], group: 'Overview', color: '#22d3ee', requiredFeature: 'SCHOOL_OPS' },
     { path: '/student/profile', label: 'Profile', icon: User, roles: ['STUDENT'], group: 'Overview', color: '#94a3b8', requiredFeature: 'SCHOOL_OPS' },
@@ -96,12 +96,12 @@ function getNavItems(role: string): NavItem[] {
     { path: '/library', label: 'Library', icon: Library, roles: ['STUDENT'], group: 'Resources', color: '#34d399' },
     { path: '/forum', label: 'Forums', icon: MessageSquare, roles: ['STUDENT'], group: 'Resources', color: '#6366f1' },
     { path: '/transport/my', label: 'Transport', icon: Bus, roles: ['STUDENT'], group: 'Resources', color: '#fb923c', requiredFeature: 'TRANSPORT_BASE' },
-    { path: '/learn', label: 'AI Visualizer', icon: Brain, roles: ['STUDENT'], group: 'Resources', color: '#fbbf24' },
+    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: ['STUDENT'], group: 'Resources', color: '#fbbf24' },
     // Parent
     { path: '/dashboard', label: 'Overview', icon: LayoutDashboard, roles: ['PARENT'], group: 'Overview', color: '#f472b6', requiredFeature: 'SCHOOL_OPS' },
     { path: '/parents/children', label: 'My Children', icon: Users, roles: ['PARENT'], group: 'Family', color: '#22d3ee', requiredFeature: 'SCHOOL_OPS' },
     { path: '/parents/messages', label: 'Messages', icon: MessageSquare, roles: ['PARENT'], group: 'Family', color: '#a78bfa', requiredFeature: 'SCHOOL_OPS' },
-    { path: '/learn', label: 'AI Visualizer', icon: Brain, roles: ['PARENT'], group: 'Family', color: '#fbbf24' },
+    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: ['PARENT'], group: 'Family', color: '#fbbf24' },
     // Common
     { path: '/profile', label: 'Profile', icon: User, roles: [...PLATFORM_ROLES, 'SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TRANSPORT_MANAGER', 'PARENT', 'DRIVER', 'CONDUCTOR'], group: 'Account', color: '#64748b' },
   ];

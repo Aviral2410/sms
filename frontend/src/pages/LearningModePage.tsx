@@ -200,8 +200,8 @@ export default function LearningModePage() {
               <BrainCircuit size={28} />
             </div>
             <div>
-              <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/60 leading-none mb-2">Interactive Neural Workspace</h1>
-              <h2 className="text-2xl font-black tracking-tighter text-white sm:text-3xl">LUMINA <span className="text-emerald-500">Neural Canvas</span></h2>
+              <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500/60 leading-none mb-2">Interactive Visual Learning Studio</h1>
+              <h2 className="text-2xl font-black tracking-tighter text-white sm:text-3xl">LUMINA <span className="text-emerald-500">Studio</span></h2>
             </div>
           </div>
           <p className="ml-0 max-w-2xl text-sm font-medium leading-relaxed text-white/30 sm:ml-16">

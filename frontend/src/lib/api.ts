@@ -2157,6 +2157,12 @@ export interface AiChatMessageResponse {
   thought?: string | null;
 }
 
+export interface AiChatResponse {
+  workspaceId: string | null;
+  conversationId: string;
+  response: Record<string, unknown>;
+}
+
 export const aiInteractionApi = {
   listTools: () => request<AiToolCatalogItem[]>('/ai-interaction/tools'),
   listAuditEvents: (limit = 100) => request<any[]>(`/ai-interaction/audit/events?limit=${limit}`),
@@ -2171,6 +2177,11 @@ export const aiInteractionApi = {
     request<void>(`/ai-interaction/workspaces/${workspaceId}`, { method: 'DELETE' }),
   listWorkspaces: () => request<AiWorkspaceResponse[]>('/ai-interaction/workspaces'),
   listAllChats: () => request<AiChatSummaryResponse[]>('/ai-interaction/chats'),
+  chat: (workspaceId: string | null, conversationId: string | null, message: string, context?: Record<string, unknown>) =>
+    request<AiChatResponse>('/ai-interaction/chat', {
+      method: 'POST',
+      body: JSON.stringify({ workspaceId, conversationId, message, context }),
+    }),
   createChat: (workspaceId: string, title?: string) =>
     request<AiChatSummaryResponse>(`/ai-interaction/workspaces/${workspaceId}/chats`, { method: 'POST', body: JSON.stringify({ title }) }),
   listChats: (workspaceId: string) =>

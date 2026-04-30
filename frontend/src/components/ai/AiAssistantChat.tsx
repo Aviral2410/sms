@@ -14,7 +14,6 @@ import {
   Send,
   Sparkles,
   Trash2,
-  Video,
   X,
 } from 'lucide-react';
 import { AssistantResponseView } from './AssistantResponseView';
@@ -59,7 +58,7 @@ const DRAWER_WIDTH = 'min(calc(100vw - 2rem), 96rem)';
 const AUTHENTICATED_EXAMPLE_PROMPTS = [
   'Show me student attendance risk trends for this month.',
   'Summarize onboarding bottlenecks across schools.',
-  'Create a visual explanation of Newton\'s second law for class 8.',
+  'List the highest-priority student issues requiring follow-up today.',
   'Draft insights for fee collection and pending dues.',
 ];
 
@@ -68,21 +67,6 @@ const PUBLIC_EXAMPLE_PROMPTS = [
   'What is on the platform roadmap for 2026?',
   'How many schools are already on ElevateSmart?',
   'Tell me about the platform vision.',
-];
-
-const SAMPLE_VIDEO_EXAMPLES = [
-  {
-    title: 'Physics Motion Storyboard',
-    caption: 'Velocity, force, and acceleration presented as a playable concept preview.',
-    poster: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80',
-    src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-  },
-  {
-    title: 'Biology Process Walkthrough',
-    caption: 'Cycle-driven explainer motion for systems, processes, and cause-effect teaching.',
-    poster: 'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?auto=format&fit=crop&w=1200&q=80',
-    src: 'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-  },
 ];
 
 function buildAssistantSummary(response: RenderedResponse | null | undefined) {
@@ -105,7 +89,7 @@ function buildAssistantSummary(response: RenderedResponse | null | undefined) {
     return `${response.data.title} is ready.`;
   }
 
-  return 'AURA synthesized a visual response.';
+  return 'AURA synthesized a response.';
 }
 
 function normalizeStoredMessage(message: AiChatMessageResponse): ChatMessage {
@@ -132,10 +116,6 @@ function formatTimestamp(timestamp: string) {
   const date = new Date(timestamp);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function isMeaningfulResponse(message: ChatMessage | undefined) {
-  return Boolean(message?.response?.data && typeof message.response.data === 'object');
 }
 
 export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticated' }: Props) {
@@ -174,10 +154,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     () => workspaces.find((workspace) => workspace.workspaceId === activeWorkspaceId) ?? null,
     [activeWorkspaceId, workspaces],
   );
-
-  const lastVisualResponse = useMemo(() => {
-    return [...messages].reverse().find((message) => isMeaningfulResponse(message))?.response ?? null;
-  }, [messages]);
 
   const sortChats = useCallback((items: AiChatSummaryResponse[]) => {
     return [...items].sort((left, right) => {
@@ -223,6 +199,13 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       setActiveWorkspaceId((current) =>
         current && nextWorkspaces.some((workspace) => workspace.workspaceId === current) ? current : nextWorkspaceId,
       );
+    } catch (error) {
+      setStatusText(error instanceof Error ? error.message : 'Assistant workspace is unavailable right now.');
+      setWorkspaces([]);
+      setChats([]);
+      setMessages([]);
+      setActiveConversationId(null);
+      setActiveWorkspaceId(null);
     } finally {
       setBootstrapping(false);
     }
@@ -241,17 +224,17 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   }, [activeWorkspaceId]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isPublic) return;
     void loadWorkspaces();
-  }, [loadWorkspaces, open]);
+  }, [isPublic, loadWorkspaces, open]);
 
   useEffect(() => {
-    if (!open || !activeWorkspaceId) return;
+    if (!open || !activeWorkspaceId || isPublic) return;
     void loadChats(activeWorkspaceId, activeConversationId);
-  }, [activeWorkspaceId, loadChats, open]);
+  }, [activeWorkspaceId, activeConversationId, isPublic, loadChats, open]);
 
   useEffect(() => {
-    if (!open || !activeConversationId) return;
+    if (!open || !activeConversationId || isPublic) return;
 
     let cancelled = false;
 
@@ -271,7 +254,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     return () => {
       cancelled = true;
     };
-  }, [activeConversationId, open]);
+  }, [activeConversationId, isPublic, open]);
 
   useEffect(() => {
     if (!scrollRef.current) return;
@@ -444,14 +427,43 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     ]);
 
     let conversationId = activeConversationId;
+    const chatRequestBody = (workspaceId: string | null, currentConversationId: string | null) => ({
+      workspaceId,
+      conversationId: currentConversationId,
+      message: messageText,
+      context: {
+        route: variant === 'page' ? '/ai-assistant' : '/assistant-drawer',
+      },
+    });
+
+    const commitFinalResponse = (nextConversationId: string, response: RenderedResponse) => {
+      conversationId = nextConversationId;
+      setStatusText('Response ready');
+      setActiveConversationId(nextConversationId);
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === assistantId
+            ? {
+                ...message,
+                text: buildAssistantSummary(response),
+                response,
+                thought: response.thought ?? message.thought ?? null,
+                streaming: false,
+              }
+            : message,
+        ),
+      );
+    };
 
     try {
-      const workspaceId = await ensureActiveWorkspace();
+      const workspaceId = isPublic ? null : await ensureActiveWorkspace();
       if (!workspaceId) {
-        throw new Error('AURA could not prepare a workspace for this chat.');
+        if (!isPublic) {
+          throw new Error('AURA could not prepare a workspace for this chat.');
+        }
       }
 
-      if (!conversationId) {
+      if (!conversationId && workspaceId) {
         const chat = await aiInteractionApi.createChat(workspaceId, messageText.slice(0, 64));
         conversationId = chat.conversationId;
         setActiveConversationId(chat.conversationId);
@@ -465,70 +477,51 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           ...(session.token ? { Authorization: `Bearer ${session.token}` } : {}),
           ...(!session.token ? { 'X-Guest-ID': resolveAiGuestId() } : {}),
         },
-        body: JSON.stringify({
-          workspaceId,
-          conversationId,
-          message: messageText,
-          context: {
-            route: variant === 'page' ? '/ai-assistant' : '/assistant-drawer',
-          },
-        }),
+        body: JSON.stringify(chatRequestBody(workspaceId, conversationId)),
       });
 
       if (!response.ok || !response.body) {
-        throw new Error('AURA stream could not be established.');
+        const fallback = await aiInteractionApi.chat(workspaceId, conversationId, messageText, {
+          route: variant === 'page' ? '/ai-assistant' : '/assistant-drawer',
+        });
+        commitFinalResponse(fallback.conversationId, fallback.response as RenderedResponse);
+      } else {
+        await readSseStream(response.body, {
+          onEvent: ({ event, data }) => {
+            if (event === 'thought') {
+              const parsed = tryParseJson<{ text?: string }>(data);
+              if (parsed.ok && parsed.value.text) {
+                setStatusText(parsed.value.text);
+                setMessages((current) =>
+                  current.map((message) =>
+                    message.id === assistantId ? { ...message, thought: parsed.value.text ?? null } : message,
+                  ),
+                );
+              }
+              return;
+            }
+
+            if (event === 'final') {
+              const parsed = tryParseJson<{
+                workspaceId: string | null;
+                conversationId: string;
+                response: RenderedResponse;
+              }>(data);
+
+              if (!parsed.ok) return;
+              commitFinalResponse(parsed.value.conversationId, parsed.value.response);
+            }
+
+            if (event === 'error') {
+              const parsed = tryParseJson<{ text?: string }>(data);
+              const text = parsed.ok && parsed.value.text ? parsed.value.text : 'The assistant stream failed.';
+              throw new Error(text);
+            }
+          },
+        });
       }
 
-      await readSseStream(response.body, {
-        onEvent: ({ event, data }) => {
-          if (event === 'thought') {
-            const parsed = tryParseJson<{ text?: string }>(data);
-            if (parsed.ok && parsed.value.text) {
-              setStatusText(parsed.value.text);
-              setMessages((current) =>
-                current.map((message) =>
-                  message.id === assistantId ? { ...message, thought: parsed.value.text ?? null } : message,
-                ),
-              );
-            }
-            return;
-          }
-
-          if (event === 'final') {
-            const parsed = tryParseJson<{
-              workspaceId: string | null;
-              conversationId: string;
-              response: RenderedResponse;
-            }>(data);
-
-            if (!parsed.ok) return;
-
-            setStatusText('Response ready');
-            setActiveConversationId(parsed.value.conversationId);
-            setMessages((current) =>
-              current.map((message) =>
-                message.id === assistantId
-                  ? {
-                      ...message,
-                      text: buildAssistantSummary(parsed.value.response),
-                      response: parsed.value.response,
-                      thought: parsed.value.response.thought ?? message.thought ?? null,
-                      streaming: false,
-                    }
-                  : message,
-              ),
-            );
-          }
-
-          if (event === 'error') {
-            const parsed = tryParseJson<{ text?: string }>(data);
-            const text = parsed.ok && parsed.value.text ? parsed.value.text : 'The assistant stream failed.';
-            throw new Error(text);
-          }
-        },
-      });
-
-      if (conversationId) {
+      if (workspaceId && conversationId && !isPublic) {
         await loadChats(workspaceId, conversationId);
       }
     } catch (error) {
@@ -549,7 +542,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     } finally {
       setLoading(false);
     }
-  }, [activeConversationId, ensureActiveWorkspace, input, loadChats, loading, session.token, sortChats, variant]);
+  }, [activeConversationId, ensureActiveWorkspace, input, isPublic, loadChats, loading, session.token, sortChats, variant]);
 
   const startVoiceCapture = useCallback(() => {
     setVoiceError(null);
@@ -602,13 +595,13 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const shellSubtitle = isPublic
     ? 'Ask about pricing, onboarding, platform capabilities, and roadmap in a polished public-facing assistant.'
     : variant === 'page'
-      ? 'Manage chats, review history, and open generated intelligence next to the conversation.'
-      : 'Fast insight, summaries, and visual reasoning without leaving the page.';
+      ? 'Manage workspaces, revisit chats, and work in a focused assistant workspace.'
+      : 'Fast insight and operational reasoning without leaving the page.';
 
   const shellBody = (
-    <div className={`relative flex h-full min-h-0 flex-col lg:grid ${isPublic ? 'lg:grid-cols-[minmax(0,1fr)_minmax(22rem,28rem)]' : 'lg:grid-cols-[20rem_minmax(0,1fr)_minmax(0,30rem)]'}`}>
+    <div className={`relative flex h-full min-h-0 flex-col ${!isPublic ? 'lg:grid lg:grid-cols-[20rem_minmax(0,1fr)]' : ''}`}>
       <AnimatePresence>
-        {(variant === 'page' || sidebarOpen) && (
+        {!isPublic && (variant === 'page' || sidebarOpen) && (
           <motion.aside
             initial={{ x: -24, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -810,7 +803,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
       <section className="min-h-0 border-b border-white/10 lg:border-b-0 lg:border-r">
         <div className="flex h-full min-h-0 flex-col">
-          <div className="border-b border-white/10 px-4 py-4 md:px-5">
+              <div className="border-b border-white/10 px-4 py-4 md:px-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Neural Assistant</div>
@@ -818,13 +811,15 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 <p className="mt-1 max-w-2xl text-sm leading-6 text-white/55">{shellSubtitle}</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen((current) => !current)}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                >
-                  <PanelLeft size={18} />
-                </button>
+                {!isPublic ? (
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen((current) => !current)}
+                    className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
+                  >
+                    <PanelLeft size={18} />
+                  </button>
+                ) : null}
                 {variant === 'drawer' ? (
                   <button
                     type="button"
@@ -869,7 +864,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                     <div className="mt-1 text-sm text-white/50">
                       {isPublic
                         ? 'You can ask about plans, onboarding, vision, roadmap, support, and platform fit without leaving the page.'
-                        : 'Ask for school insights, operations summaries, or a visual learning explanation.'}
+                        : 'Ask for school insights, workflow summaries, policy help, and operational analysis.'}
                     </div>
                   </div>
                 </div>
@@ -928,10 +923,12 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 <Sparkles size={14} className="text-emerald-300/70" />
                 <span>{loading ? statusText : isPublic ? 'Public assistant connected' : 'Tool-aware assistant connected'}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <History size={13} />
-                <span>{activeConversationId ? 'History saved' : 'Draft mode'}</span>
-              </div>
+              {!isPublic ? (
+                <div className="flex items-center gap-2">
+                  <History size={13} />
+                  <span>{activeConversationId ? 'History saved' : 'Draft mode'}</span>
+                </div>
+              ) : null}
             </div>
             {voiceError ? (
               <div className="mb-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-100/85">
@@ -950,7 +947,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                     void handleSend();
                   }
                 }}
-                placeholder="Ask for insights, explain a concept, or request a visual answer..."
+                placeholder={isPublic ? 'Ask about the platform, onboarding, pricing, roadmap, or support...' : 'Ask for insights, explain a concept, or request an operational answer...'}
                 className="min-h-[58px] flex-1 resize-none rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-emerald-300/30 focus:bg-white/[0.06]"
               />
               <button
@@ -986,63 +983,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
         </div>
       </section>
 
-      <aside className="hidden min-h-0 bg-black/10 lg:block">
-        <div className="flex h-full min-h-0 flex-col">
-          <div className="border-b border-white/10 px-4 py-4">
-            <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Visualizer</div>
-            <h3 className="mt-2 text-lg font-black text-white">{isPublic ? 'Live answer canvas' : 'Response canvas'}</h3>
-            <p className="mt-1 text-sm leading-6 text-white/50">
-              {isPublic
-                ? 'The latest public answer appears here, with clean sample motion previews that stay playable inside the drawer.'
-                : 'The latest generated intelligence is shown here, alongside sample motion references for explainers.'}
-            </p>
-          </div>
-
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5">
-            {lastVisualResponse?.data ? (
-              <div className="overflow-hidden rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-3">
-                <AssistantResponseView response={lastVisualResponse} />
-              </div>
-            ) : (
-              <div className="rounded-[1.8rem] border border-dashed border-white/12 bg-white/[0.03] p-5 text-sm leading-6 text-white/45">
-                Ask AURA for a visualization, chart, or workflow breakdown to populate this canvas.
-              </div>
-            )}
-
-            <div className="rounded-[1.8rem] border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-white">
-                <Video size={16} className="text-emerald-300" />
-                Visualizer examples
-              </div>
-              <div className="grid gap-4">
-                {SAMPLE_VIDEO_EXAMPLES.map((item) => (
-                  <div
-                    key={item.title}
-                    className="overflow-hidden rounded-[1.4rem] border border-white/8 bg-black/20"
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    <video
-                      className="aspect-video w-full cursor-auto object-cover"
-                      src={item.src}
-                      poster={item.poster}
-                      muted
-                      playsInline
-                      autoPlay
-                      loop
-                      controls
-                      preload="metadata"
-                    />
-                    <div className="p-3">
-                      <div className="text-sm font-semibold text-white">{item.title}</div>
-                      <div className="mt-1 text-[0.82rem] leading-6 text-white/55">{item.caption}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </aside>
     </div>
   );
 

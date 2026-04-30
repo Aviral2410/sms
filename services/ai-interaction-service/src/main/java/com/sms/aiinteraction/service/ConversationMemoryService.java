@@ -105,7 +105,7 @@ public class ConversationMemoryService {
     }
 
     public ChatRecord ensureChat(UserContext user, UUID conversationId, UUID requestedWorkspaceId, String suggestedTitle) {
-        ChatRecord existing = findChatOwnedByUser(user, conversationId);
+        ChatRecord existing = conversationId == null ? null : findChatOwnedByUser(user, conversationId);
         if (existing != null) {
             return existing;
         }
@@ -291,6 +291,9 @@ public class ConversationMemoryService {
     }
 
     private WorkspaceRecord findWorkspaceOwnedByUser(UserContext user, UUID workspaceId) {
+        if (workspaceId == null) {
+            return null;
+        }
         WorkspaceRecord redis = loadWorkspaceRedis(workspaceId);
         UUID effectiveUserId = getEffectiveUserId(user);
         if (redis != null && redis.userId().equals(effectiveUserId)) {
@@ -312,6 +315,9 @@ public class ConversationMemoryService {
     }
 
     private ChatRecord findChatOwnedByUser(UserContext user, UUID conversationId) {
+        if (conversationId == null) {
+            return null;
+        }
         ChatRecord redis = loadChatRedis(conversationId);
         UUID effectiveUserId = getEffectiveUserId(user);
         if (redis != null && redis.userId().equals(effectiveUserId)) {
