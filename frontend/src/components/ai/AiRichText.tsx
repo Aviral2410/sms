@@ -10,6 +10,7 @@ type Block =
   | { type: 'paragraph'; text: string }
   | { type: 'heading'; text: string; level: number }
   | { type: 'list'; items: string[]; ordered: boolean }
+  | { type: 'quote'; text: string }
   | { type: 'code'; code: string; language: string };
 
 function parseBlocks(content: string): Block[] {
@@ -51,6 +52,21 @@ function parseBlocks(content: string): Block[] {
         index += 1;
       }
       blocks.push({ type: 'code', code: codeLines.join('\n').trim(), language });
+      continue;
+    }
+
+    if (line.startsWith('>')) {
+      flushParagraph(paragraphBuffer);
+      const quoteLines: string[] = [];
+      while (index < lines.length) {
+        const candidate = lines[index].trim();
+        if (!candidate.startsWith('>')) break;
+        quoteLines.push(candidate.replace(/^>\s?/, '').trim());
+        index += 1;
+      }
+      if (quoteLines.length > 0) {
+        blocks.push({ type: 'quote', text: quoteLines.join(' ') });
+      }
       continue;
     }
 
@@ -123,6 +139,10 @@ export const AiRichText: React.FC<AiRichTextProps> = ({ content, className }) =>
               <code>{block.code}</code>
             </pre>
           );
+        }
+
+        if (block.type === 'quote') {
+          return <blockquote key={index}>{block.text}</blockquote>;
         }
 
         return <p key={index}>{block.text}</p>;

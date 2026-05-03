@@ -13,11 +13,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuditTrailStore {
+    private static final Logger logger = LoggerFactory.getLogger(AuditTrailStore.class);
     private final AuditEventRepository repository;
     private final ObjectMapper objectMapper;
 
@@ -41,8 +44,13 @@ public class AuditTrailStore {
                 .payload(event.toString())
                 .status(status)
                 .build();
-        
-        repository.save(auditEvent);
+
+        try {
+            repository.save(auditEvent);
+        } catch (Exception ex) {
+            logger.error("Failed to persist AI audit event. eventType={} userId={} schoolId={} payload={}",
+                    type, uid, schoolId, event, ex);
+        }
     }
 
     public List<JsonNode> list(UserContext user, int limit) {

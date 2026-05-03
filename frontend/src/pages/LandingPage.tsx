@@ -586,70 +586,80 @@ export default function LandingPage() {
           <div className="public-assistance-showcase__glow" />
           <div className="public-assistance-showcase__grid">
             <div className="public-assistance-showcase__copy">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-6 font-mono">
+              <div className="public-assistance-showcase__eyebrow">
                 <Sparkles size={12} /> Intelligent Assistance
               </div>
-              <h2 className="text-4xl font-black tracking-tighter text-white mb-6 leading-tight">
+              <h2 className="public-assistance-showcase__title">
                 Guided Institutional Intelligence
               </h2>
-              <p className="text-emerald-50/60 text-lg font-medium leading-relaxed mb-8">
+              <p className="public-assistance-showcase__body">
                 Experience a stateful, AI-driven support and onboarding layer. 
                 Our assistant remembers your context, helps with missing fields, 
                 and provides intelligent answers to your platform queries.
               </p>
+              <div className="public-assistance-showcase__meta-grid">
+                <div className="public-assistance-showcase__meta-card">
+                  <span className="public-assistance-showcase__meta-label">Guest Support</span>
+                  <span className="public-assistance-showcase__meta-value">No login required for guided product questions.</span>
+                </div>
+                <div className="public-assistance-showcase__meta-card">
+                  <span className="public-assistance-showcase__meta-label">Stateful Workspace</span>
+                  <span className="public-assistance-showcase__meta-value">Conversations remember rollout context and missing fields.</span>
+                </div>
+              </div>
               <div className="public-assistance-showcase__actions">
-                <Link to="/ai-assistant" className="public-primary-button" style={{ background: '#10b981', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)' }}>
+                <Link to="/assistant" className="public-primary-button public-assistance-showcase__button" style={{ background: '#10b981', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)' }}>
                   Launch AI Assistant
                   <Cpu size={18} />
                 </Link>
-                <div className="public-assistance-showcase__meta">
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-sm">Guest Support</span>
-                    <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">No Login Required</span>
-                  </div>
-                  <div className="h-8 w-px bg-white/10" />
-                  <div className="flex flex-col">
-                    <span className="text-white font-bold text-sm">Stateful Hub</span>
-                    <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">Always Persistent</span>
-                  </div>
+                <div className="public-assistance-showcase__actions-note">
+                  Ask about onboarding, pricing fit, rollout planning, or school workflows.
                 </div>
               </div>
             </div>
             <div className="public-assistance-showcase__visual group">
               <div className="public-assistance-showcase__visual-glow" />
               <div className="public-assistance-showcase__terminal">
-                 <div className="flex items-center justify-between mb-8">
+                 <div className="public-assistance-showcase__terminal-top">
                     <div className="flex gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-red-500/40" />
                       <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/40" />
                       <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-widest opacity-30 text-emerald-100">AI Terminal v2.0</div>
+                    <div className="public-assistance-showcase__terminal-label">Aura assistant preview</div>
                  </div>
-                 <div className="flex-1 space-y-4">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                 <div className="public-assistance-showcase__terminal-body">
+                    <div className="public-assistance-showcase__message-row">
+                      <div className="public-assistance-showcase__message-avatar public-assistance-showcase__message-avatar--assistant">
                         <Cpu size={14} className="text-emerald-400" />
                       </div>
-                      <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-3 text-xs text-emerald-50/70 max-w-[80%]">
+                      <div className="public-assistance-showcase__message public-assistance-showcase__message--assistant">
                         How can I assist you with your school onboarding today? I've noticed you still need to provide the contact details.
                       </div>
                     </div>
-                    <div className="flex gap-3 justify-end">
-                      <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-xs text-white max-w-[80%]">
+                    <div className="public-assistance-showcase__message-row public-assistance-showcase__message-row--user">
+                      <div className="public-assistance-showcase__message public-assistance-showcase__message--user">
                         Help me fill the contact phone and email for my institution.
                       </div>
-                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center flex-shrink-0">
+                      <div className="public-assistance-showcase__message-avatar public-assistance-showcase__message-avatar--user">
                         <Users size={14} className="text-white/40" />
                       </div>
                     </div>
-                 </div>
-                 <div className="mt-8 pt-4 border-t border-white/5 flex items-center gap-4">
-                    <div className="flex-1 h-10 bg-white/5 rounded-full border border-white/10 px-4 flex items-center gap-2">
-                       <Plus size={14} className="opacity-30" />
-                       <div className="text-[10px] opacity-20 font-medium">Type your query...</div>
+                    <div className="public-assistance-showcase__message-row">
+                      <div className="public-assistance-showcase__message-avatar public-assistance-showcase__message-avatar--assistant">
+                        <Sparkles size={14} className="text-emerald-300" />
+                      </div>
+                      <div className="public-assistance-showcase__message public-assistance-showcase__message--assistant public-assistance-showcase__message--soft">
+                        I can guide you step by step, explain why each field matters, and continue the onboarding without losing context.
+                      </div>
                     </div>
-                    <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                 </div>
+                 <div className="public-assistance-showcase__terminal-compose">
+                    <div className="public-assistance-showcase__terminal-input">
+                       <Plus size={14} className="opacity-30" />
+                       <div className="public-assistance-showcase__terminal-placeholder">Type your query...</div>
+                    </div>
+                    <div className="public-assistance-showcase__terminal-send">
                        <Send size={14} className="text-black" />
                     </div>
                  </div>

@@ -98,6 +98,13 @@ const PUBLIC_CAPABILITY_PILLS = [
   { label: 'Rollout guidance', icon: Compass },
 ];
 
+const AUTHENTICATED_CAPABILITY_PILLS = [
+  { label: 'Workspace memory', icon: History },
+  { label: 'Structured outputs', icon: LayoutGrid },
+  { label: 'Operational analysis', icon: Brain },
+  { label: 'Action confirmation', icon: Compass },
+];
+
 const PUBLIC_STARTER_CARDS = [
   {
     title: 'Leadership briefing',
@@ -108,6 +115,19 @@ const PUBLIC_STARTER_CARDS = [
     title: 'Operational walkthrough',
     body: 'Move from admissions to attendance, finance, and parent communication without losing context.',
     icon: Library,
+  },
+];
+
+const AUTHENTICATED_STARTER_CARDS = [
+  {
+    title: 'Workspace continuity',
+    body: 'Move between workspaces and preserved threads without losing operational context.',
+    icon: History,
+  },
+  {
+    title: 'Decision support',
+    body: 'Use the same assistant surface for audits, policy questions, and structured school analysis.',
+    icon: Building2,
   },
 ];
 
@@ -226,6 +246,8 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const speechRecognitionRef = useRef<any>(null);
 
   const examplePrompts = isPublic ? PUBLIC_EXAMPLE_PROMPTS : AUTHENTICATED_EXAMPLE_PROMPTS;
+  const capabilityPills = isPublic ? PUBLIC_CAPABILITY_PILLS : AUTHENTICATED_CAPABILITY_PILLS;
+  const starterCards = isPublic ? PUBLIC_STARTER_CARDS : AUTHENTICATED_STARTER_CARDS;
 
   const activeWorkspace = useMemo(
     () => workspaces.find((workspace) => workspace.workspaceId === activeWorkspaceId) ?? null,
@@ -697,16 +719,12 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     recognition.start();
   }, [handleSend]);
 
-  const shellTitle = isPublic
-    ? 'Aura Workspace'
-    : variant === 'page'
-      ? 'AURA Strategy Workspace'
-      : 'AURA Assistant';
+  const shellTitle = 'Aura Workspace';
 
   const shellSubtitle = isPublic
     ? 'Explore school operations, rollout fit, and product answers in a focused conversation workspace.'
     : variant === 'page'
-      ? 'Manage workspaces, revisit chats, and work in a focused assistant workspace.'
+      ? 'Manage workspaces, revisit chats, and work in a focused assistant workspace with the same calm interaction model.'
       : 'Fast insight and operational reasoning without leaving the page.';
 
   const renderPublicSidebar = () => (
@@ -734,7 +752,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       <div className="aura-rail__block">
         <div className="aura-rail__eyebrow">Capabilities</div>
         <div className="aura-pill-grid">
-          {PUBLIC_CAPABILITY_PILLS.map((item) => {
+          {capabilityPills.map((item) => {
             const Icon = item.icon;
             return (
               <div key={item.label} className="aura-capability-pill">
@@ -1016,7 +1034,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               <div className="aura-empty-state__hero">
                 <div className="aura-empty-state__badge">
                   <Brain size={15} />
-                  Start with an evaluation question
+                  {isPublic ? 'Start with an evaluation question' : 'Start with an operational question'}
                 </div>
                 <h3 className="aura-empty-state__title">
                   {isPublic ? 'A calmer school ERP assistant for product evaluation.' : 'A quieter workspace for operational reasoning.'}
@@ -1028,26 +1046,33 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 </p>
               </div>
 
-              {isPublic ? (
-                <div className="aura-empty-state__meta">
-                  <div className="aura-capabilities">
-                    {PUBLIC_CAPABILITY_PILLS.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <div key={item.label} className="aura-capability-card">
-                          <Icon size={16} />
-                          <span>{item.label}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="aura-empty-state__meta">
+                <div className="aura-capabilities">
+                  {capabilityPills.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.label} className="aura-capability-card">
+                        <Icon size={16} />
+                        <span>{item.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {isPublic ? (
                   <div className="aura-tool-row">
                     {ERP_TOOL_LABELS.map((tool) => (
                       <span key={tool} className="aura-tool-pill">{tool}</span>
                     ))}
                   </div>
-                </div>
-              ) : null}
+                ) : (
+                  <div className="aura-tool-row">
+                    <span className="aura-tool-pill">Workspace history</span>
+                    <span className="aura-tool-pill">Saved chats</span>
+                    <span className="aura-tool-pill">Structured replies</span>
+                    <span className="aura-tool-pill">Confirmation flows</span>
+                  </div>
+                )}
+              </div>
 
               <div className="aura-prompt-grid">
                 {examplePrompts.map((prompt) => (
@@ -1063,24 +1088,22 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 ))}
               </div>
 
-              {isPublic ? (
-                <div className="aura-starter-grid">
-                  {PUBLIC_STARTER_CARDS.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                      <div key={card.title} className="aura-starter-card">
-                        <div className="aura-starter-card__icon">
-                          <Icon size={18} />
-                        </div>
-                        <div>
-                          <div className="aura-starter-card__title">{card.title}</div>
-                          <p className="aura-starter-card__body">{card.body}</p>
-                        </div>
+              <div className="aura-starter-grid">
+                {starterCards.map((card) => {
+                  const Icon = card.icon;
+                  return (
+                    <div key={card.title} className="aura-starter-card">
+                      <div className="aura-starter-card__icon">
+                        <Icon size={18} />
                       </div>
-                    );
-                  })}
-                </div>
-              ) : null}
+                      <div>
+                        <div className="aura-starter-card__title">{card.title}</div>
+                        <p className="aura-starter-card__body">{card.body}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div className="aura-thread__messages">

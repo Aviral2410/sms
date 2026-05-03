@@ -142,7 +142,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
   }
 
   if (response.type === 'smart_ui') {
-    return <SmartUiRenderer response={response.data} />;
+    return <SmartUiRenderer response={response.data} variant="aura" />;
   }
 
   if (response.type === 'chart' && chartData?.points?.length) {

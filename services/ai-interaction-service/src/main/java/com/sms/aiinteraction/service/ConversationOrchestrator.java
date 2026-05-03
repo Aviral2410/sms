@@ -121,6 +121,21 @@ public class ConversationOrchestrator {
     public AiInteractionDtos.ChatResponse confirmAction(UserContext userContext, String token) {
         PendingActionService.PendingAction action = pendingActionService.consume(token)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.GONE, "Action expired or invalid"));
+
+        boolean sameGuestSession = userContext.guestId() != null
+                && action.userId() != null
+                && action.userId().equals(userContext.userId());
+        boolean sameUserSession = userContext.guestId() == null
+                && action.userId() != null
+                && action.userId().equals(userContext.userId())
+                && action.tenantId() != null
+                && action.tenantId().equals(userContext.tenantId())
+                && action.schoolId() != null
+                && action.schoolId().equals(userContext.schoolId());
+
+        if (!sameGuestSession && !sameUserSession) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Action confirmation does not belong to this session.");
+        }
         
         JsonNode result = executeSingleTool(userContext, action.toolCall(), "Confirmed action", action.conversationId(), true);
         

@@ -222,11 +222,12 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   )
 };
 
-export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> = ({ response, isLoading }) => {
+export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean; variant?: 'default' | 'aura' }> = ({ response, isLoading, variant = 'default' }) => {
   if (isLoading) return <SkeletonPulse />;
   if (!response) return null;
 
   const { title, view, components, insights, actions, summary } = response;
+  const isAura = variant === 'aura';
   
   const container = { 
     hidden: { opacity: 0 }, 
@@ -238,19 +239,19 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> =
   };
 
   return (
-    <motion.div variants={container} initial="hidden" animate="show" className="space-y-6 relative">
-      <div className={`absolute -top-20 -left-20 w-96 h-96 rounded-full ${NEURAL_GRADIENT} blur-[100px] pointer-events-none opacity-50`} />
+    <motion.div variants={container} initial="hidden" animate="show" className={`space-y-6 relative ${isAura ? 'aura-smart-ui' : ''}`}>
+      {!isAura ? <div className={`absolute -top-20 -left-20 w-96 h-96 rounded-full ${NEURAL_GRADIENT} blur-[100px] pointer-events-none opacity-50`} /> : null}
       
-      <motion.div variants={item} className="mb-8 border-b border-white/10 pb-6 relative z-10">
+      <motion.div variants={item} className={`mb-8 pb-6 relative z-10 ${isAura ? 'border-b border-white/8' : 'border-b border-white/10'}`}>
         <div className="flex items-center gap-3 mb-3">
-            <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+            <div className={isAura ? 'aura-smart-ui__icon' : 'p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}>
                 <Brain size={18} />
             </div>
-            {title && <h3 className="text-3xl font-black tracking-tight text-white">{title}</h3>}
+            {title && <h3 className={isAura ? 'aura-smart-ui__title' : 'text-3xl font-black tracking-tight text-white'}>{title}</h3>}
         </div>
         {summary && (
-          <div className="relative pl-6 border-l-2 border-emerald-500/40">
-             <p className="text-[15px] text-white/60 font-bold leading-relaxed">{summary}</p>
+          <div className={isAura ? 'aura-smart-ui__summary' : 'relative pl-6 border-l-2 border-emerald-500/40'}>
+             <p className={isAura ? 'aura-smart-ui__summary-copy' : 'text-[15px] text-white/60 font-bold leading-relaxed'}>{summary}</p>
           </div>
         )}
       </motion.div>
@@ -272,24 +273,26 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> =
       </div>
 
       {insights && insights.length > 0 && (
-        <motion.div variants={item} className={`mt-10 p-8 rounded-[2.5rem] ${GLASS_BG} relative overflow-hidden group`}>
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-            <Sparkles size={120} />
-          </div>
+        <motion.div variants={item} className={isAura ? 'aura-smart-ui__insights' : `mt-10 p-8 rounded-[2.5rem] ${GLASS_BG} relative overflow-hidden group`}>
+          {!isAura ? (
+            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+              <Sparkles size={120} />
+            </div>
+          ) : null}
           
           <div className="flex items-center gap-3 mb-6">
-            <Zap className="text-emerald-400 fill-emerald-400" size={16} />
-            <div className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-400 shadow-emerald-500/50">Strategic Intelligence</div>
+            <Zap className={isAura ? 'text-white/55' : 'text-emerald-400 fill-emerald-400'} size={16} />
+            <div className={isAura ? 'aura-smart-ui__eyebrow' : 'text-[11px] font-black uppercase tracking-[0.3em] text-emerald-400 shadow-emerald-500/50'}>Strategic Intelligence</div>
           </div>
           
           <div className="grid gap-4">
             {insights.map((insight: string, i: number) => (
               <motion.div 
                 key={i} 
-                whileHover={{ x: 10 }}
-                className="flex gap-4 text-sm text-white/70 font-bold leading-relaxed group/insight p-2 rounded-2xl transition-colors hover:bg-white/5"
+                whileHover={{ x: isAura ? 4 : 10 }}
+                className={isAura ? 'aura-smart-ui__insight' : 'flex gap-4 text-sm text-white/70 font-bold leading-relaxed group/insight p-2 rounded-2xl transition-colors hover:bg-white/5'}
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0 shadow-[0_0_12px_rgba(16,185,129,1)] group-hover/insight:scale-150 transition-transform" />
+                <div className={isAura ? 'aura-smart-ui__insight-dot' : 'w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 flex-shrink-0 shadow-[0_0_12px_rgba(16,185,129,1)] group-hover/insight:scale-150 transition-transform'} />
                 {insight}
               </motion.div>
             ))}
@@ -298,9 +301,9 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean }> =
       )}
 
       {actions && actions.length > 0 && (
-        <motion.div variants={item} className="mt-10 flex flex-wrap gap-4">
+        <motion.div variants={item} className={isAura ? 'aura-smart-ui__actions' : 'mt-10 flex flex-wrap gap-4'}>
           {actions.map((btn: any, j: number) => (
-            <button key={j} className="px-8 py-4 rounded-full bg-emerald-500 text-black text-[13px] font-black uppercase tracking-widest hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_20px_50px_rgba(16,185,129,0.3)] group">
+            <button key={j} className={isAura ? 'aura-smart-ui__action' : 'px-8 py-4 rounded-full bg-emerald-500 text-black text-[13px] font-black uppercase tracking-widest hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all flex items-center gap-3 shadow-[0_20px_50px_rgba(16,185,129,0.3)] group'}>
               {btn.label}
               <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
             </button>

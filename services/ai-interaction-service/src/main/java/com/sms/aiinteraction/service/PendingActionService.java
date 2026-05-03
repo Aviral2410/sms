@@ -48,14 +48,28 @@ public class PendingActionService {
             );
             return new PendingAction(
                 call,
-                UUID.fromString(node.path("conversationId").asText())
+                UUID.fromString(node.path("conversationId").asText()),
+                parseUuid(node.path("userId").asText(null)),
+                parseUuid(node.path("tenantId").asText(null)),
+                parseUuid(node.path("schoolId").asText(null))
             );
         });
+    }
+
+    private UUID parseUuid(String value) {
+        if (value == null || value.isBlank()) return null;
+        return UUID.fromString(value);
     }
 
     private String key(String token) {
         return "ai:pending-action:" + token;
     }
 
-    public record PendingAction(ToolCall toolCall, UUID conversationId) {}
+    public record PendingAction(
+            ToolCall toolCall,
+            UUID conversationId,
+            UUID userId,
+            UUID tenantId,
+            UUID schoolId
+    ) {}
 }

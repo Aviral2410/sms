@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "audit_events")
+@Table(name = "audit_events", schema = "aiinteraction")
 public class AuditEvent {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
