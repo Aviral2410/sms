@@ -7,6 +7,7 @@ import { Toaster } from './components/common/Toaster';
 import './store/useStore';
 import './styles/design-system.css';
 import './styles/antigravity.css';
+import './styles/aura-assistant.css';
 import './styles.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(

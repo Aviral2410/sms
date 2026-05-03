@@ -188,6 +188,10 @@ function buildPublicConversationTitle(messages: ChatMessage[], fallbackText?: st
   return firstUserMessage.length > 68 ? `${firstUserMessage.slice(0, 65)}...` : firstUserMessage;
 }
 
+function cx(...values: Array<string | false | null | undefined>) {
+  return values.filter(Boolean).join(' ');
+}
+
 export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticated' }: Props) {
   const { session } = useStore();
   const isPublic = accessMode === 'public';
@@ -227,6 +231,8 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     () => workspaces.find((workspace) => workspace.workspaceId === activeWorkspaceId) ?? null,
     [activeWorkspaceId, workspaces],
   );
+
+  const showEmptyState = messages.length === 0;
 
   const sortChats = useCallback((items: AiChatSummaryResponse[]) => {
     return [...items].sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime());
@@ -698,108 +704,79 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       : 'AURA Assistant';
 
   const shellSubtitle = isPublic
-    ? 'A premium school ERP assistant with streaming answers, markdown, structured insights, and suggested prompts built for evaluation workflows.'
+    ? 'Explore school operations, rollout fit, and product answers in a focused conversation workspace.'
     : variant === 'page'
       ? 'Manage workspaces, revisit chats, and work in a focused assistant workspace.'
       : 'Fast insight and operational reasoning without leaving the page.';
 
   const renderPublicSidebar = () => (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-white/10 px-4 py-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">Aura History</div>
-            <div className="mt-1 text-sm font-semibold text-white/80">Recent school conversations</div>
-          </div>
-          {variant !== 'page' ? (
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(false)}
-              className="rounded-xl border border-white/10 p-2 text-white/60 transition hover:bg-white/5 hover:text-white"
-            >
-              <X size={16} />
-            </button>
-          ) : null}
-        </div>
-
+    <div className="aura-rail__section">
+      <div className="aura-rail__block">
+        <div className="aura-rail__eyebrow">Aura History</div>
+        <div className="aura-rail__title">Recent school conversations</div>
         <button
           type="button"
           onClick={handleCreateDraftChat}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-400/25 bg-emerald-500/5 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-500/10"
+          className="aura-rail__primary-button"
         >
           <Plus size={16} />
           New chat
         </button>
-
-        <div className="mt-4 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.35))] p-4">
-          <div className="text-[0.68rem] font-black uppercase tracking-[0.22em] text-emerald-200/70">Evaluation mode</div>
-          <p className="mt-2 text-sm leading-6 text-slate-300">
-            Explore product fit, rollout logic, and school ERP use cases in a focused workspace.
-          </p>
-        </div>
       </div>
 
-      <div className="border-b border-white/10 px-4 py-4">
-        <div className="text-[0.68rem] font-black uppercase tracking-[0.24em] text-white/35">Integrated tools</div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {ERP_TOOL_LABELS.map((tool) => (
-            <span key={tool} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-medium text-slate-300">
-              {tool}
-            </span>
-          ))}
-        </div>
-        <div className="mt-4 space-y-2">
+      <div className="aura-note">
+        <div className="aura-note__eyebrow">Evaluation mode</div>
+        <p className="aura-note__copy">
+          Explore product fit, rollout logic, and school ERP use cases in a focused workspace.
+        </p>
+      </div>
+
+      <div className="aura-rail__block">
+        <div className="aura-rail__eyebrow">Capabilities</div>
+        <div className="aura-pill-grid">
           {PUBLIC_CAPABILITY_PILLS.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-300">
-                <Icon size={13} className="text-emerald-200" />
-                {item.label}
+              <div key={item.label} className="aura-capability-pill">
+                <Icon size={13} />
+                <span>{item.label}</span>
               </div>
             );
           })}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4">
+      <div className="aura-rail__list">
         {publicChats.length ? (
-          <div className="space-y-2">
-            {publicChats.map((chat) => (
-              <div
-                key={chat.conversationId}
-                className={`group flex items-center gap-2 rounded-2xl px-3 py-3 transition ${
-                  chat.conversationId === activeConversationId
-                    ? 'bg-white/10 text-white ring-1 ring-white/15'
-                    : 'bg-white/[0.03] text-white/70 hover:bg-white/8 hover:text-white'
-                }`}
+          publicChats.map((chat) => (
+            <div
+              key={chat.conversationId}
+              className={cx('aura-history-card', chat.conversationId === activeConversationId && 'is-active')}
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveConversationId(chat.conversationId);
+                  setMessages(chat.messages);
+                  if (variant !== 'page') setSidebarOpen(false);
+                }}
+                className="aura-history-card__main"
               >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveConversationId(chat.conversationId);
-                    setMessages(chat.messages);
-                    if (variant !== 'page') setSidebarOpen(false);
-                  }}
-                  className="min-w-0 flex-1 text-left"
-                >
-                  <div className="truncate text-sm font-semibold">{chat.title}</div>
-                  <div className="mt-1 text-[0.68rem] uppercase tracking-[0.18em] text-white/35">
-                    {new Date(chat.updatedAt).toLocaleDateString()}
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deletePublicConversation(chat.conversationId)}
-                  className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
-                  aria-label={`Delete ${chat.title}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
+                <div className="aura-history-card__title">{chat.title}</div>
+                <div className="aura-history-card__meta">{new Date(chat.updatedAt).toLocaleDateString()}</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => deletePublicConversation(chat.conversationId)}
+                className="aura-history-card__delete"
+                aria-label={`Delete ${chat.title}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))
         ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/45">
+          <div className="aura-empty-rail-state">
             Your public Aura chats will appear here so you can revisit product questions during evaluation.
           </div>
         )}
@@ -808,159 +785,135 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   );
 
   const renderAuthenticatedSidebar = () => (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-white/10 px-4 py-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-300/70">
-              {bootstrapping ? 'Loading' : 'Workspace Hub'}
-            </div>
-            <div className="mt-1 text-sm font-semibold text-white/80">
-              {activeWorkspace?.name || 'Loading workspace'}
+    <div className="aura-rail__section">
+      <div className="aura-rail__block">
+        <div className="aura-rail__eyebrow">{bootstrapping ? 'Loading' : 'Workspace Hub'}</div>
+        <div className="aura-rail__title">{activeWorkspace?.name || 'Loading workspace'}</div>
+      </div>
+
+      <div className="aura-rail__block">
+        {workspaceComposerOpen ? (
+          <div className="aura-inline-form">
+            <input
+              value={workspaceDraft}
+              onChange={(event) => setWorkspaceDraft(event.target.value)}
+              placeholder="New workspace name"
+              className="aura-input"
+            />
+            <div className="aura-inline-form__actions">
+              <button
+                type="button"
+                onClick={() => void handleCreateWorkspace()}
+                className="aura-inline-form__confirm"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setWorkspaceComposerOpen(false);
+                  setWorkspaceDraft('');
+                }}
+                className="aura-inline-form__cancel"
+              >
+                Cancel
+              </button>
             </div>
           </div>
-          {variant !== 'page' ? (
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(false)}
-              className="rounded-xl border border-white/10 p-2 text-white/60 transition hover:bg-white/5 hover:text-white"
-            >
-              <X size={16} />
-            </button>
-          ) : null}
-        </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setWorkspaceComposerOpen(true)}
+            className="aura-rail__secondary-button"
+          >
+            <FolderPlus size={16} />
+            New Workspace
+          </button>
+        )}
+      </div>
 
-        <div className="mt-4 space-y-2">
-          {workspaceComposerOpen ? (
-            <div className="space-y-2 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-3">
-              <input
-                value={workspaceDraft}
-                onChange={(event) => setWorkspaceDraft(event.target.value)}
-                placeholder="New workspace name"
-                className="w-full rounded-xl border border-white/10 bg-slate-950/50 px-3 py-2 text-sm text-white outline-none placeholder:text-white/30"
-              />
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => void handleCreateWorkspace()}
-                  className="flex-1 rounded-xl bg-emerald-500 px-3 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-400"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setWorkspaceComposerOpen(false);
-                    setWorkspaceDraft('');
-                  }}
-                  className="rounded-xl border border-white/10 px-3 py-2 text-sm text-white/70 transition hover:bg-white/5 hover:text-white"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setWorkspaceComposerOpen(true)}
-              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-emerald-400/25 bg-emerald-500/5 px-4 py-3 text-sm font-semibold text-emerald-200 transition hover:border-emerald-300/40 hover:bg-emerald-500/10"
+      <div className="aura-rail__block">
+        <div className="aura-rail__eyebrow">Workspaces</div>
+        <div className="aura-workspace-list">
+          {workspaces.map((workspace) => (
+            <div
+              key={workspace.workspaceId}
+              onDragOver={(event) => {
+                if (!draggingConversationId) return;
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                if (!draggingConversationId) return;
+                event.preventDefault();
+                void handleMoveChatToWorkspace(draggingConversationId, workspace.workspaceId);
+              }}
+              className={cx('aura-workspace-card-wrap', draggingConversationId && 'is-droppable')}
             >
-              <FolderPlus size={16} />
-              New Workspace
-            </button>
-          )}
-
-          <div className="max-h-32 space-y-2 overflow-y-auto pr-1">
-            {workspaces.map((workspace) => (
               <div
-                key={workspace.workspaceId}
-                onDragOver={(event) => {
-                  if (!draggingConversationId) return;
-                  event.preventDefault();
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  setActiveWorkspaceId(workspace.workspaceId);
+                  setSidebarOpen(variant === 'page');
                 }}
-                onDrop={(event) => {
-                  if (!draggingConversationId) return;
-                  event.preventDefault();
-                  void handleMoveChatToWorkspace(draggingConversationId, workspace.workspaceId);
-                }}
-                className={draggingConversationId ? 'rounded-2xl ring-1 ring-dashed ring-emerald-400/25' : ''}
-              >
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => {
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
                     setActiveWorkspaceId(workspace.workspaceId);
-                    setSidebarOpen(variant === 'page');
-                  }}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      setActiveWorkspaceId(workspace.workspaceId);
-                    }
-                  }}
-                  className={`flex w-full items-center justify-between rounded-2xl px-3 py-3 text-left transition ${
-                    workspace.workspaceId === activeWorkspaceId
-                      ? 'bg-emerald-500/12 text-white ring-1 ring-emerald-400/30'
-                      : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold">{workspace.name}</div>
-                    <div className="mt-1 text-[0.7rem] uppercase tracking-[0.2em] text-white/35">
-                      {new Date(workspace.updatedAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {workspaces.length > 1 ? (
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          void handleDeleteWorkspace(workspace.workspaceId);
-                        }}
-                        className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
-                        aria-label={`Delete workspace ${workspace.name}`}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    ) : null}
-                    <ChevronRight size={14} className="shrink-0" />
-                  </div>
+                  }
+                }}
+                className={cx('aura-workspace-card', workspace.workspaceId === activeWorkspaceId && 'is-active')}
+              >
+                <div className="aura-workspace-card__copy">
+                  <div className="aura-workspace-card__title">{workspace.name}</div>
+                  <div className="aura-workspace-card__meta">{new Date(workspace.updatedAt).toLocaleDateString()}</div>
+                </div>
+                <div className="aura-workspace-card__actions">
+                  {workspaces.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleDeleteWorkspace(workspace.workspaceId);
+                      }}
+                      className="aura-history-card__delete"
+                      aria-label={`Delete workspace ${workspace.name}`}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : null}
+                  <ChevronRight size={14} />
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="text-[0.7rem] font-black uppercase tracking-[0.24em] text-white/35">Chat History</div>
-        <button
-          type="button"
-          onClick={handleCreateDraftChat}
-          className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/75 transition hover:bg-white/5 hover:text-white"
-        >
-          <Plus size={14} />
-          New chat
-        </button>
-      </div>
+      <div className="aura-rail__block aura-rail__block--grow">
+        <div className="aura-rail__row">
+          <div className="aura-rail__eyebrow">Chat History</div>
+          <button
+            type="button"
+            onClick={handleCreateDraftChat}
+            className="aura-rail__quiet-button"
+          >
+            <Plus size={14} />
+            New chat
+          </button>
+        </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
-        {historyLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-4 text-sm text-white/50">Loading conversations...</div>
-        ) : chats.length ? (
-          <div className="space-y-2">
-            {chats.map((chat) => (
+        <div className="aura-rail__list">
+          {historyLoading ? (
+            <div className="aura-empty-rail-state">Loading conversations...</div>
+          ) : chats.length ? (
+            chats.map((chat) => (
               <div
                 key={chat.conversationId}
                 draggable
                 onDragStart={() => setDraggingConversationId(chat.conversationId)}
                 onDragEnd={() => setDraggingConversationId(null)}
-                className={`group flex items-center gap-2 rounded-2xl px-3 py-3 transition ${
-                  chat.conversationId === activeConversationId
-                    ? 'bg-white/10 text-white ring-1 ring-white/15'
-                    : 'bg-white/[0.03] text-white/70 hover:bg-white/8 hover:text-white'
-                }`}
+                className={cx('aura-history-card', chat.conversationId === activeConversationId && 'is-active')}
               >
                 <button
                   type="button"
@@ -968,259 +921,244 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                     setActiveConversationId(chat.conversationId);
                     if (variant !== 'page') setSidebarOpen(false);
                   }}
-                  className="min-w-0 flex-1 text-left"
+                  className="aura-history-card__main"
                 >
-                  <div className="truncate text-sm font-semibold">{chat.title || 'Untitled chat'}</div>
-                  <div className="mt-1 text-[0.68rem] uppercase tracking-[0.18em] text-white/35">
-                    {new Date(chat.updatedAt).toLocaleDateString()}
-                  </div>
+                  <div className="aura-history-card__title">{chat.title || 'Untitled chat'}</div>
+                  <div className="aura-history-card__meta">{new Date(chat.updatedAt).toLocaleDateString()}</div>
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleDeleteChat(chat.conversationId)}
-                  className="rounded-xl border border-transparent p-2 text-white/35 transition hover:border-rose-400/30 hover:bg-rose-500/10 hover:text-rose-200"
+                  className="aura-history-card__delete"
                   aria-label={`Delete ${chat.title}`}
                 >
                   <Trash2 size={14} />
                 </button>
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.03] px-4 py-5 text-sm text-white/45">
-            No chats in this workspace yet. Start a draft to create one automatically.
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="aura-empty-rail-state">
+              No chats in this workspace yet. Start a draft to create one automatically.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 
   const shellBody = (
-    <div className={`relative flex h-full min-h-0 flex-col ${sidebarOpen || variant === 'page' ? 'lg:grid lg:grid-cols-[19rem_minmax(0,1fr)]' : ''}`}>
+    <div className={cx('aura-shell', (sidebarOpen || variant === 'page') && 'aura-shell--rail-open', showEmptyState && 'aura-shell--empty')}>
       <AnimatePresence>
         {(variant === 'page' || sidebarOpen) ? (
           <motion.aside
             initial={{ x: -24, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -24, opacity: 0 }}
-            className={`${
-              variant === 'page'
-                ? `${sidebarOpen ? 'absolute inset-y-0 left-0 z-20 w-[18rem]' : 'hidden'} border-r border-white/10 bg-slate-950/95 shadow-2xl lg:static lg:z-auto lg:block lg:w-auto lg:bg-black/20 lg:shadow-none`
-                : 'absolute inset-y-0 left-0 z-20 w-[18rem] border-r border-white/10 bg-slate-950/95 shadow-2xl'
-            }`}
+            className={cx('aura-rail', variant !== 'page' && 'aura-rail--drawer')}
           >
+            <div className="aura-rail__header">
+              <div>
+                <div className="aura-rail__brand">AURA</div>
+                <div className="aura-rail__brand-sub">{isPublic ? 'Evaluation workspace' : 'Operational workspace'}</div>
+              </div>
+              {variant !== 'page' ? (
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(false)}
+                  className="aura-icon-button"
+                  aria-label="Close sidebar"
+                >
+                  <X size={16} />
+                </button>
+              ) : null}
+            </div>
             {isPublic ? renderPublicSidebar() : renderAuthenticatedSidebar()}
           </motion.aside>
         ) : null}
       </AnimatePresence>
 
-      <section className="min-h-0 border-b border-white/10 lg:border-b-0 lg:border-r lg:border-r-white/10">
-        <div className="flex h-full min-h-0 flex-col">
-          <div className="border-b border-white/10 px-4 py-4 md:px-6 md:py-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/14 bg-emerald-500/8 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.28em] text-emerald-200/72">
-                  <Sparkles size={12} />
-                  Neural Assistant
-                </div>
-                <h2 className="mt-3 text-2xl font-black tracking-tight text-white md:text-[2rem]">{shellTitle}</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-white/55">{shellSubtitle}</p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen((current) => !current)}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                >
-                  <PanelLeft size={18} />
-                </button>
-                {variant === 'drawer' ? (
-                  <button
-                    type="button"
-                    onClick={() => setOpen(false)}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-2.5 text-white/70 transition hover:bg-white/10 hover:text-white"
-                  >
-                    <X size={18} />
-                  </button>
-                ) : null}
-              </div>
+      <section className="aura-main">
+        <div className={cx('aura-main__header', !showEmptyState && 'aura-main__header--compact')}>
+          <div className="aura-main__header-copy">
+            <div className="aura-main__eyebrow">
+              <Sparkles size={12} />
+              {isPublic ? 'Neural Assistant' : 'Workspace Assistant'}
             </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              {examplePrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => void handleSend(prompt)}
-                  className={`rounded-full border border-white/10 px-3 py-2 text-xs font-semibold transition ${
-                    isPublic
-                      ? 'bg-white/[0.06] text-white/85 hover:border-emerald-300/35 hover:bg-emerald-500/12 hover:text-white'
-                      : 'bg-white/[0.04] text-white/70 hover:border-emerald-300/30 hover:bg-emerald-500/10 hover:text-emerald-100'
-                  }`}
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
-
-            {isPublic ? (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {ERP_TOOL_LABELS.map((tool) => (
-                  <span key={tool} className="rounded-full border border-white/10 bg-slate-950/60 px-3 py-1.5 text-[0.7rem] font-medium text-slate-300">
-                    {tool}
-                  </span>
-                ))}
-              </div>
-            ) : null}
+            <h2 className="aura-main__title">{shellTitle}</h2>
+            <p className="aura-main__subtitle">{shellSubtitle}</p>
           </div>
 
-          <div ref={scrollRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto px-4 py-5 md:px-6">
-            {!messages.length ? (
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.7fr)]">
-                <div className="rounded-[1.9rem] border border-white/10 bg-white/[0.03] p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="rounded-2xl bg-emerald-500/12 p-3 text-emerald-300">
-                      <Brain size={20} />
-                    </div>
-                    <div>
-                      <div className="text-sm font-semibold text-white">
-                        {isPublic ? 'Start with an evaluation question' : 'Start a new analysis'}
-                      </div>
-                      <div className="mt-1 text-sm text-white/50">
-                        {isPublic
-                          ? 'Aura can explain the platform, compare rollout paths, and return structured school ERP responses.'
-                          : 'Ask for school insights, workflow summaries, policy help, and operational analysis.'}
-                      </div>
-                    </div>
-                  </div>
+          <div className="aura-main__controls">
+            <button
+              type="button"
+              onClick={() => setSidebarOpen((current) => !current)}
+              className="aura-icon-button"
+              aria-label="Toggle sidebar"
+            >
+              <PanelLeft size={18} />
+            </button>
+            {variant === 'drawer' ? (
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="aura-icon-button"
+                aria-label="Close assistant"
+              >
+                <X size={18} />
+              </button>
+            ) : null}
+          </div>
+        </div>
 
-                  <div className="mt-6 grid gap-3">
-                    {examplePrompts.map((prompt) => (
-                      <button
-                        key={prompt}
-                        type="button"
-                        onClick={() => void handleSend(prompt)}
-                        className="rounded-[1.25rem] border border-white/10 bg-slate-950/55 px-4 py-3 text-left text-sm leading-6 text-slate-300 transition hover:border-emerald-300/30 hover:bg-white/[0.05] hover:text-white"
-                      >
-                        {prompt}
-                      </button>
-                    ))}
-                  </div>
+        <div ref={scrollRef} className="aura-thread">
+          {showEmptyState ? (
+            <div className="aura-empty-state">
+              <div className="aura-empty-state__hero">
+                <div className="aura-empty-state__badge">
+                  <Brain size={15} />
+                  Start with an evaluation question
                 </div>
+                <h3 className="aura-empty-state__title">
+                  {isPublic ? 'A calmer school ERP assistant for product evaluation.' : 'A quieter workspace for operational reasoning.'}
+                </h3>
+                <p className="aura-empty-state__subtitle">
+                  {isPublic
+                    ? 'Ask how admissions, attendance, finance, parent communication, and rollout come together. Aura responds with structured answers, streaming replies, and leadership-ready summaries.'
+                    : 'Ask for school insights, workflow summaries, policy help, and structured analysis without losing the workspace context.'}
+                </p>
+              </div>
 
-                <div className="space-y-4">
-                  <div className="rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.35))] p-6">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/16 bg-emerald-500/8 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.24em] text-emerald-200/75">
-                      <LayoutGrid size={12} />
-                      Response formats
-                    </div>
-                    <div className="mt-5 space-y-3">
-                      <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Markdown answers with headings, lists, and code-safe formatting.</div>
-                      <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Charts, cards, and tables when the assistant has structured data to show.</div>
-                      <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">School ERP-aware prompts for leadership, operations, and rollout teams.</div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
-                    {PUBLIC_STARTER_CARDS.map((card) => {
-                      const Icon = card.icon;
+              {isPublic ? (
+                <div className="aura-empty-state__meta">
+                  <div className="aura-capabilities">
+                    {PUBLIC_CAPABILITY_PILLS.map((item) => {
+                      const Icon = item.icon;
                       return (
-                        <div key={card.title} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
-                          <div className="flex items-center gap-3">
-                            <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-200">
-                              <Icon size={18} />
-                            </div>
-                            <div className="text-sm font-semibold text-white">{card.title}</div>
-                          </div>
-                          <p className="mt-3 text-sm leading-6 text-slate-400">{card.body}</p>
+                        <div key={item.label} className="aura-capability-card">
+                          <Icon size={16} />
+                          <span>{item.label}</span>
                         </div>
                       );
                     })}
                   </div>
+                  <div className="aura-tool-row">
+                    {ERP_TOOL_LABELS.map((tool) => (
+                      <span key={tool} className="aura-tool-pill">{tool}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ) : null}
+              ) : null}
 
-            {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[92%] sm:max-w-[84%] ${message.role === 'assistant' ? 'w-full' : ''}`}>
+              <div className="aura-prompt-grid">
+                {examplePrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => void handleSend(prompt)}
+                    className="aura-prompt-card"
+                  >
+                    <span className="aura-prompt-card__label">Try asking</span>
+                    <span className="aura-prompt-card__text">{prompt}</span>
+                  </button>
+                ))}
+              </div>
+
+              {isPublic ? (
+                <div className="aura-starter-grid">
+                  {PUBLIC_STARTER_CARDS.map((card) => {
+                    const Icon = card.icon;
+                    return (
+                      <div key={card.title} className="aura-starter-card">
+                        <div className="aura-starter-card__icon">
+                          <Icon size={18} />
+                        </div>
+                        <div>
+                          <div className="aura-starter-card__title">{card.title}</div>
+                          <p className="aura-starter-card__body">{card.body}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div className="aura-thread__messages">
+              {messages.map((message) => (
+                <div key={message.id} className={cx('aura-message', message.role === 'user' ? 'aura-message--user' : 'aura-message--assistant')}>
                   {message.role === 'assistant' ? (
-                    <div className={`rounded-[1.7rem] border p-4 shadow-lg ${
-                      message.error
-                        ? 'border-rose-400/20 bg-rose-500/10'
-                        : 'border-emerald-400/15 bg-emerald-500/[0.06]'
-                    }`}>
-                      <div className="mb-3 flex items-center gap-3">
-                        <div className="rounded-xl bg-emerald-500/15 p-2 text-emerald-200">
+                    <div className={cx('aura-response-block', message.error && 'is-error')}>
+                      <div className="aura-response-block__header">
+                        <div className="aura-response-block__avatar">
                           <Bot size={16} />
                         </div>
                         <div>
-                          <div className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200/75">AURA</div>
-                          <div className="text-[0.72rem] text-white/35">{formatTimestamp(message.timestamp)}</div>
+                          <div className="aura-response-block__title">AURA</div>
+                          <div className="aura-response-block__meta">{formatTimestamp(message.timestamp)}</div>
                         </div>
                       </div>
+
                       {message.thought ? (
-                        <div className="mb-3 rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-emerald-100/80">
-                          {message.thought}
-                        </div>
+                        <details className="aura-thought">
+                          <summary>Reasoning trace</summary>
+                          <div className="aura-thought__body">{message.thought}</div>
+                        </details>
                       ) : null}
+
                       {message.response ? (
-                        <div className="mt-2">
-                          <AssistantResponseView
-                            response={message.response}
-                            onConfirmAction={(token) => handleConfirmAction(token)}
-                            actionPending={actionPendingToken === message.response?.meta?.confirmationToken}
-                          />
-                        </div>
+                        <AssistantResponseView
+                          response={message.response}
+                          onConfirmAction={(token) => handleConfirmAction(token)}
+                          actionPending={actionPendingToken === message.response?.meta?.confirmationToken}
+                        />
                       ) : (
-                        <div className="text-sm leading-7 text-white/85">{message.text}</div>
+                        <div className="aura-response-block__plain">{message.text || (message.streaming ? statusText : '')}</div>
                       )}
                     </div>
                   ) : (
-                    <div className="rounded-[1.5rem] border border-cyan-400/15 bg-cyan-500/[0.08] px-4 py-3 text-sm leading-7 text-white">
-                      <div className="mb-1 text-[0.68rem] font-black uppercase tracking-[0.2em] text-cyan-100/55">You</div>
-                      {message.text}
+                    <div className="aura-user-bubble">
+                      <div className="aura-user-bubble__label">You</div>
+                      <div>{message.text}</div>
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="aura-composer">
+          <div className="aura-composer__status">
+            <div className="aura-composer__status-line">
+              <Sparkles size={14} />
+              <span>{loading ? statusText : isPublic ? 'Public assistant connected' : 'Tool-aware assistant connected'}</span>
+            </div>
+            <div className="aura-composer__status-line">
+              {isPublic ? <GraduationCap size={13} /> : <History size={13} />}
+              <span>{isPublic ? 'School ERP prompts ready' : activeConversationId ? 'History saved' : 'Draft mode'}</span>
+            </div>
           </div>
 
-          <div className="border-t border-white/10 px-4 py-4 md:px-6">
-            <div className="mb-2 flex items-center justify-between gap-3 text-xs text-white/40">
-              <div className="flex items-center gap-2">
-                <Sparkles size={14} className="text-emerald-300/70" />
-                <span>{loading ? statusText : isPublic ? 'Public assistant connected' : 'Tool-aware assistant connected'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {isPublic ? <GraduationCap size={13} /> : <History size={13} />}
-                <span>{isPublic ? 'School ERP prompts ready' : activeConversationId ? 'History saved' : 'Draft mode'}</span>
-              </div>
-            </div>
+          {voiceError ? (
+            <div className="aura-composer__error">{voiceError}</div>
+          ) : null}
 
-            {voiceError ? (
-              <div className="mb-3 rounded-2xl border border-rose-400/20 bg-rose-500/[0.08] px-3 py-2 text-xs text-rose-100/85">
-                {voiceError}
-              </div>
-            ) : null}
-
-            <div className="flex items-end gap-3">
-              <textarea
-                ref={composerRef}
-                value={input}
-                maxLength={2000}
-                onChange={(event) => setInput(event.target.value.slice(0, 2000))}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !event.shiftKey) {
-                    event.preventDefault();
-                    void handleSend();
-                  }
-                }}
-                placeholder={isPublic ? 'Ask Aura about school operations, rollout, AI workflows, pricing, or platform fit...' : 'Ask for insights, explain a concept, or request an operational answer...'}
-                className="min-h-[58px] flex-1 resize-none rounded-[1.5rem] border border-white/10 bg-white/[0.04] px-4 py-4 text-sm text-white outline-none placeholder:text-white/30 focus:border-emerald-300/30 focus:bg-white/[0.06]"
-              />
+          <div className="aura-composer__dock">
+            <textarea
+              ref={composerRef}
+              value={input}
+              maxLength={2000}
+              onChange={(event) => setInput(event.target.value.slice(0, 2000))}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  void handleSend();
+                }
+              }}
+              placeholder={isPublic ? 'Ask Aura about school operations, rollout, AI workflows, pricing, or platform fit...' : 'Ask for insights, explain a concept, or request an operational answer...'}
+              className="aura-composer__input"
+            />
+            <div className="aura-composer__actions">
               <button
                 type="button"
                 onClick={() => {
@@ -1231,11 +1169,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                   }
                   startVoiceCapture();
                 }}
-                className={`inline-flex h-[58px] w-[58px] items-center justify-center rounded-[1.25rem] border transition ${
-                  voiceListening
-                    ? 'border-rose-400/30 bg-rose-500/15 text-rose-100'
-                    : 'border-white/10 bg-white/[0.04] text-white/70 hover:border-emerald-300/30 hover:bg-white/[0.08] hover:text-white'
-                }`}
+                className={cx('aura-composer__icon', voiceListening && 'is-active')}
                 aria-label={voiceListening ? 'Stop voice input' : 'Start voice input'}
               >
                 {voiceListening ? <MicOff size={18} /> : <Mic size={18} />}
@@ -1244,13 +1178,13 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 type="button"
                 onClick={() => void handleSend()}
                 disabled={loading || !input.trim()}
-                className="inline-flex h-[58px] w-[58px] items-center justify-center rounded-[1.25rem] bg-emerald-500 text-slate-950 shadow-[0_12px_30px_rgba(16,185,129,0.25)] transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-55"
+                className="aura-composer__send"
               >
                 <Send size={18} />
               </button>
             </div>
-            <div className="mt-2 text-right text-[0.72rem] text-white/35">{input.length}/2000</div>
           </div>
+          <div className="aura-composer__meta">{input.length}/2000</div>
         </div>
       </section>
     </div>
@@ -1258,8 +1192,8 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
   if (variant === 'page') {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(34,211,238,0.1),transparent_24%),linear-gradient(180deg,#020617_0%,#020817_100%)] px-3 py-3 text-white md:px-4 md:py-4">
-        <div className="mx-auto h-[calc(100vh-1.5rem)] max-w-[1600px] overflow-hidden rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(3,7,18,0.94))] shadow-[0_24px_80px_rgba(2,6,23,0.45)] md:h-[calc(100vh-2rem)]">
+      <div className="aura-page">
+        <div className="aura-page__frame">
           {shellBody}
         </div>
       </div>
@@ -1274,11 +1208,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           initial={{ scale: 0.92, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           onClick={() => setOpen(true)}
-          className={`fixed right-5 z-50 inline-flex items-center justify-center bg-emerald-500 text-slate-950 shadow-[0_18px_45px_rgba(16,185,129,0.35)] transition hover:scale-105 hover:bg-emerald-400 ${
-            isPublic
-              ? 'bottom-5 h-14 w-14 rounded-[1.5rem] md:bottom-auto md:top-1/2 md:-translate-y-1/2'
-              : 'bottom-5 h-14 w-14 rounded-[1.5rem]'
-          }`}
+          className="aura-launcher"
         >
           <MessageSquare size={22} />
         </motion.button>
@@ -1290,14 +1220,10 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             initial={{ opacity: 0, x: 18 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 18 }}
-            className={`fixed right-0 z-50 w-full ${
-              isPublic
-                ? 'inset-y-0 sm:bottom-4 sm:top-4 sm:right-4 sm:h-auto'
-                : 'bottom-0 h-[100dvh] sm:bottom-5 sm:right-5 sm:h-[min(90vh,48rem)]'
-            }`}
+            className={cx('aura-drawer', isPublic && 'aura-drawer--public')}
             style={{ maxWidth: isPublic ? 'min(calc(100vw - 1rem), 88rem)' : DRAWER_WIDTH }}
           >
-            <div className="flex h-full flex-col overflow-hidden border border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,0.98),rgba(3,7,18,0.96))] text-white shadow-[0_30px_80px_rgba(2,6,23,0.7)] sm:rounded-[2rem]">
+            <div className="aura-drawer__frame">
               {shellBody}
             </div>
           </motion.div>

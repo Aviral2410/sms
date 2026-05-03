@@ -81,11 +81,11 @@ function KeyValueSnapshot({ data }: { data: Record<string, any> }) {
   if (!rows.length) return null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="aura-response__snapshot">
       {rows.map((row) => (
-        <div key={row.key} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
-          <div className="text-[0.68rem] font-black uppercase tracking-[0.2em] text-white/35">{row.key}</div>
-          <div className="mt-2 text-sm leading-6 text-white/80">{row.value}</div>
+        <div key={row.key} className="aura-response__snapshot-item">
+          <div className="aura-response__snapshot-key">{row.key}</div>
+          <div className="aura-response__snapshot-value">{row.value}</div>
         </div>
       ))}
     </div>
@@ -104,14 +104,14 @@ function ConfirmationCard({
   pending?: boolean;
 }) {
   return (
-    <div className="space-y-4 rounded-[1.4rem] border border-amber-400/20 bg-amber-500/[0.08] p-4">
-      <div className="flex items-start gap-3">
-        <div className="rounded-xl bg-amber-500/15 p-2 text-amber-200">
+    <div className="aura-response aura-response--warning">
+      <div className="aura-response__header">
+        <div className="aura-response__icon">
           <AlertTriangle size={16} />
         </div>
         <div className="min-w-0">
-          <div className="text-[0.72rem] font-black uppercase tracking-[0.22em] text-amber-200/80">Confirmation needed</div>
-          <div className="mt-2 text-sm leading-7 text-white/85">{text || 'This action needs your confirmation before it can run.'}</div>
+          <div className="aura-response__eyebrow">Confirmation needed</div>
+          <div className="aura-response__content">{text || 'This action needs your confirmation before it can run.'}</div>
         </div>
       </div>
 
@@ -120,7 +120,7 @@ function ConfirmationCard({
           type="button"
           onClick={() => onConfirmAction(confirmationToken)}
           disabled={pending}
-          className="inline-flex items-center gap-2 rounded-2xl bg-amber-400 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+          className="aura-response__confirm"
         >
           <Send size={15} />
           {pending ? 'Confirming...' : 'Confirm action'}
@@ -181,14 +181,14 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
     }
 
     return (
-      <div className="space-y-4 rounded-[1.4rem] border border-emerald-400/20 bg-emerald-500/[0.08] p-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-xl bg-emerald-500/15 p-2 text-emerald-200">
+      <div className="aura-response aura-response--success">
+        <div className="aura-response__header">
+          <div className="aura-response__icon">
             <CheckCircle2 size={16} />
           </div>
           <div className="min-w-0">
-            <div className="text-[0.72rem] font-black uppercase tracking-[0.22em] text-emerald-200/80">Action complete</div>
-            <div className="mt-2 text-sm leading-7 text-white/85">{plainText || 'The assistant completed your request successfully.'}</div>
+            <div className="aura-response__eyebrow">Action complete</div>
+            <div className="aura-response__content">{plainText || 'The assistant completed your request successfully.'}</div>
           </div>
         </div>
         {response.data ? <KeyValueSnapshot data={response.data} /> : null}
@@ -198,28 +198,24 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
 
   if (response.type === 'status' || response.type === 'error' || response.type === 'text') {
     return (
-      <div className={`space-y-4 rounded-[1.4rem] border p-4 ${
-        response.type === 'error'
-          ? 'border-rose-400/20 bg-rose-500/[0.08]'
-          : 'border-white/10 bg-white/[0.03]'
-      }`}>
-        {plainText ? <AiRichText content={plainText} className="text-sm leading-7 text-white/85" /> : null}
+      <div className={`aura-response ${response.type === 'error' ? 'aura-response--warning' : ''}`}>
+        {plainText ? <AiRichText content={plainText} className="aura-response__content" /> : null}
         {!plainText && hasSnapshotData && response.data ? <KeyValueSnapshot data={response.data} /> : null}
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 rounded-[1.4rem] border border-white/10 bg-white/[0.03] p-4">
-      <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.2em] text-emerald-200/70">
+    <div className="aura-response">
+      <div className="aura-response__eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         <Clock3 size={14} />
         Assistant response
       </div>
-      {plainText ? <AiRichText content={plainText} className="text-sm leading-7 text-white/85" /> : null}
+      {plainText ? <AiRichText content={plainText} className="aura-response__content" /> : null}
       {!plainText && hasSnapshotData && response.data ? <KeyValueSnapshot data={response.data} /> : null}
       {!plainText && !response.data ? (
-        <div className="flex items-center gap-2 text-sm text-white/55">
-          <Sparkles size={14} className="text-emerald-300" />
+        <div className="aura-response__content" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <Sparkles size={14} />
           No additional content was returned for this response.
         </div>
       ) : null}
