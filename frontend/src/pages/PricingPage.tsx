@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { HoverTiltCard } from '../components/public/HoverTiltCard';
 import { PublicPretextHeading } from '../components/public/PublicPretextHeading';
 import { PublicSiteFrame } from '../components/public/PublicSiteFrame';
+import { ScrollReveal } from '../components/public/ScrollReveal';
 import { usePublicSiteContent } from '../hooks/usePublicSiteContent';
 import { publicSiteApi } from '../lib/publicSiteApi';
 import type { SubscriptionPlanResponse } from '../lib/api';
@@ -73,9 +74,9 @@ export default function PricingPage() {
     <PublicSiteFrame content={content} activePath="/pricing" mode="ambient" density={1.12}>
       <section className="public-page-intro public-page-intro--focus">
         <PublicPretextHeading
-          eyebrow="Launch Options"
-          pretext="Subscription"
-          title={content?.pricingHeadline || 'Commercial plans shaped around rollout depth, capacity, and operational coverage.'}
+          eyebrow="Pricing"
+          pretext="Plans"
+          title={content?.pricingHeadline || 'Commercial plans shaped around rollout depth and operational capacity.'}
           description={content?.pricingBody || 'Choose the pricing lane that matches launch speed, user volume, and how much institutional workflow you want connected from day one.'}
           align="center"
         />
@@ -92,8 +93,8 @@ export default function PricingPage() {
               {orderedPlans.map((plan, index) => {
                 const featured = (plan.planCode || '').toUpperCase().includes('COMMERCIAL') || (plan.planName || '').toUpperCase().includes('COMMERCIAL') || index === 1;
                 return (
+                <ScrollReveal key={plan.planId} delay={index * 0.06}>
                   <HoverTiltCard
-                    key={plan.planId}
                     className={`public-site-plan-card public-site-plan-card--spotlit public-panel--strong${featured ? ' public-site-plan-card--featured' : ''}`}
                     accentColor={accentForPlan(index)}
                     as="article"
@@ -114,6 +115,7 @@ export default function PricingPage() {
                       <ArrowRight size={16} />
                     </Link>
                   </HoverTiltCard>
+                </ScrollReveal>
                 );
               })}
             </div>
@@ -129,7 +131,7 @@ export default function PricingPage() {
                 </div>
                 <div className="public-feature-lattice__legend">
                   {orderedPlans.map((plan, index) => (
-                    <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index) } as React.CSSProperties}>
+                    <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index), minWidth: 120 } as React.CSSProperties}>
                       <span style={{ fontSize: 10 }}>{plan.planCode}</span>
                       <strong style={{ fontSize: 16 }}>{formatCurrency(Number(plan.monthlyPrice))}</strong>
                     </div>
