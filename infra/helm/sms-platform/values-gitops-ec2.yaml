@@ -94,11 +94,25 @@ services:
     env:
       - name: JAVA_OPTS
         value: "-Xmx384m"
+      - name: SERVER_PORT
+        value: "8081"
       - name: APP_JWT_SECRET
         valueFrom:
           secretKeyRef:
             name: sms-secrets
             key: JWT_SECRET_KEY
+      - name: DB_URL
+        value: jdbc:postgresql://postgres:5432/sms_platform
+      - name: DB_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_USER
+      - name: DB_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: POSTGRES_PASSWORD
       - name: SPRING_DATASOURCE_URL
         value: jdbc:postgresql://postgres:5432/sms_platform
       - name: SPRING_DATASOURCE_USERNAME
@@ -111,8 +125,26 @@ services:
           secretKeyRef:
             name: sms-secrets
             key: POSTGRES_PASSWORD
+      - name: DB_SCHEMA
+        value: onboarding
       - name: APP_MQTT_BROKER_URL
         value: tcp://emqx:1883
+      - name: AUTH_SERVICE_URL
+        value: "http://auth-service:8082"
+      - name: COMMUNICATION_SERVICE_URL
+        value: "http://communication-service:8089"
+      - name: SUBSCRIPTION_SERVICE_URL
+        value: "http://subscription-service:8086"
+      - name: INTERNAL_API_KEY
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: INTERNAL_API_KEY
+      - name: PLATFORM_CONFIG_ENCRYPTION_KEY
+        valueFrom:
+          secretKeyRef:
+            name: sms-secrets
+            key: PLATFORM_CONFIG_ENCRYPTION_KEY
       - name: SPRING_PROFILES_ACTIVE
         value: docker
     image:
