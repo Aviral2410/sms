@@ -582,10 +582,10 @@ export default function LandingPage() {
       </div>
 
       <section className="public-site-section">
-        <div className="public-panel--strong overflow-hidden relative" style={{ background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(2, 44, 34, 0.6))', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 32 }}>
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 blur-[100px] -mr-48 -mt-48" />
-          <div className="p-12 relative z-10 grid md:grid-cols-2 gap-12 items-center">
-            <div>
+        <div className="public-panel--strong public-assistance-showcase" style={{ background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(2, 44, 34, 0.6))', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 32 }}>
+          <div className="public-assistance-showcase__glow" />
+          <div className="public-assistance-showcase__grid">
+            <div className="public-assistance-showcase__copy">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-6 font-mono">
                 <Sparkles size={12} /> Intelligent Assistance
               </div>
@@ -597,12 +597,12 @@ export default function LandingPage() {
                 Our assistant remembers your context, helps with missing fields, 
                 and provides intelligent answers to your platform queries.
               </p>
-              <div className="flex flex-wrap gap-4">
+              <div className="public-assistance-showcase__actions">
                 <Link to="/ai-assistant" className="public-primary-button" style={{ background: '#10b981', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)' }}>
                   Launch AI Assistant
                   <Cpu size={18} />
                 </Link>
-                <div className="flex items-center gap-6 mt-4 md:mt-0 px-4">
+                <div className="public-assistance-showcase__meta">
                   <div className="flex flex-col">
                     <span className="text-white font-bold text-sm">Guest Support</span>
                     <span className="text-emerald-500/50 text-[10px] uppercase font-black tracking-widest">No Login Required</span>
@@ -615,9 +615,9 @@ export default function LandingPage() {
                 </div>
               </div>
             </div>
-            <div className="relative group">
-              <div className="absolute -inset-4 bg-emerald-500/20 blur-3xl opacity-20 group-hover:opacity-40 transition duration-1000" />
-              <div className="relative aspect-square md:aspect-video rounded-2xl border border-white/10 bg-black/40 backdrop-blur-3xl p-6 shadow-2xl overflow-hidden flex flex-col">
+            <div className="public-assistance-showcase__visual group">
+              <div className="public-assistance-showcase__visual-glow" />
+              <div className="public-assistance-showcase__terminal">
                  <div className="flex items-center justify-between mb-8">
                     <div className="flex gap-1.5">
                       <div className="w-2.5 h-2.5 rounded-full bg-red-500/40" />
