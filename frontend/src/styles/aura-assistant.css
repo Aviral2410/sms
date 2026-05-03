@@ -1,0 +1,1008 @@
+.aura-page {
+  min-height: 100vh;
+  padding: 16px;
+  background:
+    radial-gradient(circle at top left, rgba(199, 210, 254, 0.14), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(148, 163, 184, 0.12), transparent 30%),
+    linear-gradient(180deg, #07111f 0%, #0a1422 100%);
+  color: #e7edf6;
+}
+
+.aura-page__frame,
+.aura-drawer__frame {
+  height: calc(100vh - 32px);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 28px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(8, 15, 27, 0.98), rgba(9, 16, 28, 0.96));
+  box-shadow: 0 30px 80px rgba(2, 6, 23, 0.42);
+}
+
+.aura-shell {
+  position: relative;
+  display: flex;
+  min-height: 100%;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.015), rgba(255, 255, 255, 0)),
+    rgba(7, 13, 24, 0.82);
+}
+
+.aura-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.aura-main__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 32px 36px 20px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.aura-main__header--compact {
+  padding-bottom: 16px;
+}
+
+.aura-main__header-copy {
+  max-width: 760px;
+}
+
+.aura-main__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.09);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.aura-main__title {
+  margin: 18px 0 0;
+  font-size: clamp(1.8rem, 2.4vw, 2.8rem);
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: #f8fafc;
+}
+
+.aura-main__subtitle {
+  margin: 12px 0 0;
+  max-width: 720px;
+  font-size: 0.98rem;
+  line-height: 1.7;
+  color: rgba(203, 213, 225, 0.72);
+}
+
+.aura-main__controls {
+  display: inline-flex;
+  gap: 10px;
+}
+
+.aura-icon-button {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.5);
+  color: rgba(226, 232, 240, 0.8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.aura-icon-button:hover {
+  background: rgba(30, 41, 59, 0.75);
+  color: #fff;
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.aura-rail {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(4, 9, 18, 0.72);
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.aura-rail--drawer {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: 20;
+  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.56);
+}
+
+.aura-rail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.aura-rail__brand {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.82);
+}
+
+.aura-rail__brand-sub,
+.aura-history-card__meta,
+.aura-workspace-card__meta,
+.aura-note__eyebrow,
+.aura-rail__eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.55);
+}
+
+.aura-rail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  flex: 1;
+  padding: 18px;
+}
+
+.aura-rail__block {
+  display: grid;
+  gap: 12px;
+}
+
+.aura-rail__block--grow {
+  min-height: 0;
+  flex: 1;
+}
+
+.aura-rail__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aura-rail__title {
+  font-size: 0.98rem;
+  font-weight: 600;
+  color: rgba(241, 245, 249, 0.92);
+}
+
+.aura-rail__primary-button,
+.aura-rail__secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border-radius: 16px;
+  padding: 0 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.aura-rail__primary-button {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: #eff3f8;
+  color: #0f172a;
+}
+
+.aura-rail__primary-button:hover {
+  background: #ffffff;
+}
+
+.aura-rail__secondary-button {
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(148, 163, 184, 0.08);
+  color: rgba(241, 245, 249, 0.88);
+}
+
+.aura-rail__secondary-button:hover,
+.aura-rail__quiet-button:hover {
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.aura-rail__quiet-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(148, 163, 184, 0.06);
+  color: rgba(226, 232, 240, 0.76);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 8px 12px;
+}
+
+.aura-note,
+.aura-empty-rail-state,
+.aura-inline-form,
+.aura-workspace-card,
+.aura-history-card,
+.aura-capability-card,
+.aura-prompt-card,
+.aura-starter-card,
+.aura-user-bubble,
+.aura-response-block,
+.aura-composer__dock,
+.aura-response,
+.aura-response__snapshot-item {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.aura-note,
+.aura-empty-rail-state,
+.aura-inline-form,
+.aura-workspace-card,
+.aura-history-card,
+.aura-capability-card,
+.aura-prompt-card,
+.aura-starter-card,
+.aura-user-bubble,
+.aura-response-block,
+.aura-composer__dock,
+.aura-response,
+.aura-response__snapshot-item {
+  border-radius: 20px;
+}
+
+.aura-note {
+  padding: 16px;
+}
+
+.aura-note__copy {
+  margin: 6px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(226, 232, 240, 0.74);
+}
+
+.aura-pill-grid,
+.aura-workspace-list {
+  display: grid;
+  gap: 10px;
+}
+
+.aura-capability-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(148, 163, 184, 0.06);
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 0.84rem;
+}
+
+.aura-rail__list {
+  display: grid;
+  gap: 10px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.aura-history-card,
+.aura-workspace-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.aura-history-card.is-active,
+.aura-workspace-card.is-active {
+  border-color: rgba(226, 232, 240, 0.22);
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.aura-history-card__main {
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+}
+
+.aura-history-card__title,
+.aura-workspace-card__title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: rgba(248, 250, 252, 0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aura-history-card__delete {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  color: rgba(148, 163, 184, 0.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aura-history-card__delete:hover {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.18);
+  background: rgba(127, 29, 29, 0.24);
+}
+
+.aura-workspace-card-wrap.is-droppable {
+  border-radius: 22px;
+  box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.16);
+}
+
+.aura-workspace-card {
+  cursor: pointer;
+}
+
+.aura-workspace-card__copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.aura-workspace-card__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(203, 213, 225, 0.76);
+}
+
+.aura-inline-form {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.aura-input,
+.aura-composer__input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #f8fafc;
+  font: inherit;
+}
+
+.aura-input {
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 12px;
+  background: rgba(2, 6, 23, 0.34);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.aura-input::placeholder,
+.aura-composer__input::placeholder {
+  color: rgba(148, 163, 184, 0.62);
+}
+
+.aura-inline-form__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.aura-inline-form__confirm,
+.aura-inline-form__cancel {
+  min-height: 40px;
+  border-radius: 14px;
+  padding: 0 14px;
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.aura-inline-form__confirm {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.aura-inline-form__cancel {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.aura-thread {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+
+.aura-thread__messages,
+.aura-empty-state {
+  width: min(100%, 860px);
+  margin: 0 auto;
+}
+
+.aura-thread__messages {
+  display: grid;
+  gap: 18px;
+  padding-top: 18px;
+}
+
+.aura-empty-state {
+  display: grid;
+  gap: 24px;
+  padding: 32px 0 12px;
+}
+
+.aura-empty-state__hero {
+  display: grid;
+  gap: 14px;
+}
+
+.aura-empty-state__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  color: rgba(226, 232, 240, 0.78);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.aura-empty-state__title {
+  margin: 0;
+  font-size: clamp(1.8rem, 2.5vw, 3rem);
+  line-height: 1.06;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #f8fafc;
+}
+
+.aura-empty-state__subtitle {
+  margin: 0;
+  max-width: 760px;
+  color: rgba(203, 213, 225, 0.72);
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.aura-empty-state__meta {
+  display: grid;
+  gap: 16px;
+}
+
+.aura-capabilities {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.aura-capability-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  color: rgba(241, 245, 249, 0.82);
+}
+
+.aura-tool-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.aura-tool-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 9px 14px;
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  color: rgba(226, 232, 240, 0.74);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.aura-prompt-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.aura-prompt-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  text-align: left;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+
+.aura-prompt-card:hover,
+.aura-starter-card:hover,
+.aura-history-card:hover,
+.aura-workspace-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(226, 232, 240, 0.18);
+  background: rgba(30, 41, 59, 0.62);
+}
+
+.aura-prompt-card__label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.58);
+}
+
+.aura-prompt-card__text {
+  font-size: 0.98rem;
+  line-height: 1.65;
+  color: rgba(241, 245, 249, 0.92);
+}
+
+.aura-starter-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.aura-starter-card {
+  display: flex;
+  gap: 14px;
+  padding: 18px;
+}
+
+.aura-starter-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(241, 245, 249, 0.9);
+  flex-shrink: 0;
+}
+
+.aura-starter-card__title {
+  font-size: 0.96rem;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+.aura-starter-card__body {
+  margin: 8px 0 0;
+  color: rgba(203, 213, 225, 0.68);
+  line-height: 1.7;
+  font-size: 0.92rem;
+}
+
+.aura-message {
+  display: flex;
+}
+
+.aura-message--user {
+  justify-content: flex-end;
+}
+
+.aura-message--assistant {
+  justify-content: flex-start;
+}
+
+.aura-user-bubble {
+  width: min(100%, 620px);
+  padding: 16px 18px;
+  background: rgba(226, 232, 240, 0.96);
+  color: #0f172a;
+}
+
+.aura-user-bubble__label {
+  margin-bottom: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.56);
+}
+
+.aura-response-block {
+  width: min(100%, 760px);
+  padding: 18px;
+}
+
+.aura-response-block.is-error {
+  border-color: rgba(248, 113, 113, 0.2);
+  background: rgba(127, 29, 29, 0.18);
+}
+
+.aura-response-block__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.aura-response-block__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(148, 163, 184, 0.12);
+  color: rgba(241, 245, 249, 0.92);
+}
+
+.aura-response-block__title {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.68);
+}
+
+.aura-response-block__meta,
+.aura-composer__meta {
+  font-size: 0.78rem;
+  color: rgba(148, 163, 184, 0.65);
+}
+
+.aura-response-block__plain {
+  color: rgba(241, 245, 249, 0.88);
+  font-size: 0.98rem;
+  line-height: 1.8;
+}
+
+.aura-thought {
+  margin: 0 0 14px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.28);
+  border: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.aura-thought summary {
+  cursor: pointer;
+  list-style: none;
+  padding: 12px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(203, 213, 225, 0.76);
+}
+
+.aura-thought summary::-webkit-details-marker {
+  display: none;
+}
+
+.aura-thought__body {
+  padding: 0 14px 14px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+  color: rgba(203, 213, 225, 0.74);
+}
+
+.aura-composer {
+  padding: 18px 24px 24px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(7, 13, 24, 0.82);
+}
+
+.aura-composer__status {
+  width: min(100%, 860px);
+  margin: 0 auto 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aura-composer__status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(148, 163, 184, 0.72);
+  font-size: 0.82rem;
+}
+
+.aura-composer__error {
+  width: min(100%, 860px);
+  margin: 0 auto 12px;
+  border-radius: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  background: rgba(127, 29, 29, 0.18);
+  color: #fecaca;
+  font-size: 0.84rem;
+}
+
+.aura-composer__dock {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding: 12px 14px 12px 18px;
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.aura-composer__input {
+  min-height: 74px;
+  max-height: 180px;
+  resize: none;
+  line-height: 1.7;
+}
+
+.aura-composer__actions {
+  display: inline-flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.aura-composer__icon,
+.aura-composer__send {
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 180ms ease, color 180ms ease, opacity 180ms ease, border-color 180ms ease;
+}
+
+.aura-composer__icon {
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(148, 163, 184, 0.08);
+  color: rgba(226, 232, 240, 0.76);
+}
+
+.aura-composer__icon.is-active {
+  background: rgba(127, 29, 29, 0.28);
+  border-color: rgba(248, 113, 113, 0.22);
+  color: #fecaca;
+}
+
+.aura-composer__send {
+  background: #eff3f8;
+  color: #0f172a;
+}
+
+.aura-composer__send:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.aura-composer__meta {
+  width: min(100%, 860px);
+  margin: 8px auto 0;
+  text-align: right;
+}
+
+.aura-launcher {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  background: #eff3f8;
+  color: #0f172a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 18px 45px rgba(2, 6, 23, 0.28);
+}
+
+.aura-drawer {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 50;
+  width: 100%;
+  height: min(90vh, 48rem);
+}
+
+.aura-drawer--public {
+  top: 16px;
+  bottom: 16px;
+  height: auto;
+}
+
+.aura-response {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.aura-response--warning {
+  border-color: rgba(245, 158, 11, 0.24);
+  background: rgba(120, 53, 15, 0.2);
+}
+
+.aura-response--success {
+  border-color: rgba(34, 197, 94, 0.18);
+  background: rgba(20, 83, 45, 0.18);
+}
+
+.aura-response__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.aura-response__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aura-response__eyebrow {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.aura-response__content,
+.aura-response__content .ai-richtext {
+  color: rgba(241, 245, 249, 0.9);
+  line-height: 1.75;
+}
+
+.aura-response__snapshot {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.aura-response__snapshot-item {
+  padding: 14px;
+}
+
+.aura-response__snapshot-key {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.6);
+}
+
+.aura-response__snapshot-value {
+  margin-top: 8px;
+  color: rgba(241, 245, 249, 0.86);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.aura-response__confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: #f8d06a;
+  color: #111827;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.aura-response__confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (min-width: 1100px) {
+  .aura-shell--rail-open .aura-rail {
+    position: relative;
+    inset: auto;
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 1099px) {
+  .aura-page {
+    padding: 10px;
+  }
+
+  .aura-page__frame {
+    height: calc(100vh - 20px);
+  }
+
+  .aura-rail {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 20;
+    box-shadow: 0 20px 60px rgba(2, 6, 23, 0.56);
+  }
+
+  .aura-main__header {
+    padding: 24px 20px 16px;
+  }
+
+  .aura-thread {
+    padding: 0 16px 18px;
+  }
+
+  .aura-composer {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 720px) {
+  .aura-rail {
+    width: min(100%, 320px);
+  }
+
+  .aura-main__title {
+    font-size: 1.65rem;
+  }
+
+  .aura-main__subtitle {
+    font-size: 0.92rem;
+  }
+
+  .aura-prompt-grid,
+  .aura-starter-grid,
+  .aura-capabilities {
+    grid-template-columns: 1fr;
+  }
+
+  .aura-composer__dock {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .aura-composer__actions {
+    justify-content: flex-end;
+  }
+
+  .aura-user-bubble,
+  .aura-response-block {
+    width: 100%;
+  }
+
+  .aura-drawer {
+    right: 0;
+    bottom: 0;
+    height: 100dvh;
+    max-width: 100%;
+  }
+
+  .aura-drawer--public {
+    top: 0;
+    bottom: 0;
+  }
+
+  .aura-drawer__frame {
+    height: 100%;
+    border-radius: 0;
+  }
+}
