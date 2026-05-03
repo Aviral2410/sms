@@ -3,11 +3,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   Bot,
   Brain,
+  Building2,
   ChevronRight,
+  Compass,
   FolderPlus,
   GraduationCap,
   History,
   LayoutGrid,
+  Library,
   MessageSquare,
   Mic,
   MicOff,
@@ -86,6 +89,26 @@ const ERP_TOOL_LABELS = [
   'Transport',
   'Communication',
   'Timetable',
+];
+
+const PUBLIC_CAPABILITY_PILLS = [
+  { label: 'School ERP aware', icon: Building2 },
+  { label: 'Structured answers', icon: LayoutGrid },
+  { label: 'Streaming replies', icon: Sparkles },
+  { label: 'Rollout guidance', icon: Compass },
+];
+
+const PUBLIC_STARTER_CARDS = [
+  {
+    title: 'Leadership briefing',
+    body: 'See how Aura explains cross-module workflows in a board-friendly, high-signal format.',
+    icon: Building2,
+  },
+  {
+    title: 'Operational walkthrough',
+    body: 'Move from admissions to attendance, finance, and parent communication without losing context.',
+    icon: Library,
+  },
 ];
 
 function buildAssistantSummary(response: RenderedResponse | null | undefined) {
@@ -707,6 +730,13 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           <Plus size={16} />
           New chat
         </button>
+
+        <div className="mt-4 rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.35))] p-4">
+          <div className="text-[0.68rem] font-black uppercase tracking-[0.22em] text-emerald-200/70">Evaluation mode</div>
+          <p className="mt-2 text-sm leading-6 text-slate-300">
+            Explore product fit, rollout logic, and school ERP use cases in a focused workspace.
+          </p>
+        </div>
       </div>
 
       <div className="border-b border-white/10 px-4 py-4">
@@ -717,6 +747,17 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               {tool}
             </span>
           ))}
+        </div>
+        <div className="mt-4 space-y-2">
+          {PUBLIC_CAPABILITY_PILLS.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div key={item.label} className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-xs text-slate-300">
+                <Icon size={13} className="text-emerald-200" />
+                {item.label}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -1068,15 +1109,34 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                   </div>
                 </div>
 
-                <div className="rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.35))] p-6">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/16 bg-emerald-500/8 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.24em] text-emerald-200/75">
-                    <LayoutGrid size={12} />
-                    Response formats
+                <div className="space-y-4">
+                  <div className="rounded-[1.9rem] border border-white/10 bg-[linear-gradient(180deg,rgba(16,185,129,0.12),rgba(15,23,42,0.35))] p-6">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/16 bg-emerald-500/8 px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.24em] text-emerald-200/75">
+                      <LayoutGrid size={12} />
+                      Response formats
+                    </div>
+                    <div className="mt-5 space-y-3">
+                      <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Markdown answers with headings, lists, and code-safe formatting.</div>
+                      <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Charts, cards, and tables when the assistant has structured data to show.</div>
+                      <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">School ERP-aware prompts for leadership, operations, and rollout teams.</div>
+                    </div>
                   </div>
-                  <div className="mt-5 space-y-3">
-                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Markdown answers with headings, lists, and code-safe formatting.</div>
-                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">Charts, cards, and tables when the assistant has structured data to show.</div>
-                    <div className="rounded-[1.25rem] border border-white/10 bg-slate-950/60 px-4 py-3 text-sm text-slate-300">School ERP-aware prompts for leadership, operations, and rollout teams.</div>
+
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-1">
+                    {PUBLIC_STARTER_CARDS.map((card) => {
+                      const Icon = card.icon;
+                      return (
+                        <div key={card.title} className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-5">
+                          <div className="flex items-center gap-3">
+                            <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-200">
+                              <Icon size={18} />
+                            </div>
+                            <div className="text-sm font-semibold text-white">{card.title}</div>
+                          </div>
+                          <p className="mt-3 text-sm leading-6 text-slate-400">{card.body}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>

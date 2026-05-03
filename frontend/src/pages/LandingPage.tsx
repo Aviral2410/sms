@@ -17,20 +17,10 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { FallbackImage } from '../components/ui/FallbackImage';
+import { PublicAuraMockup, PublicHeroProductMockup, PublicOperationsMockup } from '../components/public/PublicProductMockups';
 import { PublicSiteFrame } from '../components/public/PublicSiteFrame';
 import { usePublicSiteContent } from '../hooks/usePublicSiteContent';
 import { publicSiteApi, type PublicRoleBenefit, type PublicSiteFeatureCard, type PublicSubscriptionOverviewResponse, type PublicTestimonial } from '../lib/publicSiteApi';
-
-function findMedia(content: ReturnType<typeof usePublicSiteContent>['content'], key: string) {
-  return content?.mediaGallery.find((item) => item.sectionKey === key) ?? null;
-}
-
-function resolveImage(candidate?: string | null, fallback = '/institution-flow.svg') {
-  if (!candidate || candidate === '/hero.png' || candidate === '/school_facade.png' || candidate === '/classroom.png') {
-    return fallback;
-  }
-  return candidate;
-}
 
 function initials(name: string) {
   const value = name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toUpperCase() || '').join('');
@@ -91,6 +81,15 @@ const PLATFORM_BADGES = [
   'Public + tenant journeys',
 ];
 
+const TRUST_SEGMENTS = [
+  'Independent schools',
+  'K-12 groups',
+  'Residential campuses',
+  'Multi-branch institutions',
+  'Operations-first teams',
+  'AI-adoption leaders',
+];
+
 export default function LandingPage() {
   const { content, loading, error } = usePublicSiteContent();
   const [overview, setOverview] = useState<PublicSubscriptionOverviewResponse | null>(null);
@@ -125,8 +124,6 @@ export default function LandingPage() {
     };
   }, []);
 
-  const heroMedia = findMedia(content, 'hero');
-  const storyMedia = findMedia(content, 'story');
   const featureCards = (content?.featureCards || []).slice(0, 6);
   const roleBenefits = (content?.roleBenefits || []).filter((item) => item.roleKey !== 'PLATFORM_ADMIN').slice(0, 4);
   const testimonials = [...(content?.testimonials || [])]
@@ -239,36 +236,7 @@ export default function LandingPage() {
 
             <div className="relative">
               <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.98))] p-4 shadow-[0_30px_80px_rgba(2,6,23,0.45)]">
-                <div className="rounded-[1.5rem] border border-white/10 bg-slate-900/70 p-4">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.26em] text-emerald-200/65">Executive Overview</div>
-                      <div className="mt-2 text-lg font-semibold text-white">Operational command center</div>
-                    </div>
-                    <div className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-3 py-1 text-xs font-semibold text-emerald-200">
-                      Ask Aura ready
-                    </div>
-                  </div>
-
-                  <div className="mt-4 overflow-hidden rounded-[1.4rem] border border-white/10 bg-slate-950/60">
-                    <FallbackImage
-                      src={resolveImage(heroMedia?.imageUrl || storyMedia?.imageUrl, '/operational-viewpoint.svg')}
-                      fallbackSrc="/operational-viewpoint.svg"
-                      alt={heroMedia?.altText || 'School operations dashboard'}
-                      className="h-[280px] w-full object-cover"
-                    />
-                  </div>
-
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {trustMetrics.map((metric) => (
-                      <div key={metric.label} className="rounded-[1.25rem] border border-white/10 bg-white/[0.03] p-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">{metric.label}</div>
-                        <div className="mt-2 text-2xl font-black tracking-tight text-white">{metric.value}</div>
-                        <p className="mt-2 text-sm leading-6 text-slate-400">{metric.detail}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                <PublicHeroProductMockup />
               </div>
             </div>
           </div>
@@ -282,6 +250,17 @@ export default function LandingPage() {
               <p className="mt-3 text-sm leading-6 text-slate-400">{metric.detail}</p>
             </article>
           ))}
+        </section>
+
+        <section className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.03] px-5 py-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-200/75">Built for</div>
+            {TRUST_SEGMENTS.map((segment) => (
+              <div key={segment} className="rounded-full border border-white/10 bg-slate-950/65 px-3 py-1.5 text-xs font-medium text-slate-300">
+                {segment}
+              </div>
+            ))}
+          </div>
         </section>
 
         <section id="solutions" className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
@@ -318,6 +297,7 @@ export default function LandingPage() {
           </div>
 
           <div className="space-y-4">
+            <PublicOperationsMockup />
             {roleBenefits.map((benefit) => {
               const Icon = ROLE_ICON_MAP[benefit.roleKey] || ShieldCheck;
               return (
@@ -456,19 +436,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/70 p-6">
-              <div className="space-y-3">
-                {[
-                  'How does Aura connect admissions, attendance, fees, and parent communication?',
-                  'Show me how the AI assistant presents school ERP data in charts and tables.',
-                  'What does rollout look like for a growing school group?',
-                ].map((prompt) => (
-                  <div key={prompt} className="rounded-[1.25rem] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-slate-300">
-                    {prompt}
-                  </div>
-                ))}
-              </div>
-            </div>
+            <PublicAuraMockup />
           </div>
         </section>
 
