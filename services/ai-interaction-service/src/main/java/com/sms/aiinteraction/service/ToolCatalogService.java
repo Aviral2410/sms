@@ -10,14 +10,16 @@ import java.util.List;
 @Service
 public class ToolCatalogService {
     private final ToolRegistry toolRegistry;
+    private final ToolAccessPolicyService toolAccessPolicyService;
 
-    public ToolCatalogService(ToolRegistry toolRegistry) {
+    public ToolCatalogService(ToolRegistry toolRegistry, ToolAccessPolicyService toolAccessPolicyService) {
         this.toolRegistry = toolRegistry;
+        this.toolAccessPolicyService = toolAccessPolicyService;
     }
 
     public List<AiInteractionDtos.ToolCatalogItem> forUser(UserContext user) {
         return toolRegistry.all().stream()
-                .filter(tool -> user.role() == UserRole.PLATFORM_ADMIN || tool.allowedRoles().contains(user.role()))
+                .filter(tool -> toolAccessPolicyService.canDiscover(tool, user))
                 .map(tool -> new AiInteractionDtos.ToolCatalogItem(
                         tool.name(),
                         tool.descriptor().description(),

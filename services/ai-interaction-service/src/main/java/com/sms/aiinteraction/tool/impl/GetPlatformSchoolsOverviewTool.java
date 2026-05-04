@@ -52,7 +52,7 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
 
     @Override
     public Set<UserRole> allowedRoles() {
-        return Set.of(UserRole.PLATFORM_ADMIN, UserRole.SCHOOL_ADMIN);
+        return Set.of(UserRole.PUBLIC_ANONYMOUS, UserRole.PLATFORM_ADMIN);
     }
 
     @Override
@@ -62,6 +62,10 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
 
     @Override
     public ToolResult execute(ObjectNode arguments, UserContext userContext) {
+        if (userContext.role() == UserRole.PUBLIC_ANONYMOUS) {
+            return executePublicOverview(arguments);
+        }
+
         JsonNode schoolsResponse = gatewayApiClient.get("/api/v1/onboarding/schools", Collections.emptyMap(), userContext.authorization());
         
         String statusFilter = arguments.path("status").asText(null);
@@ -72,7 +76,7 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
 
         ZonedDateTime now = ZonedDateTime.now();
         var filtered = StreamSupport.stream(schoolsResponse.spliterator(), false)
-            .filter(s -> statusFilter == null || statusFilter.equalsIgnoreCase(s.path("status").asText("")))
+            .filter(s -> matchesStatusFilter(statusFilter, s.path("status").asText("")))
             .filter(s -> stateFilter == null || stateFilter.equalsIgnoreCase(s.path("state").asText("")))
             .filter(s -> {
                 if (monthsLimit <= 0) return true;
@@ -80,8 +84,9 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
                 catch (Exception e) { return true; }
             }).collect(Collectors.toList());
 
-        long activeCount = filtered.stream().filter(s -> "ACTIVE".equalsIgnoreCase(s.path("status").asText())).count();
-        long pendingCount = filtered.stream().filter(s -> "PENDING".equalsIgnoreCase(s.path("status").asText())).count();
+        long approvedCount = filtered.stream().filter(s -> "APPROVED".equalsIgnoreCase(s.path("status").asText())).count();
+        long pendingCount = filtered.stream().filter(s -> isPendingReviewStatus(s.path("status").asText())).count();
+        long rejectedCount = filtered.stream().filter(s -> "REJECTED".equalsIgnoreCase(s.path("status").asText())).count();
         
         Map<String, Integer> timeMap = new TreeMap<>();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
@@ -99,8 +104,9 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
         
         // KPI Cards
         components.addObject().put("type", "kpi_card").put("title", "Total Matches").put("value", String.valueOf(filtered.size())).put("color", "emerald");
-        components.addObject().put("type", "kpi_card").put("title", "Active Schools").put("value", String.valueOf(activeCount)).put("color", "sky");
+        components.addObject().put("type", "kpi_card").put("title", "Approved Schools").put("value", String.valueOf(approvedCount)).put("color", "sky");
         components.addObject().put("type", "kpi_card").put("title", "Pending Verification").put("value", String.valueOf(pendingCount)).put("color", "amber");
+        components.addObject().put("type", "kpi_card").put("title", "Rejected").put("value", String.valueOf(rejectedCount)).put("color", "rose");
 
         // Dynamic Chart
         ObjectNode chart = components.addObject();
@@ -109,6 +115,19 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
         ArrayNode labels = chart.putArray("labels");
         ArrayNode series = chart.putArray("series");
         timeMap.forEach((l, v) -> { labels.add(l); series.add(v); });
+
+        if ("PENDING_REVIEW".equalsIgnoreCase(statusFilter)) {
+            ObjectNode table = components.addObject();
+            table.put("type", "table");
+            table.put("title", "Pending Approval Queue");
+            ArrayNode rows = table.putArray("rows");
+            filtered.stream().limit(10).forEach(school -> rows.addObject()
+                    .put("schoolName", school.path("schoolName").asText(""))
+                    .put("schoolCode", school.path("schoolCode").asText(""))
+                    .put("status", school.path("status").asText(""))
+                    .put("city", school.path("city").asText(""))
+                    .put("createdAt", school.path("createdAt").asText("")));
+        }
 
         // Insights
         ArrayNode insights = response.putArray("insights");
@@ -120,5 +139,49 @@ public class GetPlatformSchoolsOverviewTool implements AiTool {
         meta.put("intent", "PLATFORM_ANALYTICS");
 
         return new ToolResult("smart_ui", response, meta);
+    }
+
+    private ToolResult executePublicOverview(ObjectNode arguments) {
+        JsonNode overview = gatewayApiClient.get("/api/v1/subscriptions/public/overview", Collections.emptyMap(), null);
+
+        ObjectNode response = objectMapper.createObjectNode();
+        response.put("title", "Platform Footprint Overview");
+        response.put("view", "mixed_dashboard");
+        response.put(
+                "summary",
+                "Live public metrics for the platform network, including connected schools, learners, and institution activity."
+        );
+
+        ArrayNode components = response.putArray("components");
+        components.addObject().put("type", "kpi_card").put("title", "Connected Schools").put("value", overview.path("connectedSchools").asText("0")).put("color", "emerald");
+        components.addObject().put("type", "kpi_card").put("title", "Active Institutions").put("value", overview.path("activeInstitutions").asText("0")).put("color", "sky");
+        components.addObject().put("type", "kpi_card").put("title", "Total Users").put("value", overview.path("totalUsers").asText("0")).put("color", "amber");
+        components.addObject().put("type", "kpi_card").put("title", "Learner Capacity").put("value", overview.path("totalLearnerCapacity").asText("0")).put("color", "violet");
+
+        ObjectNode table = components.addObject();
+        table.put("type", "table");
+        table.put("title", "Representative Institutions");
+        ArrayNode rows = table.putArray("rows");
+        overview.path("attachedSchools").forEach(school -> rows.addObject()
+                .put("schoolName", school.path("schoolName").asText(""))
+                .put("schoolCode", school.path("schoolCode").asText("")));
+
+        ObjectNode meta = objectMapper.createObjectNode();
+        meta.put("intent", "PUBLIC_PLATFORM_ANALYTICS");
+        return new ToolResult("smart_ui", response, meta);
+    }
+
+    private boolean matchesStatusFilter(String statusFilter, String status) {
+        if (statusFilter == null || statusFilter.isBlank()) {
+            return true;
+        }
+        if ("PENDING_REVIEW".equalsIgnoreCase(statusFilter)) {
+            return isPendingReviewStatus(status);
+        }
+        return statusFilter.equalsIgnoreCase(status);
+    }
+
+    private boolean isPendingReviewStatus(String status) {
+        return "SUBMITTED".equalsIgnoreCase(status) || "UNDER_REVIEW".equalsIgnoreCase(status);
     }
 }

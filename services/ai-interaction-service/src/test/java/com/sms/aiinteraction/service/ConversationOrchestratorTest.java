@@ -41,6 +41,7 @@ class ConversationOrchestratorTest {
         CacheService cacheService = mock(CacheService.class);
         AuditEventService auditEventService = mock(AuditEventService.class);
         AdministrativeInferenceService inferenceService = mock(AdministrativeInferenceService.class);
+        ToolAccessPolicyService toolAccessPolicyService = mock(ToolAccessPolicyService.class);
 
         AiInteractionProperties properties = new AiInteractionProperties(
                 "http://localhost:8080",
@@ -62,7 +63,8 @@ class ConversationOrchestratorTest {
                 cacheService,
                 auditEventService,
                 properties,
-                inferenceService
+                inferenceService,
+                toolAccessPolicyService
         );
 
         UserContext user = user(UserRole.TEACHER);
@@ -76,6 +78,7 @@ class ConversationOrchestratorTest {
                 .thenReturn(new ConversationMemoryService.ChatRecord(conversationId, workspaceId, user.userId(), "Physics", Instant.now(), Instant.now()));
         when(memoryService.listMessages(user, conversationId, 10)).thenReturn(List.of());
         when(toolRegistry.all()).thenReturn(List.of());
+        when(toolAccessPolicyService.canDiscover(any(), eq(user))).thenReturn(true);
         when(toolPlanningService.plan(eq("Explain Newton's second law"), eq(user), any(), any())).thenReturn(List.of());
         when(cacheService.get(any())).thenReturn(Optional.empty());
 

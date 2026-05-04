@@ -59,6 +59,13 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
             }
         }
 
+        if (userContext.role() == UserRole.PLATFORM_ADMIN) {
+            handlePlatformAdminQueries(message, normalized, availableTools, calls, chosenTools);
+            if (!calls.isEmpty()) {
+                return trim(calls);
+            }
+        }
+
         handleAuthenticatedActions(message, normalized, userContext, availableTools, calls, chosenTools);
         if (!calls.isEmpty()) {
             return trim(calls);
@@ -173,6 +180,31 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         }
 
         if (userContext.role() == UserRole.PUBLIC_ANONYMOUS) {
+            return;
+        }
+    }
+
+    private void handlePlatformAdminQueries(
+            String message,
+            String normalized,
+            Set<String> availableTools,
+            List<ToolCall> calls,
+            Set<String> chosenTools
+    ) {
+        if (containsAny(normalized, "platform growth", "schools overview", "schools onboarded", "how many schools", "platform schools", "school onboarding and growth")) {
+            ObjectNode args = arguments();
+            args.put("lastMonths", extractLastMonths(normalized).orElse(12));
+            args.put("chartType", containsAny(normalized, "pie") ? "chart_pie" : containsAny(normalized, "line", "trend", "growth") ? "chart_line" : "chart_bar");
+            addTool(calls, chosenTools, availableTools, "getPlatformSchoolsOverview", args, "Rule-based platform growth lookup");
+            return;
+        }
+
+        if (containsAny(normalized, "pending onboarding", "pending approvals", "onboarding queue", "awaiting approval", "schools awaiting approval")) {
+            ObjectNode args = arguments();
+            args.put("status", "PENDING_REVIEW");
+            args.put("lastMonths", extractLastMonths(normalized).orElse(12));
+            args.put("chartType", "chart_bar");
+            addTool(calls, chosenTools, availableTools, "getPlatformSchoolsOverview", args, "Rule-based onboarding review queue");
             return;
         }
     }

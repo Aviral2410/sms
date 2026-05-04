@@ -22,7 +22,7 @@ springdoc:
     path: /swagger-ui.html
 
 app:
-  gateway-base-url: ${GATEWAY_BASE_URL:http://localhost:8080}
+  gateway-base-url: ${GATEWAY_BASE_URL:http://api-gateway:8080}
   llm:
     provider: ${LLM_PROVIDER:OLLAMA}
     openai-api-key: ${OPENAI_API_KEY:}

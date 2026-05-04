@@ -43,6 +43,7 @@ public class ConversationOrchestrator {
     private final AuditEventService auditEventService;
     private final AiInteractionProperties properties;
     private final AdministrativeInferenceService inferenceService;
+    private final ToolAccessPolicyService toolAccessPolicyService;
 
     public ConversationOrchestrator(
             ToolPlanningService toolPlanningService,
@@ -58,7 +59,8 @@ public class ConversationOrchestrator {
             CacheService cacheService,
             AuditEventService auditEventService,
             AiInteractionProperties properties,
-            AdministrativeInferenceService inferenceService
+            AdministrativeInferenceService inferenceService,
+            ToolAccessPolicyService toolAccessPolicyService
     ) {
         this.toolPlanningService = toolPlanningService;
         this.toolRegistry = toolRegistry;
@@ -74,6 +76,7 @@ public class ConversationOrchestrator {
         this.auditEventService = auditEventService;
         this.properties = properties;
         this.inferenceService = inferenceService;
+        this.toolAccessPolicyService = toolAccessPolicyService;
     }
 
     public AiInteractionDtos.ChatResponse chat(UserContext userContext, AiInteractionDtos.ChatRequest request) {
@@ -166,7 +169,10 @@ public class ConversationOrchestrator {
     private AiInteractionDtos.RenderedResponse executeWithThoughts(UserContext userContext, String message, UUID conversationId, Consumer<String> thoughtConsumer) {
         if (thoughtConsumer != null) thoughtConsumer.accept("Analyzing historical patterns and user intent...");
         
-        List<ToolDescriptor> descriptors = toolRegistry.all().stream().map(AiTool::descriptor).toList();
+        List<ToolDescriptor> descriptors = toolRegistry.all().stream()
+                .filter(tool -> toolAccessPolicyService.canDiscover(tool, userContext))
+                .map(AiTool::descriptor)
+                .toList();
         List<ConversationMemoryService.ChatMessageRecord> history = conversationMemoryService.listMessages(userContext, conversationId, 10);
         
         List<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);

@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RbacPolicyServiceTest {
-    private final RbacPolicyService service = new RbacPolicyService();
+    private final RbacPolicyService service = new RbacPolicyService(new ToolAccessPolicyService());
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test

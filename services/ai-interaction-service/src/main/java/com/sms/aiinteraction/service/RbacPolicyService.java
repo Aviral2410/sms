@@ -11,9 +11,15 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class RbacPolicyService {
+    private final ToolAccessPolicyService toolAccessPolicyService;
+
+    public RbacPolicyService(ToolAccessPolicyService toolAccessPolicyService) {
+        this.toolAccessPolicyService = toolAccessPolicyService;
+    }
+
     public void assertAllowed(AiTool tool, UserContext user, ObjectNode args) {
-        if (user.role() == UserRole.PLATFORM_ADMIN) {
-            return;
+        if (!toolAccessPolicyService.canExecute(tool, user)) {
+            throw new ForbiddenException("You do not have permission to use this assistant action.");
         }
 
         // For demo/public site, allow anonymous users to access informational tools
@@ -23,10 +29,6 @@ public class RbacPolicyService {
                 throw new ForbiddenException("Public users cannot perform administrative actions.");
             }
             return;
-        }
-
-        if (!tool.allowedRoles().contains(user.role())) {
-            throw new ForbiddenException("You do not have permission to use this assistant action.");
         }
 
         if ("getStudentPerformance".equals(tool.name())) {
