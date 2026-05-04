@@ -21,6 +21,7 @@ import {
   Sparkles,
   Trash2,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { AssistantResponseView } from './AssistantResponseView';
 import {
@@ -69,7 +70,7 @@ type Props = {
 
 type CapabilityAction = {
   label: string;
-  icon: React.ComponentType<{ size?: number }>;
+  icon: LucideIcon;
   prompt: string;
   roles?: string[];
 };
