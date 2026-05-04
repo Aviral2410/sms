@@ -284,15 +284,27 @@ export default function RegistrationWizardPage() {
                   </div>
                   <Building2 size={22} color={CYAN} />
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 160 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 160, padding: 12, borderRadius: 18, border: `1px solid ${CYAN}22`, background: 'radial-gradient(circle at top, rgba(34,211,238,0.12), rgba(255,255,255,0.02) 55%)' }}>
                   <SchoolMark school={{ schoolName: data.schoolName || 'Your school identity', schoolCode: data.schoolCode || 'NEW', logoUrl: data.logoUrl || null }} size="lg" />
                 </div>
                 <p style={{ margin: 0, color: DIM, fontSize: '0.84rem', lineHeight: 1.6 }}>
                   The onboarding flow now captures the same brand and routing metadata the school landing page and sign-in portal will use later.
                 </p>
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, width: 'fit-content', padding: '12px 16px', borderRadius: 14, border: `1px dashed ${CYAN}66`, background: 'rgba(34,211,238,0.08)', cursor: logoUploading ? 'not-allowed' : 'pointer', color: '#b6f5ff', fontWeight: 700 }}>
-                  {logoUploading ? <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <ImagePlus size={16} />}
-                  {logoUploading ? 'Uploading...' : data.logoUrl ? 'Replace logo' : 'Upload logo'}
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, width: '100%', padding: '16px 18px', borderRadius: 18, border: `1px dashed ${CYAN}66`, background: 'linear-gradient(135deg, rgba(34,211,238,0.12), rgba(255,255,255,0.03))', cursor: logoUploading ? 'not-allowed' : 'pointer', color: '#b6f5ff', fontWeight: 700, boxSizing: 'border-box' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(34,211,238,0.14)', border: `1px solid ${CYAN}33`, flexShrink: 0 }}>
+                      {logoUploading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <ImagePlus size={18} />}
+                    </div>
+                    <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                      <span>{logoUploading ? 'Uploading logo...' : data.logoUrl ? 'Replace uploaded logo' : 'Upload school logo'}</span>
+                      <span style={{ fontSize: '0.76rem', fontWeight: 600, color: DIM, lineHeight: 1.5 }}>
+                        PNG, JPG, or WEBP works best. Recommended square artwork for cleaner marks.
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ padding: '8px 12px', borderRadius: 999, border: `1px solid ${CYAN}33`, background: 'rgba(2,6,23,0.34)', fontSize: '0.74rem', letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0 }}>
+                    {data.logoUrl ? 'Change' : 'Browse'}
+                  </div>
                   <input
                     type="file"
                     accept="image/*"
@@ -306,6 +318,11 @@ export default function RegistrationWizardPage() {
                     }}
                   />
                 </label>
+                {data.logoUrl ? (
+                  <div style={{ fontSize: '0.76rem', color: '#9dd9e5', lineHeight: 1.5 }}>
+                    Logo uploaded successfully. You can keep this version or replace it before submission.
+                  </div>
+                ) : null}
               </div>
 
               <div style={{ display: 'grid', gap: 18 }}>

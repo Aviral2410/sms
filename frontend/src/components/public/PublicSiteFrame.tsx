@@ -2,7 +2,6 @@ import React from 'react';
 import { PublicPageShell } from './PublicPageShell';
 import { PublicSiteFooter } from './PublicSiteFooter';
 import { PublicSiteNav } from './PublicSiteNav';
-import { PublicAiAssistantChat } from './PublicAiAssistantChat';
 import { PublicGuidedTour } from './PublicGuidedTour';
 import type { PublicSiteContentResponse } from '../../lib/publicSiteApi';
 
@@ -42,7 +41,6 @@ export function PublicSiteFrame({
         <PublicSiteNav content={content} activePath={activePath} />
         <main className="public-site-frame__body">{children}</main>
         <PublicSiteFooter content={content} />
-        <PublicAiAssistantChat />
         <PublicGuidedTour />
       </div>
     </PublicPageShell>

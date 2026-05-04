@@ -12,9 +12,7 @@ import {
   Sparkles,
   UserCog,
   Users,
-  Wallet,
-  Plus,
-  Send
+  Wallet
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { HoverTiltCard } from '../components/public/HoverTiltCard';
@@ -394,13 +392,14 @@ export default function LandingPage() {
 
       <section className="public-site-section">
         <div className="public-site-section__heading">
-          <PublicPretextHeading
-            eyebrow="Core Engines"
-            pretext="Modules"
-            title="Integrated Operational Domains"
-            description="Unified services for every aspect of the modern institution."
-            compact
-            effect="flow"
+            <PublicPretextHeading
+              eyebrow="Core Engines"
+              pretext="Modules"
+              title="Integrated Operational Domains"
+              titleClassName="public-pretext-heading__title--single-line"
+              description="Unified services for every aspect of the modern institution."
+              compact
+              effect="flow"
             accentColor="#10b981"
           />
         </div>
@@ -443,6 +442,7 @@ export default function LandingPage() {
               eyebrow="Global Validation"
               pretext="Proof"
               title="Voices from the Network"
+              titleClassName="public-pretext-heading__title--single-line"
               description="Trusted by institutional leaders worldwide."
               compact
               effect="flow"
@@ -508,6 +508,7 @@ export default function LandingPage() {
               eyebrow="Onboarding Flow"
               pretext="Entry"
               title="Next Steps for your Institution"
+              titleClassName="public-pretext-heading__title--single-line"
               description="Join the connected campus ecosystem."
               compact
               effect="flow"
@@ -582,7 +583,7 @@ export default function LandingPage() {
       </div>
 
       <section className="public-site-section">
-        <div className="public-panel--strong public-assistance-showcase" style={{ background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(2, 44, 34, 0.6))', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 32 }}>
+        <div className="public-panel--strong public-assistance-showcase public-assistance-showcase--simple" style={{ background: 'linear-gradient(135deg, rgba(6, 78, 59, 0.4), rgba(2, 44, 34, 0.6))', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 32 }}>
           <div className="public-assistance-showcase__glow" />
           <div className="public-assistance-showcase__grid">
             <div className="public-assistance-showcase__copy">
@@ -615,54 +616,6 @@ export default function LandingPage() {
                 <div className="public-assistance-showcase__actions-note">
                   Ask about onboarding, pricing fit, rollout planning, or school workflows.
                 </div>
-              </div>
-            </div>
-            <div className="public-assistance-showcase__visual group">
-              <div className="public-assistance-showcase__visual-glow" />
-              <div className="public-assistance-showcase__terminal">
-                 <div className="public-assistance-showcase__terminal-top">
-                    <div className="flex gap-1.5">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-500/40" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/40" />
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/40" />
-                    </div>
-                    <div className="public-assistance-showcase__terminal-label">Aura assistant preview</div>
-                 </div>
-                 <div className="public-assistance-showcase__terminal-body">
-                    <div className="public-assistance-showcase__message-row">
-                      <div className="public-assistance-showcase__message-avatar public-assistance-showcase__message-avatar--assistant">
-                        <Cpu size={14} className="text-emerald-400" />
-                      </div>
-                      <div className="public-assistance-showcase__message public-assistance-showcase__message--assistant">
-                        How can I assist you with your school onboarding today? I've noticed you still need to provide the contact details.
-                      </div>
-                    </div>
-                    <div className="public-assistance-showcase__message-row public-assistance-showcase__message-row--user">
-                      <div className="public-assistance-showcase__message public-assistance-showcase__message--user">
-                        Help me fill the contact phone and email for my institution.
-                      </div>
-                      <div className="public-assistance-showcase__message-avatar public-assistance-showcase__message-avatar--user">
-                        <Users size={14} className="text-white/40" />
-                      </div>
-                    </div>
-                    <div className="public-assistance-showcase__message-row">
-                      <div className="public-assistance-showcase__message-avatar public-assistance-showcase__message-avatar--assistant">
-                        <Sparkles size={14} className="text-emerald-300" />
-                      </div>
-                      <div className="public-assistance-showcase__message public-assistance-showcase__message--assistant public-assistance-showcase__message--soft">
-                        I can guide you step by step, explain why each field matters, and continue the onboarding without losing context.
-                      </div>
-                    </div>
-                 </div>
-                 <div className="public-assistance-showcase__terminal-compose">
-                    <div className="public-assistance-showcase__terminal-input">
-                       <Plus size={14} className="opacity-30" />
-                       <div className="public-assistance-showcase__terminal-placeholder">Type your query...</div>
-                    </div>
-                    <div className="public-assistance-showcase__terminal-send">
-                       <Send size={14} className="text-black" />
-                    </div>
-                 </div>
               </div>
             </div>
           </div>

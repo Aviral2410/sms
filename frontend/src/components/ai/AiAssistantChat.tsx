@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import {
   Bot,
   Brain,
@@ -48,6 +49,7 @@ type ChatMessage = {
   text: string;
   response?: RenderedResponse | null;
   thought?: string | null;
+  timeline?: string[];
   timestamp: string;
   streaming?: boolean;
   error?: boolean;
@@ -63,6 +65,13 @@ type PublicHistoryEntry = {
 type Props = {
   variant?: Variant;
   accessMode?: AccessMode;
+};
+
+type CapabilityAction = {
+  label: string;
+  icon: React.ComponentType<{ size?: number }>;
+  prompt: string;
+  roles?: string[];
 };
 
 const DRAWER_WIDTH = 'min(calc(100vw - 2rem), 96rem)';
@@ -91,18 +100,23 @@ const ERP_TOOL_LABELS = [
   'Timetable',
 ];
 
-const PUBLIC_CAPABILITY_PILLS = [
-  { label: 'School ERP aware', icon: Building2 },
-  { label: 'Structured answers', icon: LayoutGrid },
-  { label: 'Streaming replies', icon: Sparkles },
-  { label: 'Rollout guidance', icon: Compass },
+const PUBLIC_CAPABILITY_ACTIONS: CapabilityAction[] = [
+  { label: 'School ERP aware', icon: Building2, prompt: 'How does Aura connect admissions, attendance, finance, transport, and communication in one workflow?' },
+  { label: 'Structured answers', icon: LayoutGrid, prompt: 'Show me an example of a structured Aura answer for school leadership.' },
+  { label: 'Streaming replies', icon: Sparkles, prompt: 'What kind of streaming replies and summaries does Aura provide during evaluation?' },
+  { label: 'Rollout guidance', icon: Compass, prompt: 'Walk me through the rollout journey from demo to onboarding.' },
 ];
 
-const AUTHENTICATED_CAPABILITY_PILLS = [
-  { label: 'Workspace memory', icon: History },
-  { label: 'Structured outputs', icon: LayoutGrid },
-  { label: 'Operational analysis', icon: Brain },
-  { label: 'Action confirmation', icon: Compass },
+const AUTHENTICATED_CAPABILITY_ACTIONS: CapabilityAction[] = [
+  { label: 'Workspace memory', icon: History, prompt: 'Summarize what this workspace is tracking and suggest the next actions.', roles: ['PLATFORM_ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TRANSPORT_MANAGER'] },
+  { label: 'Operational analysis', icon: Brain, prompt: 'Give me the highest-priority operational insights for today based on my role.', roles: ['PLATFORM_ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TRANSPORT_MANAGER'] },
+  { label: 'Leadership briefing', icon: Building2, prompt: 'Draft a leadership briefing for cross-module school operations.', roles: ['PLATFORM_ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'] },
+  { label: 'Structured outputs', icon: LayoutGrid, prompt: 'Show this answer as a structured operational summary.', roles: ['PLATFORM_ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TRANSPORT_MANAGER', 'TEACHER'] },
+  { label: 'Teaching support', icon: GraduationCap, prompt: 'Help me plan instruction, follow-ups, and classroom actions for today.', roles: ['TEACHER'] },
+  { label: 'Learner help', icon: Library, prompt: 'Help me understand my school tasks, timetable, and next academic steps.', roles: ['STUDENT'] },
+  { label: 'Parent guidance', icon: Building2, prompt: 'Summarize the most important updates I should know as a parent.', roles: ['PARENT'] },
+  { label: 'Transport status', icon: Compass, prompt: 'What transport actions or updates should I focus on right now?', roles: ['TRANSPORT_MANAGER', 'DRIVER', 'CONDUCTOR', 'PARENT', 'STUDENT', 'TEACHER'] },
+  { label: 'Action confirmation', icon: Compass, prompt: 'Show me tasks that may require confirmation before they are applied.', roles: ['PLATFORM_ADMIN', 'SUPER_ADMIN', 'SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TRANSPORT_MANAGER'] },
 ];
 
 const PUBLIC_STARTER_CARDS = [
@@ -170,6 +184,7 @@ function normalizeStoredMessage(message: AiChatMessageResponse): ChatMessage {
     text: message.content || buildAssistantSummary(payload),
     response: payload,
     thought: payload?.thought ?? message.thought ?? null,
+    timeline: payload?.thought ? [payload.thought] : message.thought ? [message.thought] : [],
     timestamp: message.timestamp,
   };
 }
@@ -214,6 +229,7 @@ function cx(...values: Array<string | false | null | undefined>) {
 
 export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticated' }: Props) {
   const { session } = useStore();
+  const navigate = useNavigate();
   const isPublic = accessMode === 'public';
   const assistantRoute = variant === 'page' ? (isPublic ? '/assistant' : '/ai-assistant') : '/assistant-drawer';
 
@@ -246,7 +262,12 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const speechRecognitionRef = useRef<any>(null);
 
   const examplePrompts = isPublic ? PUBLIC_EXAMPLE_PROMPTS : AUTHENTICATED_EXAMPLE_PROMPTS;
-  const capabilityPills = isPublic ? PUBLIC_CAPABILITY_PILLS : AUTHENTICATED_CAPABILITY_PILLS;
+  const capabilityActions = useMemo(() => {
+    if (isPublic) return PUBLIC_CAPABILITY_ACTIONS;
+    const role = session.role || '';
+    const filtered = AUTHENTICATED_CAPABILITY_ACTIONS.filter((item) => !item.roles || item.roles.includes(role));
+    return filtered.length ? filtered : AUTHENTICATED_CAPABILITY_ACTIONS.filter((item) => item.label === 'Structured outputs');
+  }, [isPublic, session.role]);
   const starterCards = isPublic ? PUBLIC_STARTER_CARDS : AUTHENTICATED_STARTER_CARDS;
 
   const activeWorkspace = useMemo(
@@ -532,6 +553,23 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     composerRef.current?.focus();
   }, []);
 
+  const handleCloseAssistant = useCallback(() => {
+    stopVoiceCapture();
+    if (variant === 'page') {
+      if (isPublic) {
+        navigate('/');
+        return;
+      }
+      if (window.history.length > 1) {
+        navigate(-1);
+        return;
+      }
+      navigate('/dashboard');
+      return;
+    }
+    setOpen(false);
+  }, [isPublic, navigate, stopVoiceCapture, variant]);
+
   const handleSend = useCallback(async (override?: string) => {
     const messageText = (override ?? input).trim();
     if (!messageText || loading) return;
@@ -556,6 +594,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
         role: 'assistant',
         text: '',
         timestamp: new Date().toISOString(),
+        timeline: ['Receiving your request'],
         streaming: true,
       },
     ]);
@@ -632,7 +671,15 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 setStatusText(parsed.value.text);
                 setMessages((current) =>
                   current.map((message) =>
-                    message.id === assistantId ? { ...message, thought: parsed.value.text ?? null } : message,
+                    message.id === assistantId
+                      ? {
+                          ...message,
+                          thought: parsed.value.text ?? null,
+                          timeline: parsed.value.text && !message.timeline?.includes(parsed.value.text)
+                            ? [...(message.timeline || []), parsed.value.text]
+                            : (message.timeline || []),
+                        }
+                      : message,
                   ),
                 );
               }
@@ -752,13 +799,18 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       <div className="aura-rail__block">
         <div className="aura-rail__eyebrow">Capabilities</div>
         <div className="aura-pill-grid">
-          {capabilityPills.map((item) => {
+          {capabilityActions.map((item) => {
             const Icon = item.icon;
             return (
-              <div key={item.label} className="aura-capability-pill">
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => void handleSend(item.prompt)}
+                className="aura-capability-pill aura-capability-pill--action"
+              >
                 <Icon size={13} />
                 <span>{item.label}</span>
-              </div>
+              </button>
             );
           })}
         </div>
@@ -795,7 +847,10 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           ))
         ) : (
           <div className="aura-empty-rail-state">
-            Your public Aura chats will appear here so you can revisit product questions during evaluation.
+            <div className="aura-empty-rail-state__title">No public chats yet</div>
+            <p className="aura-empty-rail-state__copy">
+              Your public Aura chats will appear here so you can revisit product questions during evaluation.
+            </p>
           </div>
         )}
       </div>
@@ -1015,10 +1070,10 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             >
               <PanelLeft size={18} />
             </button>
-            {variant === 'drawer' ? (
+            {variant === 'drawer' || variant === 'page' ? (
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={handleCloseAssistant}
                 className="aura-icon-button"
                 aria-label="Close assistant"
               >
@@ -1048,13 +1103,18 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
               <div className="aura-empty-state__meta">
                 <div className="aura-capabilities">
-                  {capabilityPills.map((item) => {
+                  {capabilityActions.map((item) => {
                     const Icon = item.icon;
                     return (
-                      <div key={item.label} className="aura-capability-card">
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => void handleSend(item.prompt)}
+                        className="aura-capability-card aura-capability-card--action"
+                      >
                         <Icon size={16} />
                         <span>{item.label}</span>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -1126,6 +1186,17 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                           <summary>Reasoning trace</summary>
                           <div className="aura-thought__body">{message.thought}</div>
                         </details>
+                      ) : null}
+
+                      {message.timeline && message.timeline.length > 1 ? (
+                        <div className="aura-response-timeline">
+                          {message.timeline.map((event, index) => (
+                            <div key={`${message.id}-timeline-${index}`} className="aura-response-timeline__item">
+                              <div className="aura-response-timeline__dot" />
+                              <div className="aura-response-timeline__text">{event}</div>
+                            </div>
+                          ))}
+                        </div>
                       ) : null}
 
                       {message.response ? (

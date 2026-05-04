@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import { MotionBackdrop } from '../components/MotionBackdrop';
 import { ParallaxLayer } from '../components/public/ParallaxLayer';
-import PublicAiAssistantChat from '../components/public/PublicAiAssistantChat';
 import { PublicField } from '../components/public/PublicField';
 import { PublicPageShell } from '../components/public/PublicPageShell';
 import { ScrollReveal } from '../components/public/ScrollReveal';
@@ -327,7 +326,6 @@ export default function SchoolLandingPage() {
         .animate-spin { animation: spin 1s linear infinite; }
       `}</style>
       </div>
-      <PublicAiAssistantChat />
     </PublicPageShell>
   );
 }

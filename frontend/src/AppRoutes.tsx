@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useMemo } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ModernLayout } from './layouts/ModernLayout';
 import { useStore } from './store/useStore';
 import { DashboardSkeleton } from './components/ui/Skeleton';
@@ -7,6 +7,7 @@ import { Toaster } from 'sonner';
 import { RealtimeHub } from './components/RealtimeHub';
 import { isSchoolPortal } from './lib/subdomain';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import PublicAiAssistantChat from './components/public/PublicAiAssistantChat';
 
 // Public pages (lazy)
 const LandingPage = lazy(() => import('./pages/LandingPage'));
@@ -124,7 +125,9 @@ function LoginPageSwitcher({ isAuthenticated }: { isAuthenticated: boolean }) {
 
 export const AppRoutes: React.FC = () => {
   const { session, theme } = useStore();
+  const location = useLocation();
   const isAuthenticated = !!session.email;
+  const showPublicAuraLauncher = !isAuthenticated && !['/assistant', '/ai-assistant'].includes(location.pathname);
   const toasterTheme = useMemo(() => {
     if (theme === 'system') {
       return 'system';
@@ -137,6 +140,7 @@ export const AppRoutes: React.FC = () => {
       <Toaster theme={toasterTheme} position="bottom-right" richColors toastOptions={{
         style: { background: 'var(--bg-dropdown)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }
       }} />
+      {showPublicAuraLauncher ? <PublicAiAssistantChat /> : null}
 
       <Routes>
         {/* ── Public ── */}

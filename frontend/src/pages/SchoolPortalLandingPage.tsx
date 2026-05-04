@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { FallbackImage } from '../components/ui/FallbackImage';
 import { HoverTiltCard } from '../components/public/HoverTiltCard';
-import PublicAiAssistantChat from '../components/public/PublicAiAssistantChat';
 import { PublicPageShell } from '../components/public/PublicPageShell';
 import { PublicPretextFlowText } from '../components/public/PublicPretextFlowText';
 import { PublicPretextHeading } from '../components/public/PublicPretextHeading';
@@ -971,7 +970,6 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
             </div>
           </div>
         </footer>
-        <PublicAiAssistantChat />
       </div>
     </PublicPageShell>
   );

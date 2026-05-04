@@ -1925,6 +1925,16 @@ label span {
   gap: 16px;
 }
 
+.public-site-feature-card h3 {
+  font-size: clamp(1.08rem, 1.6vw, 1.22rem);
+  line-height: 1.24;
+}
+
+.public-site-feature-card p {
+  font-size: 0.94rem;
+  line-height: 1.62;
+}
+
 .public-site-feature-card h3,
 .public-site-role-card h3,
 .public-site-plan-card h3,
@@ -2347,6 +2357,19 @@ label span {
 .public-pretext-heading--compact .public-pretext-heading__title {
   max-width: 20ch;
   font-size: clamp(1.9rem, 3vw, 2.8rem);
+}
+
+.public-pretext-heading__title--single-line,
+.public-pretext-heading__title--single-line .public-pretext-flow__line,
+.public-pretext-heading__title--single-line .public-pretext-flow__line-base,
+.public-pretext-heading__title--single-line .public-pretext-flow__line-fill {
+  white-space: nowrap;
+}
+
+.public-pretext-heading--compact .public-pretext-heading__title--single-line {
+  max-width: none;
+  font-size: clamp(1.45rem, 2.6vw, 2.45rem);
+  letter-spacing: -0.04em;
 }
 
 .public-pretext-heading__description {
@@ -3365,6 +3388,10 @@ label span {
   padding: 40px;
 }
 
+.public-assistance-showcase--simple .public-assistance-showcase__grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .public-assistance-showcase__copy {
   display: flex;
   flex-direction: column;
@@ -3397,6 +3424,10 @@ label span {
   letter-spacing: -0.05em;
   font-weight: 900;
   color: #f8fafc;
+}
+
+.public-assistance-showcase--simple .public-assistance-showcase__title {
+  max-width: 16ch;
 }
 
 .public-assistance-showcase__body {

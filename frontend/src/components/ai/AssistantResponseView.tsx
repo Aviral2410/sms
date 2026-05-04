@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
-import { AlertTriangle, CheckCircle2, Clock3, Send, Sparkles } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, CheckCircle2, Clock3, Copy, Download, FileText, Send, Sparkles } from 'lucide-react';
 import { AiRichText } from './AiRichText';
 import { SmartUiRenderer } from './SmartUiRenderer';
 import { ProfessionalAreaChart, ProfessionalBarChart } from './ProfessionalCharts';
 import { SaaSTable } from '../ui/SaaSTable';
+import { copyArtifactSummary, downloadArtifactDoc, downloadArtifactMarkdown, printArtifact } from './assistantArtifactExport';
 
 type RenderedResponse = {
   type: string;
@@ -75,6 +76,156 @@ function extractColumns(rows: any[]) {
   return [...columnKeys].slice(0, 12).map((key) => ({ key, label: key.replace(/([A-Z])/g, ' $1').trim() || key }));
 }
 
+function ResponseToolbar({ response }: { response: RenderedResponse }) {
+  const [copied, setCopied] = useState(false);
+
+  return (
+    <div className="aura-response__toolbar">
+      <button
+        type="button"
+        className="aura-response__toolbar-btn"
+        onClick={async () => {
+          await copyArtifactSummary(response);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1600);
+        }}
+      >
+        <Copy size={14} />
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+      <button type="button" className="aura-response__toolbar-btn" onClick={() => printArtifact(response)}>
+        <FileText size={14} />
+        Print / PDF
+      </button>
+      <button type="button" className="aura-response__toolbar-btn" onClick={() => downloadArtifactMarkdown(response)}>
+        <Download size={14} />
+        Markdown
+      </button>
+      <button type="button" className="aura-response__toolbar-btn" onClick={() => downloadArtifactDoc(response)}>
+        <FileText size={14} />
+        Doc
+      </button>
+    </div>
+  );
+}
+
+function ChecklistSection({ section }: { section: any }) {
+  const items = Array.isArray(section?.items) ? section.items : [];
+  if (!items.length) return null;
+
+  return (
+    <div className="aura-response">
+      {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
+      <div className="aura-composed-checklist">
+        {items.map((item: any, index: number) => (
+          <div key={`${section?.title || 'check'}-${index}`} className="aura-composed-checklist__item">
+            <div className="aura-composed-checklist__dot" />
+            <div>{typeof item === 'string' ? item : item?.label || 'Untitled checklist item'}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ComposedResponseView({ response }: { response: RenderedResponse }) {
+  const sections = Array.isArray(response.data?.sections) ? response.data.sections : [];
+
+  return (
+    <div className="aura-composed-response">
+      {typeof response.data?.summary === 'string' && response.data.summary.trim() ? (
+        <div className="aura-response">
+          <AiRichText content={response.data.summary} className="aura-response__content" />
+        </div>
+      ) : null}
+
+      {sections.map((section: any, index: number) => {
+        if (section?.kind === 'markdown' && typeof section.content === 'string') {
+          return (
+            <div key={`section-${index}`} className="aura-response">
+              {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
+              <AiRichText content={section.content} className="aura-response__content" />
+            </div>
+          );
+        }
+
+        if (section?.kind === 'table' && Array.isArray(section.rows)) {
+          const columns = extractColumns(section.rows);
+          return (
+            <div key={`section-${index}`} className="aura-composed-response__artifact">
+              <SaaSTable
+                columns={columns.length ? columns : [{ key: 'value', label: 'Value' }]}
+                data={section.rows}
+                title={section?.title || 'Structured table'}
+                description={section?.description || 'Assistant-generated table'}
+              />
+            </div>
+          );
+        }
+
+        if (section?.kind === 'chart' && section?.chart?.points?.length) {
+          const chart = section.chart;
+          const labels = chart.points.map((point: any) => String(point[chart.xKey || 'label'] ?? '—'));
+          const series = chart.points.map((point: any) => Number(point[chart.yKey || 'value'] ?? 0));
+          return chart.points.length > 7 ? (
+            <div key={`section-${index}`} className="aura-composed-response__artifact">
+              <ProfessionalAreaChart title={section?.title || 'Trend'} labels={labels} series={series} />
+            </div>
+          ) : (
+            <div key={`section-${index}`} className="aura-composed-response__artifact">
+              <ProfessionalBarChart title={section?.title || 'Chart'} labels={labels} series={series} />
+            </div>
+          );
+        }
+
+        if (section?.kind === 'checklist') {
+          return <ChecklistSection key={`section-${index}`} section={section} />;
+        }
+
+        if (section?.kind === 'snapshot' && section?.data && typeof section.data === 'object') {
+          return (
+            <div key={`section-${index}`} className="aura-response">
+              {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
+              <KeyValueSnapshot data={section.data} />
+            </div>
+          );
+        }
+
+        if (section?.kind === 'smart_ui' && section?.response && typeof section.response === 'object') {
+          return (
+            <div key={`section-${index}`} className="aura-composed-response__artifact">
+              {section?.title ? <div className="aura-response__eyebrow aura-response__eyebrow--spaced">{section.title}</div> : null}
+              <SmartUiRenderer response={section.response} variant="aura" embedded />
+            </div>
+          );
+        }
+
+        if (section?.kind === 'suggestions' && Array.isArray(section.items)) {
+          return (
+            <div key={`section-${index}`} className="aura-response">
+              {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
+              <div className="aura-composed-suggestions">
+                {section.items.map((item: any, itemIndex: number) => (
+                  <div key={`${index}-suggestion-${itemIndex}`} className="aura-composed-suggestions__item">
+                    {typeof item === 'string' ? item : item?.label || 'Next step'}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div key={`section-${index}`} className="aura-response">
+            {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
+            <pre className="aura-composed-response__fallback">{JSON.stringify(section, null, 2)}</pre>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function KeyValueSnapshot({ data }: { data: Record<string, any> }) {
   const rows = extractSnapshotEntries(data);
 
@@ -142,7 +293,21 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
   }
 
   if (response.type === 'smart_ui') {
-    return <SmartUiRenderer response={response.data} variant="aura" />;
+    return (
+      <>
+        <ResponseToolbar response={response} />
+        <SmartUiRenderer response={response.data} variant="aura" />
+      </>
+    );
+  }
+
+  if (response.type === 'composed') {
+    return (
+      <>
+        <ResponseToolbar response={response} />
+        <ComposedResponseView response={response} />
+      </>
+    );
   }
 
   if (response.type === 'chart' && chartData?.points?.length) {
@@ -151,19 +316,27 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
     const labels = chartData.points.map((point) => String(point[xKey] ?? '—'));
     const series = chartData.points.map((point) => Number(point[yKey] ?? 0));
 
-    return chartData.points.length > 7
-      ? <ProfessionalAreaChart title={plainText || response.meta?.intent || 'Trend'} labels={labels} series={series} />
-      : <ProfessionalBarChart title={plainText || response.meta?.intent || 'Chart'} labels={labels} series={series} />;
+    return (
+      <>
+        <ResponseToolbar response={response} />
+        {chartData.points.length > 7
+          ? <ProfessionalAreaChart title={plainText || response.meta?.intent || 'Trend'} labels={labels} series={series} />
+          : <ProfessionalBarChart title={plainText || response.meta?.intent || 'Chart'} labels={labels} series={series} />}
+      </>
+    );
   }
 
   if (response.type === 'table' && tableRows.length) {
     return (
-      <SaaSTable
-        columns={tableColumns.length ? tableColumns : [{ key: 'value', label: 'Value' }]}
-        data={tableRows}
-        title={response.meta?.intent || 'Results'}
-        description={plainText || 'Structured response from the assistant.'}
-      />
+      <>
+        <ResponseToolbar response={response} />
+        <SaaSTable
+          columns={tableColumns.length ? tableColumns : [{ key: 'value', label: 'Value' }]}
+          data={tableRows}
+          title={response.meta?.intent || 'Results'}
+          description={plainText || 'Structured response from the assistant.'}
+        />
+      </>
     );
   }
 
@@ -182,6 +355,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
 
     return (
       <div className="aura-response aura-response--success">
+        <ResponseToolbar response={response} />
         <div className="aura-response__header">
           <div className="aura-response__icon">
             <CheckCircle2 size={16} />
@@ -199,6 +373,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
   if (response.type === 'status' || response.type === 'error' || response.type === 'text') {
     return (
       <div className={`aura-response ${response.type === 'error' ? 'aura-response--warning' : ''}`}>
+        <ResponseToolbar response={response} />
         {plainText ? <AiRichText content={plainText} className="aura-response__content" /> : null}
         {!plainText && hasSnapshotData && response.data ? <KeyValueSnapshot data={response.data} /> : null}
       </div>
@@ -207,6 +382,7 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
 
   return (
     <div className="aura-response">
+      <ResponseToolbar response={response} />
       <div className="aura-response__eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
         <Clock3 size={14} />
         Assistant response

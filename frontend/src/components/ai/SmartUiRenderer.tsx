@@ -222,7 +222,7 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   )
 };
 
-export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean; variant?: 'default' | 'aura' }> = ({ response, isLoading, variant = 'default' }) => {
+export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean; variant?: 'default' | 'aura'; embedded?: boolean }> = ({ response, isLoading, variant = 'default', embedded = false }) => {
   if (isLoading) return <SkeletonPulse />;
   if (!response) return null;
 
@@ -242,19 +242,21 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean; var
     <motion.div variants={container} initial="hidden" animate="show" className={`space-y-6 relative ${isAura ? 'aura-smart-ui' : ''}`}>
       {!isAura ? <div className={`absolute -top-20 -left-20 w-96 h-96 rounded-full ${NEURAL_GRADIENT} blur-[100px] pointer-events-none opacity-50`} /> : null}
       
-      <motion.div variants={item} className={`mb-8 pb-6 relative z-10 ${isAura ? 'border-b border-white/8' : 'border-b border-white/10'}`}>
-        <div className="flex items-center gap-3 mb-3">
-            <div className={isAura ? 'aura-smart-ui__icon' : 'p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}>
-                <Brain size={18} />
-            </div>
-            {title && <h3 className={isAura ? 'aura-smart-ui__title' : 'text-3xl font-black tracking-tight text-white'}>{title}</h3>}
-        </div>
-        {summary && (
-          <div className={isAura ? 'aura-smart-ui__summary' : 'relative pl-6 border-l-2 border-emerald-500/40'}>
-             <p className={isAura ? 'aura-smart-ui__summary-copy' : 'text-[15px] text-white/60 font-bold leading-relaxed'}>{summary}</p>
+      {(!embedded && (title || summary || !isAura)) ? (
+        <motion.div variants={item} className={`mb-8 pb-6 relative z-10 ${isAura ? 'border-b border-white/8' : 'border-b border-white/10'}`}>
+          <div className="flex items-center gap-3 mb-3">
+              <div className={isAura ? 'aura-smart-ui__icon' : 'p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}>
+                  <Brain size={18} />
+              </div>
+              {title && <h3 className={isAura ? 'aura-smart-ui__title' : 'text-3xl font-black tracking-tight text-white'}>{title}</h3>}
           </div>
-        )}
-      </motion.div>
+          {summary && (
+            <div className={isAura ? 'aura-smart-ui__summary' : 'relative pl-6 border-l-2 border-emerald-500/40'}>
+               <p className={isAura ? 'aura-smart-ui__summary-copy' : 'text-[15px] text-white/60 font-bold leading-relaxed'}>{summary}</p>
+            </div>
+          )}
+        </motion.div>
+      ) : null}
 
       <div className={`grid gap-6 ${view === 'mixed_dashboard' ? 'grid-cols-2' : 'grid-cols-1'}`}>
         {components?.map((comp: any, i: number) => {

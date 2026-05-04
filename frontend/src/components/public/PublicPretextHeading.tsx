@@ -10,6 +10,7 @@ interface PublicPretextHeadingProps {
   readonly align?: 'left' | 'center';
   readonly compact?: boolean;
   readonly className?: string;
+  readonly titleClassName?: string;
   readonly effect?: 'none' | 'flow';
   readonly accentColor?: string;
 }
@@ -22,6 +23,7 @@ export function PublicPretextHeading({
   align = 'left',
   compact = false,
   className = '',
+  titleClassName = '',
   effect = 'none',
   accentColor,
 }: PublicPretextHeadingProps) {
@@ -46,14 +48,14 @@ export function PublicPretextHeading({
             as="h1"
             text={title}
             variant={compact ? 'heading' : 'display'}
-            className="public-pretext-heading__title public-pretext-heading__title--flow"
+            className={`public-pretext-heading__title public-pretext-heading__title--flow ${titleClassName}`.trim()}
             accentColor={accentColor}
             layoutKey={`heading-${compact ? 'compact' : 'default'}`}
           />
         ) : (
           <h1
             ref={setTitleElement}
-            className="public-pretext-heading__title"
+            className={`public-pretext-heading__title ${titleClassName}`.trim()}
             data-line-count={layout.lineCount || undefined}
             data-overflow={layout.isOverflowing ? 'true' : 'false'}
           >

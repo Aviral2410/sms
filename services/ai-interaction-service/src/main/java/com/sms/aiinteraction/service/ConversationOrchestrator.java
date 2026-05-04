@@ -88,7 +88,9 @@ public class ConversationOrchestrator {
         conversationMemoryService.addUserMessage(userContext, conversationId, request.message());
         auditEventService.requestReceived(userContext, request.message(), conversationId.toString());
 
-        AiInteractionDtos.RenderedResponse rendered = executeWithThoughts(userContext, request.message(), conversationId, thoughtConsumer);
+        AiInteractionDtos.RenderedResponse rendered = responseRenderer.composeForAssistant(
+                executeWithThoughts(userContext, request.message(), conversationId, thoughtConsumer)
+        );
         
         conversationMemoryService.addAssistantResponse(
                 userContext,
@@ -139,14 +141,16 @@ public class ConversationOrchestrator {
         
         JsonNode result = executeSingleTool(userContext, action.toolCall(), "Confirmed action", action.conversationId(), true);
         
-        AiInteractionDtos.RenderedResponse rendered = responseRenderer.renderWithThought(
-                "smart_ui",
-                inferenceService.infer("Confirmed: " + action.toolCall().toolName(), userContext, result),
-                objectMapper.createObjectNode(),
-                false,
-                "action_confirmation",
-                "Action executed successfully after user approval",
-                "As requested, I have executed the strategic action that required your authorization."
+        AiInteractionDtos.RenderedResponse rendered = responseRenderer.composeForAssistant(
+                responseRenderer.renderWithThought(
+                        "smart_ui",
+                        inferenceService.infer("Confirmed: " + action.toolCall().toolName(), userContext, result),
+                        objectMapper.createObjectNode(),
+                        false,
+                        "action_confirmation",
+                        "Action executed successfully after user approval",
+                        "As requested, I have executed the strategic action that required your authorization."
+                )
         );
 
         conversationMemoryService.addAssistantResponse(

@@ -6,6 +6,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "tenant_domain", schema = "identity")
@@ -45,6 +47,7 @@ public class TenantDomainEntity {
     @Column(name = "verification_token")
     private String verificationToken;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "verification_details_json", columnDefinition = "JSONB")
     private String verificationDetailsJson;
 
