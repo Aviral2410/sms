@@ -705,6 +705,21 @@ async function answerPlatformQuestion(question) {
     });
   }
 
+  if (matchesAny(normalized, ["total classes", "class count", "how many classes"])) {
+    const totalClasses = overview.schools.reduce((sum, s) => sum + (s.classCount || 0), 0);
+    return buildTextAnswer(`There are ${totalClasses} classes configured across all active schools.`, {
+      totalClasses,
+      schoolBreakdown: overview.schools.map(s => ({ name: s.schoolName, classes: s.classCount }))
+    });
+  }
+
+  if (matchesAny(normalized, ["total departments", "department count"])) {
+    const totalDept = overview.schools.reduce((sum, s) => sum + (s.departmentCount || 0), 0);
+    return buildTextAnswer(`The platform manages ${totalDept} distinct departments across approved institutions.`, {
+      totalDepartments: totalDept
+    });
+  }
+
   // Handle Intelligence Briefing / Structured Insight
   if (matchesAny(normalized, ["briefing", "intelligence", "executive", "insight report"])) {
     const growth = await getPlatformGrowthTrend();

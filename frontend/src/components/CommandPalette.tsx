@@ -317,6 +317,31 @@ export function CommandPalette() {
                                       <Brain size={12} /> Live Analysis
                                     </div>
                                     {typeof aiResponse === 'string' ? <AiRichText content={aiResponse} /> : <AiDataVisualizer response={aiResponse!} />}
+                                    
+                                    {typeof aiResponse !== 'string' && aiResponse?.suggestedQuestions && aiResponse.suggestedQuestions.length > 0 && (
+                                      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 4 }}>Follow-up Questions</div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                          {aiResponse.suggestedQuestions.map((sq, idx) => (
+                                            <button
+                                              key={idx}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setQuery(sq);
+                                                handleAiQuery(sq);
+                                              }}
+                                              style={{ 
+                                                padding: '6px 12px', borderRadius: 10, background: 'rgba(167,139,250,0.1)', 
+                                                border: '1px solid rgba(167,139,250,0.2)', color: '#a78bfa', 
+                                                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer' 
+                                              }}
+                                            >
+                                              {sq}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -339,6 +364,31 @@ export function CommandPalette() {
                       <div style={{ background: 'rgba(15,23,42,0.4)', borderRadius: 20, border: '1px solid rgba(167,139,250,0.2)', padding: '24px' }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 900, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}><Brain size={14} /> AI Analysis</div>
                         {typeof aiResponse === 'string' ? <AiRichText content={aiResponse} /> : <AiDataVisualizer response={aiResponse!} />}
+                        
+                        {typeof aiResponse !== 'string' && aiResponse?.suggestedQuestions && aiResponse.suggestedQuestions.length > 0 && (
+                          <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid rgba(167,139,250,0.1)' }}>
+                            <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 12 }}>Suggested Follow-ups</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {aiResponse.suggestedQuestions.map((sq, idx) => (
+                                <button
+                                  key={idx}
+                                  onClick={() => {
+                                    setQuery(sq);
+                                    handleAiQuery(sq);
+                                  }}
+                                  style={{ 
+                                    width: '100%', textAlign: 'left', padding: '10px 14px', borderRadius: 12, 
+                                    background: 'rgba(167,139,250,0.05)', border: '1px solid rgba(167,139,250,0.1)', 
+                                    color: '#a78bfa', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 10
+                                  }}
+                                >
+                                  <Sparkles size={12} /> {sq}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>

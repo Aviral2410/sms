@@ -46,15 +46,15 @@ function Field({
   );
 }
 
-function inferSubdomainHost(schoolCode: string, hostname: string, port: string) {
-  const slug = schoolCode.trim().toLowerCase();
+function inferSubdomainHost(realmName: string, hostname: string, port: string) {
+  const slug = realmName.trim().toLowerCase();
   if (!slug) return '';
   if (hostname === 'localhost' || hostname.endsWith('.localhost')) return `http://${slug}.localhost${port || ':30080'}`;
   return `${window.location.protocol}//${slug}.${hostname}${port}`;
 }
 
 export default function ActivationJourneyPage() {
-  const [form, setForm] = useState({ schoolCode: '', email: '', activationCode: '', newPassword: '' });
+  const [form, setForm] = useState({ realmName: '', email: '', activationCode: '', newPassword: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -62,14 +62,14 @@ export default function ActivationJourneyPage() {
 
   const tenantUrl = useMemo(() => {
     if (typeof window === 'undefined') return '';
-    return inferSubdomainHost(form.schoolCode, window.location.hostname, window.location.port ? `:${window.location.port}` : '');
-  }, [form.schoolCode]);
+    return inferSubdomainHost(form.realmName, window.location.hostname, window.location.port ? `:${window.location.port}` : '');
+  }, [form.realmName]);
 
   const up = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
 
   const handleActivate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!form.schoolCode || !form.email || !form.activationCode || !form.newPassword) {
+    if (!form.realmName || !form.email || !form.activationCode || !form.newPassword) {
       setError('All fields are required.');
       return;
     }
@@ -78,7 +78,7 @@ export default function ActivationJourneyPage() {
     setError('');
     try {
       await authApi.activateAccount({
-        schoolCode: form.schoolCode.toUpperCase().trim(),
+        schoolCode: form.realmName.toLowerCase().trim(),
         email: form.email.trim(),
         activationCode: form.activationCode.trim(),
         newPassword: form.newPassword,
@@ -136,7 +136,7 @@ export default function ActivationJourneyPage() {
                     <ShieldCheck size={16} /> Activation checklist
                   </div>
                   <div style={{ marginTop: 10, color: DIM, fontSize: '0.84rem', lineHeight: 1.7 }}>
-                    1. Confirm the school code from the onboarding email.
+                    1. Confirm the <strong>realm name</strong> from the onboarding email.
                     <br />
                     2. Set the password for the admin account.
                     <br />
@@ -148,14 +148,14 @@ export default function ActivationJourneyPage() {
                     <Globe2 size={16} /> Tenant preview
                   </div>
                   <div style={{ marginTop: 10, color: TEXT, fontWeight: 800, wordBreak: 'break-word' }}>
-                    {tenantUrl ? `${tenantUrl}/login` : 'Enter a school code to preview the tenant URL'}
+                    {tenantUrl ? `${tenantUrl}/login` : 'Enter a realm name to preview the tenant URL'}
                   </div>
                 </div>
               </div>
             </div>
 
             <form onSubmit={handleActivate} style={{ background: 'linear-gradient(180deg, rgba(8,51,68,0.95), rgba(2,6,23,0.9))', border: '1px solid rgba(6,182,212,0.15)', borderRadius: 28, padding: 'clamp(20px, 5vw, 32px)', backdropFilter: 'blur(20px)', display: 'grid', gap: 20 }}>
-              <Field label="School code" icon={Hash} type="text" placeholder="GTA01" value={form.schoolCode} onChange={(event) => up('schoolCode', event.target.value.toUpperCase())} />
+              <Field label="Realm name" icon={Globe2} type="text" placeholder="my-school-portal" value={form.realmName} onChange={(event) => up('realmName', event.target.value.toLowerCase())} />
               <Field label="Admin email" icon={Mail} type="email" placeholder="admin@school.edu" value={form.email} onChange={(event) => up('email', event.target.value)} />
               <Field label="Activation code" icon={Key} type="text" placeholder="Code from your email" value={form.activationCode} onChange={(event) => up('activationCode', event.target.value)} />
               <Field label="New password" icon={Lock} type="password" placeholder="Choose a secure password" value={form.newPassword} onChange={(event) => up('newPassword', event.target.value)} />

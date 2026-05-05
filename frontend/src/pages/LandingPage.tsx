@@ -610,7 +610,7 @@ export default function LandingPage() {
               </div>
               <div className="public-assistance-showcase__actions">
                 <Link to="/assistant" className="public-primary-button public-assistance-showcase__button" style={{ background: '#10b981', boxShadow: '0 10px 30px rgba(16, 185, 129, 0.2)' }}>
-                  Launch AI Assistant
+                  Ask Aura
                   <Cpu size={18} />
                 </Link>
                 <div className="public-assistance-showcase__actions-note">

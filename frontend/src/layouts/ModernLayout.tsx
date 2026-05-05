@@ -40,7 +40,6 @@ function getNavItems(role: string): NavItem[] {
     { path: '/admin/ai-governance', label: 'AI Governance', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#22d3ee' },
     { path: '/admin/pricing', label: 'Pricing Control', icon: TrendingUp, roles: [...PLATFORM_ROLES], group: 'Operations', color: '#fbbf24' },
     { path: '/admin/inquiries', label: 'Public Inbox', icon: Bell, roles: [...PLATFORM_ROLES], group: 'Operations', color: '#f472b6' },
-    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#10b981' },
     { path: '/admin/logs', label: 'System Logs', icon: Activity, roles: [...PLATFORM_ROLES], group: 'Intelligence', color: '#f87171' },
     { path: '/settings', label: 'Platform Engine', icon: Settings, roles: [...PLATFORM_ROLES], group: 'System', color: '#64748b' },
     // School Admin
@@ -65,7 +64,6 @@ function getNavItems(role: string): NavItem[] {
     { path: '/communication', label: 'Communication', icon: MessageSquare, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER', 'TEACHER'], group: 'Resources', color: '#22d3ee' },
     { path: '/billing', label: 'Billing & Fees', icon: CreditCard, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Finance', color: '#ffb663', requiredFeature: 'SCHOOL_OPS' },
     { path: '/school/analytics', label: 'Analytics', icon: TrendingUp, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Intelligence', color: '#c084fc' },
-    { path: '/learn', label: 'LUMINA Studio', icon: Brain, roles: ['SCHOOL_ADMIN', 'PRINCIPAL', 'MANAGER'], group: 'Intelligence', color: '#fbbf24' },
     // Teacher
     { path: '/dashboard', label: 'Workspace', icon: Sparkles, roles: ['TEACHER'], group: 'Overview', color: '#a78bfa', requiredFeature: 'SCHOOL_OPS' },
     { path: '/teacher/profile', label: 'Profile', icon: User, roles: ['TEACHER'], group: 'Overview', color: '#94a3b8', requiredFeature: 'SCHOOL_OPS' },
@@ -113,6 +111,7 @@ export function ModernLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; title: string; body: string; time: string; color: string; read: boolean }[]>([]);
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [releasedFeatureCodes, setReleasedFeatureCodes] = useState<string[]>(['*']);
 
   // Fetch real notifications
@@ -128,58 +127,63 @@ export function ModernLayout() {
           ]);
           const pending = queue.filter(r => r.status === 'SUBMITTED' || r.status === 'UNDER_REVIEW');
           if (pending.length > 0) {
+            const id = 'pending-review';
             notifs.push({
-              id: 'pending-review',
+              id,
               title: `${pending.length} school${pending.length > 1 ? 's' : ''} awaiting review`,
               body: `${pending.map(s => s.schoolName).slice(0, 2).join(', ')}${pending.length > 2 ? ` and ${pending.length - 2} more` : ''} in the onboarding queue.`,
               time: 'Just now',
               color: '#fbbf24',
-              read: false,
+              read: readIds.has(id),
             });
           }
           const openInquiries = publicInquiries.filter((item) => item.status === 'OPEN');
           if (openInquiries.length > 0) {
+            const id = 'public-inquiries';
             notifs.push({
-              id: 'public-inquiries',
+              id,
               title: `${openInquiries.length} public request${openInquiries.length > 1 ? 's' : ''} waiting`,
               body: `${openInquiries[0].subject}${openInquiries.length > 1 ? ` and ${openInquiries.length - 1} more need platform follow-up.` : ' needs platform follow-up.'}`,
               time: 'Live',
               color: '#f472b6',
-              read: false,
+              read: readIds.has(id),
             });
           }
+          const healthId = 'system-health';
           notifs.push({
-            id: 'system-health',
+            id: healthId,
             title: 'System health nominal',
             body: `Platform services are operational. ${queue.length} total onboarding records.`,
             time: new Date().toLocaleTimeString(),
             color: '#34d399',
-            read: true,
+            read: readIds.has(healthId),
           });
         } catch {
+          const id = 'connectivity-issue';
           notifs.push({
-            id: 'connectivity-issue',
+            id,
             title: 'Service connectivity issue',
             body: 'Could not load onboarding queue. Check backend services.',
             time: 'Just now',
             color: '#f43f5e',
-            read: false,
+            read: readIds.has(id),
           });
         }
       } else {
+        const id = 'welcome';
         notifs.push({
-          id: 'welcome',
+          id,
           title: 'Welcome back!',
           body: `You are logged in as ${session.fullName || 'User'}. Have a productive session.`,
           time: new Date().toLocaleTimeString(),
           color: '#22d3ee',
-          read: true,
+          read: readIds.has(id),
         });
       }
       setNotifications(notifs);
     };
     loadNotifications();
-  }, [session.role, session.fullName]);
+  }, [session.role, session.fullName, readIds]);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,7 +436,10 @@ export function ModernLayout() {
                     <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontWeight: 800, color: 'var(--text-strong)', fontSize: '0.9rem' }}>Notifications</span>
                       <button
-                        onClick={() => setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))}
+                        onClick={() => {
+                          const allIds = notifications.map(n => n.id);
+                          setReadIds(new Set([...readIds, ...allIds]));
+                        }}
                         style={{ fontSize: '0.68rem', fontWeight: 700, color: unreadCount > 0 ? '#f43f5e' : 'var(--text-dim)', cursor: 'pointer', background: 'none', border: 'none', fontFamily: 'inherit' }}>
                         {unreadCount > 0 ? `Mark ${unreadCount} read` : 'All read'}
                       </button>
@@ -441,7 +448,7 @@ export function ModernLayout() {
                       <div key={n.id} style={{ padding: '14px 20px', borderBottom: '1px solid var(--glass-border)', cursor: 'pointer', transition: 'background 0.2s', background: n.read ? 'transparent' : 'var(--surface-elevated)' }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setNotifications((prev) => prev.map((item) => item.id === n.id ? { ...item, read: true } : item));
+                          setReadIds(prev => new Set([...prev, n.id]));
                           if (n.id === 'system-health' || n.title.toLowerCase().includes('ai') || n.title.toLowerCase().includes('health')) {
                              navigate('/admin/ai-briefing');
                              setNotifOpen(false);

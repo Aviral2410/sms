@@ -75,12 +75,7 @@ export function PublicAiAssistantChat() {
         >
           <Bot size={18} />
         </span>
-        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
-          <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'rgba(167, 243, 208, 0.7)' }}>
-            AI Assistant
-          </span>
-          <span style={{ color: '#fff' }}>Ask Aura</span>
-        </span>
+        <span style={{ color: '#fff' }}>Ask Aura</span>
         <Sparkles size={16} color="rgba(167, 243, 208, 0.8)" />
       </Link>
     </motion.div>

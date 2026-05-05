@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { AlertTriangle, CheckCircle2, Filter, LifeBuoy, Mail, RefreshCw } from 'lucide-react';
+import { Activity, AlertTriangle, CheckCircle2, Filter, LifeBuoy, Mail, RefreshCw } from 'lucide-react';
 import { onboardingApi, type PlatformPublicInquiryResponse } from '../../lib/api';
 import { useRealtime } from '../../components/RealtimeHub';
 
@@ -61,7 +61,15 @@ export default function PublicInquiryInboxPage() {
   };
 
   return (
-    <div className="modular-page animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+    <div className="modular-page animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'relative' }}>
+      <button 
+        className="secondary-button compact" 
+        onClick={load}
+        style={{ position: 'absolute', top: 0, right: 0, zIndex: 10, padding: '10px 16px', borderRadius: 14, background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)' }}
+      >
+        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Sync Inbox
+      </button>
+
       <header className="page-header">
         <div className="header-content">
           <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
@@ -70,29 +78,80 @@ export default function PublicInquiryInboxPage() {
           <h1>Public contact and support intake</h1>
           <p>Every public inquiry lands here and updates in real time when new requests hit the platform.</p>
         </div>
-        <div className="header-actions" style={{ display: 'flex', gap: 10 }}>
-          <button className="secondary-button compact" onClick={load}>
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </div>
       </header>
 
-      <section className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
-        {[
-          { label: 'Total inquiries', value: counts.all, accent: '#818cf8', icon: Mail },
-          { label: 'Open now', value: counts.open, accent: '#fbbf24', icon: AlertTriangle },
-          { label: 'Support tickets', value: counts.support, accent: '#22d3ee', icon: LifeBuoy },
-          { label: 'Contact requests', value: counts.contact, accent: '#34d399', icon: CheckCircle2 },
-        ].map((card) => (
-          <article key={card.label} className="dashboard-card" style={{ padding: 22, border: `1px solid ${card.accent}33`, background: `linear-gradient(160deg, ${card.accent}14, rgba(15,23,42,0.86))` }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.16em', color: card.accent, fontWeight: 800 }}>{card.label}</span>
-              <card.icon size={18} color={card.accent} />
-            </div>
-            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#fff' }}>{card.value.toLocaleString()}</div>
-          </article>
-        ))}
-      </section>
+      <motion.section 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 32, 
+          padding: '20px 32px', 
+          borderRadius: 24, 
+          background: 'rgba(15,23,42,0.4)', 
+          border: '1px solid var(--glass-border)',
+          backdropFilter: 'blur(20px)',
+          overflowX: 'auto',
+          scrollbarWidth: 'none'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingRight: 24, borderRight: '1px solid var(--glass-border)', flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34,211,238,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#22d3ee' }}>
+            <Activity size={20} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.62rem', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Live Signals</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fff' }}>Inbox Health</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 48, flex: 1 }}>
+          {[
+            { label: 'Total Volume', value: counts.all, accent: '#818cf8', icon: Mail },
+            { label: 'Action Required', value: counts.open, accent: '#fbbf24', icon: AlertTriangle, pulse: counts.open > 0 },
+            { label: 'Support Queue', value: counts.support, accent: '#22d3ee', icon: LifeBuoy },
+            { label: 'Growth Leads', value: counts.contact, accent: '#34d399', icon: CheckCircle2 },
+          ].map((stat, idx) => (
+            <motion.div 
+              key={stat.label}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + idx * 0.05 }}
+              style={{ display: 'flex', alignItems: 'center', gap: 14 }}
+            >
+              <div style={{ position: 'relative' }}>
+                <stat.icon size={18} color={stat.accent} style={{ opacity: 0.8 }} />
+                {stat.pulse && (
+                  <motion.div 
+                    animate={{ scale: [1, 1.8, 1], opacity: [0.5, 0, 0.5] }}
+                    transition={{ repeat: Infinity, duration: 2 }}
+                    style={{ position: 'absolute', inset: -2, borderRadius: '50%', background: stat.accent, zIndex: -1 }}
+                  />
+                )}
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em' }}>{stat.value.toLocaleString()}</span>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 800, color: stat.accent, textTransform: 'uppercase', letterSpacing: '0.08em', opacity: 0.8 }}>{stat.label}</span>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        <div style={{ marginLeft: 'auto', paddingLeft: 24, borderLeft: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.62rem', fontWeight: 900, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Real-time</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Inbox Synced</div>
+          </div>
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1] }} 
+            transition={{ repeat: Infinity, duration: 3 }}
+            style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399', boxShadow: '0 0 10px #34d399' }} 
+          />
+        </div>
+      </motion.section>
 
       <section className="dashboard-card" style={{ padding: 22, display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

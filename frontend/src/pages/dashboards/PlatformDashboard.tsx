@@ -95,11 +95,14 @@ export default function PlatformDashboard() {
 
   const widgets: Record<string, React.ReactNode> = {
     stats: (
-      <div style={{ padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.05))', border: '1px solid rgba(99,102,241,0.2)', position: 'relative', overflow: 'hidden' }}>
+      <div 
+        onClick={() => navigate('/admin/schools')}
+        style={{ cursor: 'pointer', padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.05))', border: '1px solid rgba(99,102,241,0.2)', position: 'relative', overflow: 'hidden' }}
+      >
         <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(99,102,241,0.15)', filter: 'blur(40px)' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div style={{ padding: 8, borderRadius: 12, background: 'rgba(99,102,241,0.2)', color: '#818cf8' }}><Users size={20} /></div>
-          <button onClick={() => removeWidget('stats')} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); removeWidget('stats'); }} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
         </div>
         <div style={{ fontSize: '0.68rem', fontWeight: 900, color: '#818cf8', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Platform Reach</div>
         <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginBottom: 4, letterSpacing: '-0.03em' }}>
@@ -109,11 +112,14 @@ export default function PlatformDashboard() {
       </div>
     ),
     onboarding: (
-      <div style={{ padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(34,211,238,0.08), rgba(6,182,212,0.03))', border: '1px solid rgba(34,211,238,0.15)', position: 'relative', overflow: 'hidden' }}>
+      <div 
+        onClick={() => navigate('/admin/onboarding')}
+        style={{ cursor: 'pointer', padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(34,211,238,0.08), rgba(6,182,212,0.03))', border: '1px solid rgba(34,211,238,0.15)', position: 'relative', overflow: 'hidden' }}
+      >
         <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(34,211,238,0.1)', filter: 'blur(40px)' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div style={{ padding: 8, borderRadius: 12, background: 'rgba(34,211,238,0.15)', color: '#22d3ee' }}><Building2 size={20} /></div>
-          <button onClick={() => removeWidget('onboarding')} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); removeWidget('onboarding'); }} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
         </div>
         <div style={{ fontSize: '0.68rem', fontWeight: 900, color: '#22d3ee', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Onboarding Pipeline</div>
         <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginBottom: 4, letterSpacing: '-0.03em' }}>
@@ -129,11 +135,14 @@ export default function PlatformDashboard() {
       </div>
     ),
     health: (
-      <div style={{ padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(52,211,153,0.08), rgba(16,185,129,0.03))', border: '1px solid rgba(52,211,153,0.15)', position: 'relative', overflow: 'hidden' }}>
+      <div 
+        onClick={() => navigate('/admin/logs')}
+        style={{ cursor: 'pointer', padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(52,211,153,0.08), rgba(16,185,129,0.03))', border: '1px solid rgba(52,211,153,0.15)', position: 'relative', overflow: 'hidden' }}
+      >
         <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(52,211,153,0.1)', filter: 'blur(40px)' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div style={{ padding: 8, borderRadius: 12, background: 'rgba(52,211,153,0.15)', color: '#34d399' }}><Activity size={20} /></div>
-          <button onClick={() => removeWidget('health')} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); removeWidget('health'); }} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
         </div>
         <div style={{ fontSize: '0.68rem', fontWeight: 900, color: '#34d399', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>System Health</div>
         <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginBottom: 4, letterSpacing: '-0.03em' }}>99.9%</div>
@@ -145,11 +154,14 @@ export default function PlatformDashboard() {
       </div>
     ),
     revenue: (
-      <div style={{ padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(245,158,11,0.03))', border: '1px solid rgba(251,191,36,0.15)', position: 'relative', overflow: 'hidden' }}>
+      <div 
+        onClick={() => navigate('/admin/analytics')}
+        style={{ cursor: 'pointer', padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(251,191,36,0.08), rgba(245,158,11,0.03))', border: '1px solid rgba(251,191,36,0.15)', position: 'relative', overflow: 'hidden' }}
+      >
         <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(251,191,36,0.1)', filter: 'blur(40px)' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div style={{ padding: 8, borderRadius: 12, background: 'rgba(251,191,36,0.15)', color: '#fbbf24' }}><TrendingUp size={20} /></div>
-          <button onClick={() => removeWidget('revenue')} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
+          <button onClick={(e) => { e.stopPropagation(); removeWidget('revenue'); }} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
         </div>
         <div style={{ fontSize: '0.68rem', fontWeight: 900, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Monthly Revenue</div>
         <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginBottom: 4, letterSpacing: '-0.03em' }}>
@@ -161,11 +173,14 @@ export default function PlatformDashboard() {
   };
 
   widgets.inquiries = (
-    <div style={{ padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(244,114,182,0.1), rgba(34,211,238,0.04))', border: '1px solid rgba(244,114,182,0.18)', position: 'relative', overflow: 'hidden' }}>
+    <div 
+      onClick={() => navigate('/admin/inquiries')}
+      style={{ cursor: 'pointer', padding: '24px', borderRadius: 24, background: 'linear-gradient(135deg, rgba(244,114,182,0.1), rgba(34,211,238,0.04))', border: '1px solid rgba(244,114,182,0.18)', position: 'relative', overflow: 'hidden' }}
+    >
       <div style={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(244,114,182,0.12)', filter: 'blur(40px)' }} />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div style={{ padding: 8, borderRadius: 12, background: 'rgba(244,114,182,0.15)', color: '#f472b6' }}><Mail size={20} /></div>
-        <button onClick={() => removeWidget('inquiries')} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
+        <button onClick={(e) => { e.stopPropagation(); removeWidget('inquiries'); }} style={{ color: '#475569', cursor: 'pointer', background: 'none', border: 'none' }}><X size={14} /></button>
       </div>
       <div style={{ fontSize: '0.68rem', fontWeight: 900, color: '#f472b6', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 6 }}>Public Inbox</div>
       <div style={{ fontSize: '2.2rem', fontWeight: 900, color: '#fff', marginBottom: 4, letterSpacing: '-0.03em' }}>

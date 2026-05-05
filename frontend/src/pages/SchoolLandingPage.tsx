@@ -144,7 +144,7 @@ export default function SchoolLandingPage() {
         </div>
         <div style={{ display: 'flex', gap: 20 }}>
           <button onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: 'none', border: 'none', color: DIM, fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer' }}>Vision</button>
-          <button onClick={() => document.getElementById('login-portal')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: 'var(--public-panel-soft)', border: `1px solid ${BORDER}`, color: TEXT, padding: '8px 16px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Portal Access</button>
+          <button onClick={() => document.getElementById('login-portal')?.scrollIntoView({ behavior: 'smooth' })} style={{ background: 'var(--public-panel-soft)', border: `1px solid ${BORDER}`, color: TEXT, padding: '8px 16px', borderRadius: 10, fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer' }}>Login</button>
         </div>
       </nav>
 
@@ -152,9 +152,9 @@ export default function SchoolLandingPage() {
         {/* ── Hero ── */}
         <section style={{ height: '80vh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 6%' }}>
           <div style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
-            <ParallaxLayer offset={54}>
-              <FallbackImage src="/school_facade.png" fallbackSrc="/hero.png" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} alt="Campus" />
-            </ParallaxLayer>
+            {profile?.logoUrl ? (
+              <FallbackImage src={profile.logoUrl} fallbackSrc="/hero.png" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.4 }} alt="Campus" />
+            ) : null}
             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to bottom, ${BG} 0%, transparent 40%, transparent 60%, ${BG} 100%)` }} />
           </div>
           
@@ -167,9 +167,9 @@ export default function SchoolLandingPage() {
             <motion.button whileHover={{ y: -3, scale: 1.01 }} whileTap={{ scale: 0.98 }} onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} style={{ padding: '16px 36px', borderRadius: 16, background: `linear-gradient(135deg, ${AMBER}, #d97706)`, border: 'none', color: '#040b14', fontWeight: 900, fontSize: '1.1rem', cursor: 'pointer', boxShadow: `0 10px 30px ${AMBER}25` }}>Explore Institution</motion.button>
           </ScrollReveal>
           <motion.div className="public-soft-card parallax-float" style={{ position: 'absolute', right: '7%', bottom: '12%', padding: '16px 18px', textAlign: 'left', minWidth: 220, zIndex: 1 }} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.84, delay: 0.2 }}>
-            <div style={{ fontSize: '0.72rem', fontWeight: 900, color: AMBER, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>School Code</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 4 }}>{profile?.schoolCode}</div>
-            <div style={{ color: DIM, fontSize: '0.86rem', lineHeight: 1.5 }}>Campus updates, public notices, and portal access stay aligned with this school context.</div>
+            <div style={{ fontSize: '0.72rem', fontWeight: 900, color: AMBER, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Realm</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 4 }}>{profile?.schoolCode?.toLowerCase()}</div>
+            <div style={{ color: DIM, fontSize: '0.86rem', lineHeight: 1.5 }}>Campus updates, public notices, and portal access stay aligned with this realm identifier.</div>
           </motion.div>
         </section>
 
@@ -270,7 +270,7 @@ export default function SchoolLandingPage() {
             </div>
 
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <PublicField label="School Context" icon={Hash} readOnly value={schoolCode ?? ''} accent={AMBER} />
+              
 
               <PublicField label="Academic Email" icon={Mail} type="email" placeholder="name@school.com" value={email} onChange={e => setEmail(e.target.value)} accent={CYAN} />
 
