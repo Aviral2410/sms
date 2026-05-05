@@ -4,31 +4,31 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RegistrationWizardPage from './RegistrationWizardPage';
 
-const navigateMock = vi.fn();
-const createMock = vi.fn();
-const uploadLogoMock = vi.fn();
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
+const viMockNavigate = vi.fn();
+const viMockCreate = vi.fn();
+const viMockUploadLogo = vi.fn();
+const viMockToastSuccess = vi.fn();
+const viMockToastError = vi.fn();
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
   return {
     ...actual,
-    useNavigate: () => navigateMock,
+    useNavigate: () => viMockNavigate,
   };
 });
 
 vi.mock('../lib/api', () => ({
   onboardingApi: {
-    create: createMock,
-    uploadPublicSchoolLogo: uploadLogoMock,
+    create: viMockCreate,
+    uploadPublicSchoolLogo: viMockUploadLogo,
   },
 }));
 
 vi.mock('sonner', () => ({
   toast: {
-    success: toastSuccessMock,
-    error: toastErrorMock,
+    success: viMockToastSuccess,
+    error: viMockToastError,
   },
 }));
 
@@ -45,8 +45,8 @@ vi.mock('../components/public/SchoolMark', () => ({
 describe('RegistrationWizardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    createMock.mockResolvedValue({ onboardingId: 'test-id' });
-    uploadLogoMock.mockResolvedValue({ publicUrl: 'https://cdn.example.com/logo.png' });
+    viMockCreate.mockResolvedValue({ onboardingId: 'test-id' });
+    viMockUploadLogo.mockResolvedValue({ publicUrl: 'https://cdn.example.com/logo.png' });
   });
 
   it('shows a validation error on the first step when required fields are missing', async () => {
@@ -59,9 +59,9 @@ describe('RegistrationWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith('Please fill in school name, school code, admin email, and contact phone.');
+      expect(viMockToastError).toHaveBeenCalledWith('Please fill in school name, school code, admin email, and contact phone.');
     });
-    expect(createMock).not.toHaveBeenCalled();
+    expect(viMockCreate).not.toHaveBeenCalled();
   });
 
   it('submits a normalized onboarding payload through the full wizard flow', async () => {
@@ -89,10 +89,10 @@ describe('RegistrationWizardPage', () => {
     fireEvent.click(screen.getByRole('button', { name: /submit registration/i }));
 
     await waitFor(() => {
-      expect(createMock).toHaveBeenCalledTimes(1);
+      expect(viMockCreate).toHaveBeenCalledTimes(1);
     });
 
-    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({
+    expect(viMockCreate).toHaveBeenCalledWith(expect.objectContaining({
       schoolName: 'Automation Academy',
       schoolCode: 'AUTO01',
       realmName: 'auto01',
@@ -112,7 +112,7 @@ describe('RegistrationWizardPage', () => {
     }));
 
     await screen.findByText(/application submitted/i);
-    expect(toastSuccessMock).toHaveBeenCalledWith('Onboarding request submitted successfully.');
+    expect(viMockToastSuccess).toHaveBeenCalledWith('Onboarding request submitted successfully.');
   });
 
   it('uploads a school logo after the school code is entered', async () => {
@@ -129,9 +129,9 @@ describe('RegistrationWizardPage', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(uploadLogoMock).toHaveBeenCalledWith(file, 'AUTO02');
+      expect(viMockUploadLogo).toHaveBeenCalledWith(file, 'AUTO02');
     });
 
-    expect(toastSuccessMock).toHaveBeenCalledWith('School logo uploaded. You can replace it later inside the school CMS.');
+    expect(viMockToastSuccess).toHaveBeenCalledWith('School logo uploaded. You can replace it later inside the school CMS.');
   });
 });

@@ -3,13 +3,13 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PublicPretextHeading } from './PublicPretextHeading';
 
-const prepareWithSegmentsMock = vi.fn((text: string, font: string, options?: Record<string, string>) => ({
+const viMockPrepareWithSegments = vi.fn((text: string, font: string, options?: Record<string, string>) => ({
   text,
   font,
   options,
 }));
 
-const layoutWithLinesMock = vi.fn((prepared: { text: string }, maxWidth: number, lineHeight: number) => {
+const viMockLayoutWithLines = vi.fn((prepared: { text: string }, maxWidth: number, lineHeight: number) => {
   const limit = Math.max(1, Math.floor(maxWidth / 12));
   const lines: Array<{ text: string; width: number; start: { segmentIndex: number; graphemeIndex: number }; end: { segmentIndex: number; graphemeIndex: number } }> = [];
 
@@ -31,8 +31,8 @@ const layoutWithLinesMock = vi.fn((prepared: { text: string }, maxWidth: number,
 });
 
 vi.mock('@chenglou/pretext', () => ({
-  prepareWithSegments: prepareWithSegmentsMock,
-  layoutWithLines: layoutWithLinesMock,
+  prepareWithSegments: viMockPrepareWithSegments,
+  layoutWithLines: viMockLayoutWithLines,
 }));
 
 class MockResizeObserver {
@@ -67,8 +67,8 @@ class MockResizeObserver {
 
 describe('PublicPretextHeading', () => {
   beforeEach(() => {
-    prepareWithSegmentsMock.mockClear();
-    layoutWithLinesMock.mockClear();
+    viMockPrepareWithSegments.mockClear();
+    viMockLayoutWithLines.mockClear();
     MockResizeObserver.instances = [];
 
     vi.stubGlobal('ResizeObserver', MockResizeObserver);
@@ -136,17 +136,17 @@ describe('PublicPretextHeading', () => {
     );
 
     await waitFor(() => {
-      expect(layoutWithLinesMock).toHaveBeenCalled();
+      expect(viMockLayoutWithLines).toHaveBeenCalled();
     });
 
-    const initialCalls = layoutWithLinesMock.mock.calls.length;
+    const initialCalls = viMockLayoutWithLines.mock.calls.length;
 
     act(() => {
       document.fonts.dispatchEvent(new Event('loadingdone'));
     });
 
     await waitFor(() => {
-      expect(layoutWithLinesMock.mock.calls.length).toBeGreaterThan(initialCalls);
+      expect(viMockLayoutWithLines.mock.calls.length).toBeGreaterThan(initialCalls);
     });
   });
 });

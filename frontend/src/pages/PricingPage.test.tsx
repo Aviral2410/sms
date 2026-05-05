@@ -4,8 +4,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PricingPage from './PricingPage';
 
-const getPlansMock = vi.fn();
-const getPublicSettingsMock = vi.fn();
+const viMockGetPlans = vi.fn();
+const viMockGetPublicSettings = vi.fn();
 
 vi.mock('../hooks/usePublicSiteContent', () => ({
   usePublicSiteContent: () => ({ content: null }),
@@ -29,7 +29,7 @@ vi.mock('../components/public/HoverTiltCard', () => ({
 
 vi.mock('../lib/publicSiteApi', () => ({
   publicSiteApi: {
-    getPlans: getPlansMock,
+    getPlans: viMockGetPlans,
   },
 }));
 
@@ -38,7 +38,7 @@ vi.mock('../lib/api', async () => {
   return {
     ...actual,
     platformSettingsApi: {
-      getPublicSettings: getPublicSettingsMock,
+      getPublicSettings: viMockGetPublicSettings,
     },
   };
 });
@@ -46,7 +46,7 @@ vi.mock('../lib/api', async () => {
 describe('PricingPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getPlansMock.mockResolvedValue([
+    viMockGetPlans.mockResolvedValue([
       {
         planId: 'plan-1',
         planName: 'Premium',
@@ -60,7 +60,7 @@ describe('PricingPage', () => {
         createdAt: '2026-05-05T08:00:00Z',
       },
     ]);
-    getPublicSettingsMock.mockResolvedValue({
+    viMockGetPublicSettings.mockResolvedValue({
       platformName: 'ElevateSmart',
       contactEmail: 'support@elevatesmart.ai',
       maintenanceMode: false,
@@ -77,7 +77,7 @@ describe('PricingPage', () => {
     );
 
     await waitFor(() => {
-      expect(getPlansMock).toHaveBeenCalledTimes(1);
+      expect(viMockGetPlans).toHaveBeenCalledTimes(1);
     });
 
     expect(screen.getByText('School Ops')).toBeInTheDocument();

@@ -3,22 +3,22 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchoolBrandingPanel } from './SchoolBrandingPanel';
 
-const getCurrentBrandingMock = vi.fn();
-const uploadCurrentSchoolLogoMock = vi.fn();
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
+const viMockGetCurrentBranding = vi.fn();
+const viMockUploadCurrentSchoolLogo = vi.fn();
+const viMockToastSuccess = vi.fn();
+const viMockToastError = vi.fn();
 
 vi.mock('../../lib/api', () => ({
   onboardingApi: {
-    getCurrentBranding: getCurrentBrandingMock,
-    uploadCurrentSchoolLogo: uploadCurrentSchoolLogoMock,
+    getCurrentBranding: viMockGetCurrentBranding,
+    uploadCurrentSchoolLogo: viMockUploadCurrentSchoolLogo,
   },
 }));
 
 vi.mock('sonner', () => ({
   toast: {
-    success: toastSuccessMock,
-    error: toastErrorMock,
+    success: viMockToastSuccess,
+    error: viMockToastError,
   },
 }));
 
@@ -31,7 +31,7 @@ vi.mock('../public/SchoolMark', () => ({
 describe('SchoolBrandingPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getCurrentBrandingMock.mockResolvedValue({
+    viMockGetCurrentBranding.mockResolvedValue({
       onboardingId: 'onboarding-1',
       schoolId: 'school-1',
       schoolName: 'Automation Academy',
@@ -40,7 +40,7 @@ describe('SchoolBrandingPanel', () => {
       state: 'Karnataka',
       logoUrl: 'https://cdn.example.com/logo-1.png',
     });
-    uploadCurrentSchoolLogoMock.mockResolvedValue({
+    viMockUploadCurrentSchoolLogo.mockResolvedValue({
       onboardingId: 'onboarding-1',
       schoolId: 'school-1',
       schoolName: 'Automation Academy',
@@ -55,7 +55,7 @@ describe('SchoolBrandingPanel', () => {
     render(<SchoolBrandingPanel accentColor="#22d3ee" />);
 
     await screen.findByText('Automation Academy');
-    expect(getCurrentBrandingMock).toHaveBeenCalledTimes(1);
+    expect(viMockGetCurrentBranding).toHaveBeenCalledTimes(1);
     expect(screen.getByText('AUTO01')).toBeInTheDocument();
     expect(screen.getByText('Bengaluru')).toBeInTheDocument();
   });
@@ -70,10 +70,10 @@ describe('SchoolBrandingPanel', () => {
     fireEvent.change(fileInput, { target: { files: [file] } });
 
     await waitFor(() => {
-      expect(uploadCurrentSchoolLogoMock).toHaveBeenCalledWith(file);
+      expect(viMockUploadCurrentSchoolLogo).toHaveBeenCalledWith(file);
     });
 
-    expect(toastSuccessMock).toHaveBeenCalledWith('School branding updated.');
+    expect(viMockToastSuccess).toHaveBeenCalledWith('School branding updated.');
     expect(screen.getByTestId('school-mark')).toHaveTextContent('https://cdn.example.com/logo-2.png');
   });
 });
