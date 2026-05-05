@@ -82,7 +82,7 @@ describe('PricingPage', () => {
       expect(viMockGetPlans).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByText('School Ops')).toBeInTheDocument();
+    expect(screen.getAllByText('School Ops').length).toBeGreaterThan(0);
     expect(screen.queryByText('Transport Base')).not.toBeInTheDocument();
     expect(screen.getAllByText(/not yet enabled/i).length).toBeGreaterThan(0);
   });

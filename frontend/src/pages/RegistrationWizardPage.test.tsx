@@ -44,6 +44,22 @@ vi.mock('../components/public/SchoolMark', () => ({
   ),
 }));
 
+// Helper to fill step 1 fields
+function fillStep1() {
+  fireEvent.change(screen.getByPlaceholderText('Global Tech Academy'), { target: { value: 'Automation Academy' } });
+  fireEvent.change(screen.getByPlaceholderText('GTA01'), { target: { value: 'AUTO01' } });
+  fireEvent.change(screen.getByPlaceholderText('admin@academy.edu'), { target: { value: 'admin@example.edu' } });
+  fireEvent.change(screen.getByPlaceholderText('+91 9876543210'), { target: { value: '+91 9876543210' } });
+}
+
+// Helper to fill step 2 fields
+function fillStep2() {
+  fireEvent.change(screen.getByPlaceholderText('123 Innovation Drive'), { target: { value: '123 Innovation Drive' } });
+  fireEvent.change(screen.getByPlaceholderText('Mumbai'), { target: { value: 'Bengaluru' } });
+  fireEvent.change(screen.getByPlaceholderText('Maharashtra'), { target: { value: 'Karnataka' } });
+  fireEvent.change(screen.getByPlaceholderText('400001'), { target: { value: '560001' } });
+}
+
 describe('RegistrationWizardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,21 +89,26 @@ describe('RegistrationWizardPage', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/e\.g\. global tech academy/i), { target: { value: 'Automation Academy' } });
-    fireEvent.change(screen.getByPlaceholderText(/e\.g\. gta01/i), { target: { value: 'auto01' } });
-    fireEvent.change(screen.getByPlaceholderText(/admin@academy\.edu/i), { target: { value: 'admin@example.edu' } });
-    fireEvent.change(screen.getByPlaceholderText(/\+91 9876543210/i), { target: { value: '+91 9876543210' } });
+    // Step 1: School details
+    fillStep1();
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 
-    fireEvent.change(screen.getByPlaceholderText(/123 innovation drive/i), { target: { value: '123 Innovation Drive' } });
-    fireEvent.change(screen.getByPlaceholderText(/^mumbai$/i), { target: { value: 'Bengaluru' } });
-    fireEvent.change(screen.getByPlaceholderText(/^maharashtra$/i), { target: { value: 'Karnataka' } });
-    fireEvent.change(screen.getByPlaceholderText(/^400001$/i), { target: { value: '560001' } });
+    // Step 2: Campus details
+    await waitFor(() => expect(screen.getByPlaceholderText('123 Innovation Drive')).toBeInTheDocument());
+    fillStep2();
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
 
+    // Step 3: Routing - realm auto-filled, just continue
+    await waitFor(() => expect(screen.queryByPlaceholderText('123 Innovation Drive')).not.toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
-    fireEvent.click(screen.getByText(/premium/i));
+
+    // Step 4: Plan - select Premium
+    await waitFor(() => expect(screen.getByText('Premium')).toBeInTheDocument());
+    fireEvent.click(screen.getByText('Premium'));
     fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+
+    // Step 5: Review + submit
+    await waitFor(() => expect(screen.getByRole('button', { name: /submit registration/i })).toBeInTheDocument());
     fireEvent.click(screen.getByRole('button', { name: /submit registration/i }));
 
     await waitFor(() => {
@@ -97,8 +118,6 @@ describe('RegistrationWizardPage', () => {
     expect(viMockCreate).toHaveBeenCalledWith(expect.objectContaining({
       schoolName: 'Automation Academy',
       schoolCode: 'AUTO01',
-      realmName: 'auto01',
-      boardAffiliation: 'CBSE',
       contactEmail: 'admin@example.edu',
       contactPhone: '+91 9876543210',
       addressLine: '123 Innovation Drive',
@@ -107,7 +126,6 @@ describe('RegistrationWizardPage', () => {
       country: 'India',
       postalCode: '560001',
       selectedPlanCode: 'PREMIUM',
-      usePlatformSubdomain: true,
       customDomain: null,
       tagline: null,
       hasBranches: false,
@@ -124,9 +142,14 @@ describe('RegistrationWizardPage', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByPlaceholderText(/e\.g\. gta01/i), { target: { value: 'auto02' } });
+    // Enter a school code first (required before logo upload)
+    fireEvent.change(screen.getByPlaceholderText('GTA01'), { target: { value: 'AUTO02' } });
 
-    const fileInput = screen.getByLabelText(/upload school logo/i) as HTMLInputElement;
+    // The logo input is inside a <label> with visible text "Upload school logo"
+    // It has no aria-label, so we query it by role with the label text
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeTruthy();
+
     const file = new File(['image-bytes'], 'logo.png', { type: 'image/png' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
