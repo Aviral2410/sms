@@ -1,12 +1,9 @@
 package com.sms.onboarding.service;
 
 import com.sms.onboarding.api.PlatformSettingsResponse;
-import com.sms.onboarding.api.PublicPlatformSettingsResponse;
 import com.sms.onboarding.api.UpdatePlatformSettingsRequest;
 import com.sms.onboarding.domain.PlatformSettingsEntity;
 import com.sms.onboarding.repository.PlatformSettingsRepository;
-import java.util.Arrays;
-import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,20 +26,6 @@ public class PlatformSettingsService {
         return mapToResponse(entity);
     }
 
-    public PublicPlatformSettingsResponse getPublicSettings() {
-        PlatformSettingsEntity entity = repository.findById(DEFAULT_SETTINGS_ID).orElse(null);
-        if (entity == null) {
-            entity = buildDefaultSettingsEntity();
-        }
-        return new PublicPlatformSettingsResponse(
-                entity.getPlatformName(),
-                entity.getContactEmail(),
-                entity.getMaintenanceMode(),
-                parseReleasedFeatureCodes(entity.getReleasedFeatureCodes()),
-                entity.getUpdatedAt()
-        );
-    }
-
     @Transactional
     public PlatformSettingsResponse updateSettings(UpdatePlatformSettingsRequest request) {
         PlatformSettingsEntity entity = repository.findById(DEFAULT_SETTINGS_ID).orElse(null);
@@ -60,7 +43,6 @@ public class PlatformSettingsService {
         entity.setBorderRadius(request.borderRadius());
         entity.setAuthServiceUrl(request.authServiceUrl());
         entity.setCommunicationServiceUrl(request.communicationServiceUrl());
-        entity.setReleasedFeatureCodes(joinReleasedFeatureCodes(request.releasedFeatureCodes()));
         
         return mapToResponse(repository.save(entity));
     }
@@ -78,7 +60,6 @@ public class PlatformSettingsService {
         entity.setBorderRadius("24px");
         entity.setAuthServiceUrl("http://auth-service:8082");
         entity.setCommunicationServiceUrl("http://communication-service:8089");
-        entity.setReleasedFeatureCodes("*");
         entity.setUpdatedAt(java.time.Instant.now());
         return entity;
     }
@@ -96,31 +77,7 @@ public class PlatformSettingsService {
                 entity.getBorderRadius(),
                 entity.getAuthServiceUrl(),
                 entity.getCommunicationServiceUrl(),
-                parseReleasedFeatureCodes(entity.getReleasedFeatureCodes()),
                 entity.getUpdatedAt()
         );
-    }
-
-    private List<String> parseReleasedFeatureCodes(String releasedFeatureCodes) {
-        if (releasedFeatureCodes == null || releasedFeatureCodes.isBlank()) {
-            return List.of("*");
-        }
-        return Arrays.stream(releasedFeatureCodes.split(","))
-                .map(String::trim)
-                .filter(code -> !code.isBlank())
-                .distinct()
-                .toList();
-    }
-
-    private String joinReleasedFeatureCodes(List<String> releasedFeatureCodes) {
-        if (releasedFeatureCodes == null || releasedFeatureCodes.isEmpty()) {
-            return "*";
-        }
-        return releasedFeatureCodes.stream()
-                .map(String::trim)
-                .filter(code -> !code.isBlank())
-                .distinct()
-                .reduce((left, right) -> left + "," + right)
-                .orElse("*");
     }
 }

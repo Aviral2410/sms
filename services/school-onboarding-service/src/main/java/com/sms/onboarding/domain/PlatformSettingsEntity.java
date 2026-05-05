@@ -42,9 +42,6 @@ public class PlatformSettingsEntity {
     @Column(name = "communication_service_url")
     private String communicationServiceUrl;
 
-    @Column(name = "released_feature_codes", columnDefinition = "TEXT")
-    private String releasedFeatureCodes;
-
     @Column(name = "updated_at")
     private Instant updatedAt;
 

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PaymentGateway } from '../components/PaymentGateway';
 import { useRealtime } from '../components/RealtimeHub';
 import { CreditCard, ShieldCheck, Zap, Clock, ChevronRight, Sparkles, AlertCircle } from 'lucide-react';
-import { platformSettingsApi, request } from '../lib/api';
-import { filterVisibleFeatures, hiddenFeatures } from '../lib/features';
+import { request } from '../lib/api';
 
 interface FeaturePrice {
   featureCode: string;
@@ -36,7 +35,6 @@ export const BillingPage: React.FC<BillingPageProps> = ({ schoolSession, createS
   const { messages } = useRealtime();
   const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
   const [availablePlans, setAvailablePlans] = useState<any[]>([]);
-  const [releasedFeatureCodes, setReleasedFeatureCodes] = useState<string[]>(['*']);
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentConfig, setPaymentConfig] = useState({ planId: '', planName: '', amount: 0 });
@@ -45,9 +43,7 @@ export const BillingPage: React.FC<BillingPageProps> = ({ schoolSession, createS
     try {
       const current = await request<any>('/subscriptions/current');
       const plansData = await request<any[]>('/subscriptions/plans');
-      const publicSettings = await platformSettingsApi.getPublicSettings().catch(() => null);
       setAvailablePlans(plansData);
-      setReleasedFeatureCodes(publicSettings?.releasedFeatureCodes || ['*']);
 
       const currentPlan = plansData.find((plan) => plan.planId === current.planId || plan.planCode === current.planCode);
       const monthlyBasePrice = Number(currentPlan?.monthlyPrice || 0);
@@ -202,16 +198,11 @@ export const BillingPage: React.FC<BillingPageProps> = ({ schoolSession, createS
                 </div>
                 <div className="flex-1">
                   <ul className="space-y-2 mb-6">
-                    {filterVisibleFeatures(plan.featureCodes || [], releasedFeatureCodes).map((f: string) => (
+                    {(plan.featureCodes || []).map((f: string) => (
                       <li key={f} className="text-[10px] text-slate-400 flex items-center gap-2">
                         <div className="h-1 w-1 bg-cyan-500 rounded-full" /> {f}
                       </li>
                     ))}
-                    {hiddenFeatures(plan.featureCodes || [], releasedFeatureCodes).length > 0 ? (
-                      <li className="text-[10px] text-amber-300 flex items-center gap-2">
-                        <AlertCircle size={12} /> Some plan capabilities are not yet enabled. Contact your admin.
-                      </li>
-                    ) : null}
                   </ul>
                 </div>
                 <button 

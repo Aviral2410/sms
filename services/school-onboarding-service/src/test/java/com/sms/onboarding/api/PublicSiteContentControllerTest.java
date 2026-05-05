@@ -76,7 +76,6 @@ class PublicSiteContentControllerTest {
                 List.of(new PublicSiteFeatureCard("Feature", "Description", "Category", "/hero.png", "#22d3ee", 1, List.of("One"))),
                 List.of(new PublicRoleBenefit("SCHOOL_ADMIN", "School Admin", "Run ops", "Description", "#ffb663", List.of("Outcome"))),
                 List.of(new PublicSectionMedia("hero", "/hero.png", "/hero.png", "Hero", "Caption")),
-                List.of(),
                 Instant.parse("2026-04-09T10:00:00Z")
         ));
 
@@ -139,7 +138,6 @@ class PublicSiteContentControllerTest {
                 "/onboarding",
                 "Read",
                 "/founders-message",
-                List.of(),
                 List.of(),
                 List.of(),
                 List.of(),

@@ -24,11 +24,6 @@ public class PlatformSettingsController {
         return service.getSettings();
     }
 
-    @GetMapping("/public")
-    public PublicPlatformSettingsResponse getPublicSettings() {
-        return service.getPublicSettings();
-    }
-
     @PatchMapping
     public PlatformSettingsResponse updateSettings(
             @RequestHeader(value = "X-User-Role", required = false) String role,

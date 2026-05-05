@@ -3,8 +3,7 @@ import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { CommandPalette } from '../components/CommandPalette';
-import { onboardingApi, platformSettingsApi, subscriptionApi } from '../lib/api';
-import { hasVisibleFeature } from '../lib/features';
+import { onboardingApi, subscriptionApi } from '../lib/api';
 import {
   LayoutDashboard, Building2, ShieldCheck, BarChart2, Settings,
   Users, BookOpen, Calendar, CreditCard, FileText, Bell, LogOut, Home,
@@ -29,6 +28,12 @@ type NavItem = {
   color: string;
   requiredFeature?: string;
 };
+
+function hasFeature(featureCodes: string[] | undefined, requiredFeature?: string) {
+  if (!requiredFeature) return true;
+  const codes = featureCodes || [];
+  return codes.includes('*') || codes.includes(requiredFeature);
+}
 
 function getNavItems(role: string): NavItem[] {
   const all: NavItem[] = [
@@ -113,7 +118,6 @@ export function ModernLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<{ id: string; title: string; body: string; time: string; color: string; read: boolean }[]>([]);
-  const [releasedFeatureCodes, setReleasedFeatureCodes] = useState<string[]>(['*']);
 
   // Fetch real notifications
   useEffect(() => {
@@ -234,27 +238,7 @@ export function ModernLayout() {
   }, [session.role, session.tenantId, session.isPremium, session.planCode, session.featureCodes, updateSession]);
 
   const unreadCount = notifications.filter((item) => !item.read).length;
-  const navItems = getNavItems(session.role || '').filter((item) => hasVisibleFeature(session.featureCodes, releasedFeatureCodes, item.requiredFeature));
-
-  useEffect(() => {
-    let cancelled = false;
-
-    platformSettingsApi.getPublicSettings()
-      .then((settings) => {
-        if (!cancelled) {
-          setReleasedFeatureCodes(settings.releasedFeatureCodes || ['*']);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setReleasedFeatureCodes(['*']);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const navItems = getNavItems(session.role || '').filter((item) => hasFeature(session.featureCodes, item.requiredFeature));
 
   // ── Global Theme Inoculation ──
   useEffect(() => {

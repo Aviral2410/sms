@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.sms.subscription.api.SubscriptionDtos.PublicAttachedSchool;
 import com.sms.subscription.api.SubscriptionDtos.PublicSubscriptionOverviewResponse;
 import com.sms.subscription.api.SubscriptionDtos.SubscriptionPlanResponse;
 import com.sms.subscription.service.SubscriptionService;
@@ -53,19 +52,7 @@ class PublicSubscriptionControllerTest {
     @Test
     void shouldReturnPublicOverview() throws Exception {
         when(subscriptionService.getPublicOverview()).thenReturn(
-                new PublicSubscriptionOverviewResponse(
-                        12,
-                        7,
-                        14200,
-                        3,
-                        14,
-                        2180,
-                        List.of(
-                                new PublicAttachedSchool("North Ridge Academy", "NRA", "https://cdn.example.com/nra.png"),
-                                new PublicAttachedSchool("Summit Public School", "SPS", "https://cdn.example.com/sps.png")
-                        ),
-                        List.of("North Ridge Academy", "Summit Public School")
-                )
+                new PublicSubscriptionOverviewResponse(12, 7, 14200, 3, 14, 2180, List.of("North Ridge Academy", "Summit Public School"))
         );
 
         mockMvc.perform(get("/api/v1/subscriptions/public/overview"))

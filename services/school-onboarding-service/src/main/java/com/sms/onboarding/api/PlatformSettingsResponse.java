@@ -1,7 +1,6 @@
 package com.sms.onboarding.api;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 public record PlatformSettingsResponse(
@@ -16,6 +15,5 @@ public record PlatformSettingsResponse(
     String borderRadius,
     String authServiceUrl,
     String communicationServiceUrl,
-    List<String> releasedFeatureCodes,
     Instant updatedAt
 ) {}

@@ -1,24 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BadgeDollarSign, RefreshCw, Save, Sparkles } from 'lucide-react';
-import { platformSettingsApi, subscriptionApi, type SubscriptionPlanResponse } from '../../lib/api';
-import { hiddenFeatures } from '../../lib/features';
+import { subscriptionApi, type SubscriptionPlanResponse } from '../../lib/api';
 
 type DraftMap = Record<string, SubscriptionPlanResponse & { featureText: string }>;
 
 export default function PricingControlPage() {
   const [drafts, setDrafts] = useState<DraftMap>({});
-  const [releasedFeatureCodes, setReleasedFeatureCodes] = useState<string[]>(['*']);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [plans, settings] = await Promise.all([
-        subscriptionApi.listPlans(),
-        platformSettingsApi.getSettings().catch(() => null),
-      ]);
+      const plans = await subscriptionApi.listPlans();
       const next: DraftMap = {};
       plans.forEach((plan) => {
         next[plan.planId] = {
@@ -27,7 +22,6 @@ export default function PricingControlPage() {
         };
       });
       setDrafts(next);
-      setReleasedFeatureCodes(settings?.releasedFeatureCodes || ['*']);
     } finally {
       setLoading(false);
     }
@@ -84,7 +78,7 @@ export default function PricingControlPage() {
             <BadgeDollarSign size={14} className="text-amber-400" /> Commercial Controls
           </span>
           <h1>Plan pricing and feature controls</h1>
-          <p>Change plan prices, capacity, and plan entitlements here. UI visibility for unreleased features is controlled separately from Platform Engine.</p>
+          <p>Change plan prices, capacity, and public feature lists here. Public pricing updates will reflect on the website after deploy.</p>
         </div>
         <div className="header-actions">
           <button className="secondary-button compact" onClick={load}>
@@ -98,9 +92,6 @@ export default function PricingControlPage() {
       ) : (
         <section className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
           {plans.map((plan) => (
-            (() => {
-              const unreleased = hiddenFeatures(plan.featureCodes || [], releasedFeatureCodes);
-              return (
             <motion.article
               key={plan.planId}
               initial={{ opacity: 0, y: 10 }}
@@ -155,18 +146,10 @@ export default function PricingControlPage() {
                 />
               </label>
 
-              {unreleased.length > 0 ? (
-                <div className="public-site-empty public-panel" style={{ padding: '12px 14px', fontSize: '0.82rem' }}>
-                  {unreleased.length} feature{unreleased.length > 1 ? 's are' : ' is'} included in this plan but hidden on the live UI until released from Platform Engine.
-                </div>
-              ) : null}
-
               <button className="primary-button compact" onClick={() => savePlan(plan.planId)} disabled={savingId === plan.planId}>
                 <Save size={14} /> {savingId === plan.planId ? 'Saving...' : 'Save plan changes'}
               </button>
             </motion.article>
-              );
-            })()
           ))}
         </section>
       )}

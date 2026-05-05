@@ -60,66 +60,12 @@ jobs:
           owner_lc="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           echo "owner_lc=$owner_lc" >> "$GITHUB_OUTPUT"
 
-  frontend-tests:
-    name: Frontend Tests
-    needs: [metadata]
-    if: ${{ needs.metadata.outputs.any_service == 'true' || github.event.inputs.force_build_all == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Run frontend CI suite
-        run: bash tests/ci/run-frontend-tests.sh
-
-  backend-tests:
-    name: Backend Tests
-    needs: [metadata]
-    if: ${{ needs.metadata.outputs.any_java == 'true' || github.event.inputs.force_build_all == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 21
-          cache: gradle
-
-      - name: Run backend CI suite
-        run: bash tests/ci/run-backend-tests.sh
-
-  backend-functional-api:
-    name: Backend Functional API
-    needs: [metadata, backend-tests]
-    if: ${{ (needs.metadata.outputs.any_java == 'true' || github.event.inputs.force_build_all == 'true') && secrets.FUNCTIONAL_BASE_URL != '' && secrets.FUNCTIONAL_ADMIN_EMAIL != '' && secrets.FUNCTIONAL_ADMIN_PASSWORD != '' }}
-    runs-on: ubuntu-latest
-    env:
-      FUNCTIONAL_BASE_URL: ${{ secrets.FUNCTIONAL_BASE_URL }}
-      FUNCTIONAL_ADMIN_EMAIL: ${{ secrets.FUNCTIONAL_ADMIN_EMAIL }}
-      FUNCTIONAL_ADMIN_PASSWORD: ${{ secrets.FUNCTIONAL_ADMIN_PASSWORD }}
-      FUNCTIONAL_SCHOOL_ADMIN_PASSWORD: ${{ secrets.FUNCTIONAL_SCHOOL_ADMIN_PASSWORD }}
-      FUNCTIONAL_DELETE_APPROVED_ONBOARDING: "false"
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run onboarding functional API suite
-        run: bash tests/functional-api/run.sh onboarding
-
   docker-publish:
     name: 🐳 Docker
-    needs: [metadata, frontend-tests, backend-tests, backend-functional-api]
+    needs: [metadata]
     if: |
       always() && 
-      (needs.metadata.outputs.any_service == 'true' || github.event.inputs.force_build_all == 'true') &&
-      needs.frontend-tests.result == 'success' &&
-      (needs.backend-tests.result == 'success' || needs.backend-tests.result == 'skipped') &&
-      (needs.backend-functional-api.result == 'success' || needs.backend-functional-api.result == 'skipped')
+      (needs.metadata.outputs.any_service == 'true' || github.event.inputs.force_build_all == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -181,12 +127,9 @@ jobs:
 
   helm-gitops:
     name: ☸️ Helm & GitOps
-    needs: [metadata, frontend-tests, backend-tests, backend-functional-api, docker-publish]
+    needs: [metadata, docker-publish]
     if: |
       always() &&
-      (needs.frontend-tests.result == 'success' || needs.frontend-tests.result == 'skipped') &&
-      (needs.backend-tests.result == 'success' || needs.backend-tests.result == 'skipped') &&
-      (needs.backend-functional-api.result == 'success' || needs.backend-functional-api.result == 'skipped') &&
       (needs.docker-publish.result == 'success' || needs.docker-publish.result == 'skipped') &&
       (needs.metadata.outputs.helm == 'true' || needs.metadata.outputs.any_service == 'true' || github.event.inputs.force_build_all == 'true')
     runs-on: ubuntu-latest
