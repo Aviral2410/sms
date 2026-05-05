@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS identity.platform_settings (
     border_radius VARCHAR(20) DEFAULT '16px',
     auth_service_url VARCHAR(255) DEFAULT 'http://auth-service:8082',
     communication_service_url VARCHAR(255) DEFAULT 'http://communication-service:8089',
+    released_feature_codes TEXT DEFAULT '*',
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -20,7 +21,8 @@ ALTER TABLE identity.platform_settings
     ADD COLUMN IF NOT EXISTS glass_intensity DOUBLE PRECISION DEFAULT 0.55,
     ADD COLUMN IF NOT EXISTS border_radius VARCHAR(20) DEFAULT '16px',
     ADD COLUMN IF NOT EXISTS auth_service_url VARCHAR(255) DEFAULT 'http://auth-service:8082',
-    ADD COLUMN IF NOT EXISTS communication_service_url VARCHAR(255) DEFAULT 'http://communication-service:8089';
+    ADD COLUMN IF NOT EXISTS communication_service_url VARCHAR(255) DEFAULT 'http://communication-service:8089',
+    ADD COLUMN IF NOT EXISTS released_feature_codes TEXT DEFAULT '*';
 
 -- Seed initial settings
 INSERT INTO identity.platform_settings (
@@ -33,7 +35,8 @@ INSERT INTO identity.platform_settings (
     glass_intensity,
     border_radius,
     auth_service_url,
-    communication_service_url
+    communication_service_url,
+    released_feature_codes
 )
 SELECT
     'INDIGO_FLOW',
@@ -45,7 +48,8 @@ SELECT
     0.55,
     '16px',
     'http://auth-service:8082',
-    'http://communication-service:8089'
+    'http://communication-service:8089',
+    '*'
 WHERE NOT EXISTS (SELECT 1 FROM identity.platform_settings);
 
 -- Documentation for deployment

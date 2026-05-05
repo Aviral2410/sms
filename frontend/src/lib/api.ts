@@ -1996,6 +1996,15 @@ export interface PlatformSettingsResponse {
   borderRadius: string;
   authServiceUrl: string;
   communicationServiceUrl: string;
+  releasedFeatureCodes: string[];
+  updatedAt: string;
+}
+
+export interface PublicPlatformSettingsResponse {
+  platformName: string;
+  contactEmail: string;
+  maintenanceMode: boolean;
+  releasedFeatureCodes: string[];
   updatedAt: string;
 }
 
@@ -2003,6 +2012,7 @@ export const platformSettingsApi = {
   getSettings: () => request<PlatformSettingsResponse>('/platform/settings'),
   updateSettings: (body: Partial<PlatformSettingsResponse>) => 
     request<PlatformSettingsResponse>('/platform/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  getPublicSettings: () => request<PublicPlatformSettingsResponse>('/platform/settings/public', { skipAuth: true }),
 };
 
 export interface PlatformConfigResponse {

@@ -46,6 +46,7 @@ function createFallbackSettings(
     borderRadius,
     authServiceUrl: 'http://localhost:8082',
     communicationServiceUrl: 'http://localhost:8089',
+    releasedFeatureCodes: ['*'],
     updatedAt: new Date().toISOString(),
   };
 }
@@ -132,6 +133,7 @@ export default function PlatformSettingsPage() {
         borderRadius: settings.borderRadius,
         authServiceUrl: settings.authServiceUrl,
         communicationServiceUrl: settings.communicationServiceUrl,
+        releasedFeatureCodes: settings.releasedFeatureCodes,
       });
       setSettings(updated);
       setAccentColor(updated.accentColor);
@@ -466,6 +468,18 @@ export default function PlatformSettingsPage() {
               </div>
             </label>
           </div>
+
+          <label>
+            <span style={labelTitleStyle}>Released UI Feature Codes</span>
+            <textarea
+              value={(settings?.releasedFeatureCodes || []).join('\n')}
+              onChange={(e) => updateField('releasedFeatureCodes', e.target.value.split('\n').map((item) => item.trim()).filter(Boolean))}
+              style={{ ...fieldInputStyle, minHeight: 120 }}
+            />
+            <div style={{ marginTop: 8, color: '#94a3b8', fontSize: '0.78rem', lineHeight: 1.5 }}>
+              One feature code per line. Use `*` to keep all entitled features visible. Leave unreleased codes out to hide them from pricing and gated navigation until rollout.
+            </div>
+          </label>
         </section>
       </div>
 

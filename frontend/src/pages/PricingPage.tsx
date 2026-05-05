@@ -6,6 +6,8 @@ import { PublicPretextHeading } from '../components/public/PublicPretextHeading'
 import { PublicSiteFrame } from '../components/public/PublicSiteFrame';
 import { ScrollReveal } from '../components/public/ScrollReveal';
 import { usePublicSiteContent } from '../hooks/usePublicSiteContent';
+import { platformSettingsApi, type PublicPlatformSettingsResponse } from '../lib/api';
+import { filterVisibleFeatures, hiddenFeatures } from '../lib/features';
 import { publicSiteApi } from '../lib/publicSiteApi';
 import type { SubscriptionPlanResponse } from '../lib/api';
 
@@ -34,6 +36,7 @@ export default function PricingPage() {
   const { content } = usePublicSiteContent();
   const [plans, setPlans] = useState<SubscriptionPlanResponse[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [platformSettings, setPlatformSettings] = useState<PublicPlatformSettingsResponse | null>(null);
 
   const orderedPlans = useMemo(() => {
     const safe = [...plans];
@@ -59,12 +62,27 @@ export default function PricingPage() {
     return safe;
   }, [plans]);
 
-  const featureMatrix = useMemo(() => Array.from(new Set(orderedPlans.flatMap((plan) => plan.featureCodes || []))), [orderedPlans]);
+  const visiblePlans = useMemo(() => (
+    orderedPlans.map((plan) => ({
+      ...plan,
+      visibleFeatureCodes: filterVisibleFeatures(plan.featureCodes, platformSettings?.releasedFeatureCodes),
+      unreleasedFeatureCodes: hiddenFeatures(plan.featureCodes, platformSettings?.releasedFeatureCodes),
+    }))
+  ), [orderedPlans, platformSettings?.releasedFeatureCodes]);
+
+  const featureMatrix = useMemo(
+    () => Array.from(new Set(visiblePlans.flatMap((plan) => plan.visibleFeatureCodes || []))),
+    [visiblePlans],
+  );
 
   useEffect(() => {
-    publicSiteApi.getPlans()
-      .then((response) => {
+    Promise.all([
+      publicSiteApi.getPlans(),
+      platformSettingsApi.getPublicSettings().catch(() => null),
+    ])
+      .then(([response, settings]) => {
         setPlans(response);
+        setPlatformSettings(settings);
         setError(null);
       })
       .catch(() => setError('Pricing data is unavailable right now.'));
@@ -90,7 +108,7 @@ export default function PricingPage() {
         <>
           <section className="public-site-section">
             <div className="public-grid-3">
-              {orderedPlans.map((plan, index) => {
+              {visiblePlans.map((plan, index) => {
                 const featured = (plan.planCode || '').toUpperCase().includes('COMMERCIAL') || (plan.planName || '').toUpperCase().includes('COMMERCIAL') || index === 1;
                 return (
                 <ScrollReveal key={plan.planId} delay={index * 0.06}>
@@ -106,10 +124,16 @@ export default function PricingPage() {
                     <p>{plan.description}</p>
                     <div className="public-site-plan-card__metric">Student capacity: {plan.maxStudents.toLocaleString()}</div>
                     <ul>
-                      {plan.featureCodes.map((feature) => (
+                      {plan.visibleFeatureCodes.map((feature) => (
                         <li key={feature}><BadgeCheck size={14} color={accentForPlan(index)} /> {humanizeFeature(feature)}</li>
                       ))}
                     </ul>
+                    {plan.unreleasedFeatureCodes.length > 0 ? (
+                      <div className="public-site-empty public-panel" style={{ padding: '12px 14px', fontSize: '0.82rem', gap: 8 }}>
+                        <ShieldCheck size={16} />
+                        Some features in this plan are not yet enabled for release. Contact your admin for rollout timing.
+                      </div>
+                    ) : null}
                     <Link to="/onboarding" className="public-primary-button public-site-plan-card__cta">
                       Choose this plan
                       <ArrowRight size={16} />
@@ -127,10 +151,10 @@ export default function PricingPage() {
                 <div>
                   <div className="public-feature-lattice__eyebrow" style={{ color: '#10b981' }}>Feature matrix</div>
                   <h3 style={{ fontSize: '1.8rem', marginBottom: 8 }}>What each subscription unlocks</h3>
-                  <p className="public-muted" style={{ maxWidth: 500 }}>Every lane below comes directly from the subscription service, so commercial packaging and feature visibility stay aligned.</p>
+                  <p className="public-muted" style={{ maxWidth: 500 }}>Every lane below comes directly from the subscription service and platform release settings, so unreleased capabilities stay hidden until rollout.</p>
                 </div>
                 <div className="public-feature-lattice__legend">
-                  {orderedPlans.map((plan, index) => (
+                  {visiblePlans.map((plan, index) => (
                     <div key={plan.planId} className="public-feature-lattice__legend-card" style={{ '--plan-accent': accentForPlan(index), minWidth: 120 } as React.CSSProperties}>
                       <span style={{ fontSize: 10 }}>{plan.planCode}</span>
                       <strong style={{ fontSize: 16 }}>{formatCurrency(Number(plan.monthlyPrice))}</strong>
@@ -147,8 +171,8 @@ export default function PricingPage() {
                       <span>Included where this operational capability is part of the package.</span>
                     </div>
                     <div className="public-feature-lattice__plan-strip">
-                      {orderedPlans.map((plan, index) => {
-                        const enabled = plan.featureCodes.includes(feature);
+                      {visiblePlans.map((plan, index) => {
+                        const enabled = plan.visibleFeatureCodes.includes(feature);
                         return (
                           <div
                             key={`${plan.planId}-${feature}`}
@@ -172,6 +196,15 @@ export default function PricingPage() {
               </div>
             </div>
           </section>
+
+          {visiblePlans.some((plan) => plan.unreleasedFeatureCodes.length > 0) ? (
+            <section className="public-site-section">
+              <div className="public-site-empty public-panel">
+                <ShieldCheck size={18} />
+                Some capabilities exist in commercial plans but are not yet enabled on the live UI. Contact your platform admin for rollout status.
+              </div>
+            </section>
+          ) : null}
         </>
       )}
 
