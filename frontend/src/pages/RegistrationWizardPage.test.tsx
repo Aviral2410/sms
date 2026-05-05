@@ -4,11 +4,13 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import RegistrationWizardPage from './RegistrationWizardPage';
 
-const viMockNavigate = vi.fn();
-const viMockCreate = vi.fn();
-const viMockUploadLogo = vi.fn();
-const viMockToastSuccess = vi.fn();
-const viMockToastError = vi.fn();
+const { viMockNavigate, viMockCreate, viMockUploadLogo, viMockToastSuccess, viMockToastError } = vi.hoisted(() => ({
+  viMockNavigate: vi.fn(),
+  viMockCreate: vi.fn(),
+  viMockUploadLogo: vi.fn(),
+  viMockToastSuccess: vi.fn(),
+  viMockToastError: vi.fn(),
+}));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');

@@ -3,32 +3,33 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PublicPretextHeading } from './PublicPretextHeading';
 
-const viMockPrepareWithSegments = vi.fn((text: string, font: string, options?: Record<string, string>) => ({
-  text,
-  font,
-  options,
+const { viMockPrepareWithSegments, viMockLayoutWithLines } = vi.hoisted(() => ({
+  viMockPrepareWithSegments: vi.fn((text: string, font: string, options?: Record<string, string>) => ({
+    text,
+    font,
+    options,
+  })),
+  viMockLayoutWithLines: vi.fn((prepared: { text: string }, maxWidth: number, lineHeight: number) => {
+    const limit = Math.max(1, Math.floor(maxWidth / 12));
+    const lines: Array<{ text: string; width: number; start: { segmentIndex: number; graphemeIndex: number }; end: { segmentIndex: number; graphemeIndex: number } }> = [];
+
+    for (let index = 0; index < prepared.text.length; index += limit) {
+      const text = prepared.text.slice(index, index + limit);
+      lines.push({
+        text,
+        width: text.length * 12,
+        start: { segmentIndex: 0, graphemeIndex: index },
+        end: { segmentIndex: 0, graphemeIndex: Math.min(prepared.text.length, index + limit) },
+      });
+    }
+
+    return {
+      height: lines.length * lineHeight,
+      lineCount: lines.length,
+      lines,
+    };
+  }),
 }));
-
-const viMockLayoutWithLines = vi.fn((prepared: { text: string }, maxWidth: number, lineHeight: number) => {
-  const limit = Math.max(1, Math.floor(maxWidth / 12));
-  const lines: Array<{ text: string; width: number; start: { segmentIndex: number; graphemeIndex: number }; end: { segmentIndex: number; graphemeIndex: number } }> = [];
-
-  for (let index = 0; index < prepared.text.length; index += limit) {
-    const text = prepared.text.slice(index, index + limit);
-    lines.push({
-      text,
-      width: text.length * 12,
-      start: { segmentIndex: 0, graphemeIndex: index },
-      end: { segmentIndex: 0, graphemeIndex: Math.min(prepared.text.length, index + limit) },
-    });
-  }
-
-  return {
-    height: lines.length * lineHeight,
-    lineCount: lines.length,
-    lines,
-  };
-});
 
 vi.mock('@chenglou/pretext', () => ({
   prepareWithSegments: viMockPrepareWithSegments,

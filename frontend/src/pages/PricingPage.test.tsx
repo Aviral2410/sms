@@ -4,8 +4,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PricingPage from './PricingPage';
 
-const viMockGetPlans = vi.fn();
-const viMockGetPublicSettings = vi.fn();
+const { viMockGetPlans, viMockGetPublicSettings } = vi.hoisted(() => ({
+  viMockGetPlans: vi.fn(),
+  viMockGetPublicSettings: vi.fn(),
+}));
 
 vi.mock('../hooks/usePublicSiteContent', () => ({
   usePublicSiteContent: () => ({ content: null }),

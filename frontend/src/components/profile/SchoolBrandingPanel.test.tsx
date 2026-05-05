@@ -3,10 +3,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { SchoolBrandingPanel } from './SchoolBrandingPanel';
 
-const viMockGetCurrentBranding = vi.fn();
-const viMockUploadCurrentSchoolLogo = vi.fn();
-const viMockToastSuccess = vi.fn();
-const viMockToastError = vi.fn();
+const { viMockGetCurrentBranding, viMockUploadCurrentSchoolLogo, viMockToastSuccess, viMockToastError } = vi.hoisted(() => ({
+  viMockGetCurrentBranding: vi.fn(),
+  viMockUploadCurrentSchoolLogo: vi.fn(),
+  viMockToastSuccess: vi.fn(),
+  viMockToastError: vi.fn(),
+}));
 
 vi.mock('../../lib/api', () => ({
   onboardingApi: {
