@@ -67,7 +67,7 @@ const SmartTable: React.FC<any> = ({ title, columns, rows, data }) => {
      }
   }
   if (!finalColumns && finalRows?.length > 0) {
-      finalColumns = Object.keys(finalRows[0]).filter(k => typeof finalRows[0][k] !== 'object' && !Array.isArray(finalRows[0][k]));
+      finalColumns = Object.keys(finalRows[0]).filter((k: string) => typeof finalRows[0][k] !== 'object' && !Array.isArray(finalRows[0][k]));
   }
 
   return (
@@ -76,13 +76,13 @@ const SmartTable: React.FC<any> = ({ title, columns, rows, data }) => {
         <table className="w-full text-left text-xs border-collapse">
           <thead className="bg-white/[0.01] text-white/30 font-black uppercase tracking-widest text-[9px]">
             <tr>
-              {finalColumns?.map(col => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
+              {finalColumns?.map((col: string) => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {finalRows?.map((row, i) => (
+            {finalRows?.map((row: any, i: number) => (
               <tr key={i} className="hover:bg-white/[0.03] transition-all duration-300">
-                {finalColumns?.map(col => (
+                {finalColumns?.map((col: string) => (
                   <td key={col} className="px-6 py-4">
                     <div className="text-white/80 font-medium truncate max-w-[200px]">
                       {typeof row[col] === 'object' ? JSON.stringify(row[col]) : (row[col]?.toString() || '—')}
