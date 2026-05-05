@@ -32,20 +32,24 @@ public class AdministrativeInferenceService {
     public JsonNode infer(String userQuery, UserContext userContext, JsonNode toolResults) {
         String provider = properties.llm().provider();
         
+        // Step 3 & 4: Intent Detection and Response Planning
+        String intent = detectIntent(userQuery);
+        String plan = planResponse(intent);
+        
         if ("GEMINI".equalsIgnoreCase(provider)) {
-            JsonNode geminiRes = inferWithGemini(userQuery, userContext, toolResults);
+            JsonNode geminiRes = inferWithGemini(userQuery, userContext, toolResults, intent, plan);
             if (geminiRes != null) return geminiRes;
         }
         
         if ("OLLAMA".equalsIgnoreCase(provider) || properties.llm().autoFallback()) {
-            JsonNode ollamaRes = inferWithOllama(userQuery, userContext, toolResults);
+            JsonNode ollamaRes = inferWithOllama(userQuery, userContext, toolResults, intent, plan);
             if (ollamaRes != null) return ollamaRes;
         }
 
         return basicStructuredResponse(toolResults);
     }
 
-    private JsonNode inferWithGemini(String userQuery, UserContext userContext, JsonNode toolResults) {
+    private JsonNode inferWithGemini(String userQuery, UserContext userContext, JsonNode toolResults, String intent, String plan) {
         String apiKey = properties.llm().geminiApiKey();
         String model = properties.llm().geminiModel();
         if (apiKey == null || apiKey.isBlank()) return null;
@@ -64,8 +68,10 @@ public class AdministrativeInferenceService {
             prompt.append(getSystemPrompt());
             prompt.append("\n\nUser Question: ").append(userQuery);
             prompt.append("\nUser Role: ").append(userContext.role().name());
-            prompt.append("\nAvailable Data (from multiple tools):\n").append(objectMapper.writeValueAsString(toolResults));
-            prompt.append("\n\nNow, generate the synthesized Dashboard JSON response.");
+            prompt.append("\nDetected Intent: ").append(intent);
+            prompt.append("\nRequired Response Plan: ").append(plan);
+            prompt.append("\nAvailable Data (from tools):\n").append(objectMapper.writeValueAsString(toolResults));
+            prompt.append("\n\nGenerate the structured JSON response according to the plan.");
 
             parts.addObject().put("text", prompt.toString());
 
@@ -88,7 +94,7 @@ public class AdministrativeInferenceService {
         return null;
     }
 
-    private JsonNode inferWithOllama(String userQuery, UserContext userContext, JsonNode toolResults) {
+    private JsonNode inferWithOllama(String userQuery, UserContext userContext, JsonNode toolResults, String intent, String plan) {
         try {
             ObjectNode requestBody = objectMapper.createObjectNode();
             requestBody.put("model", properties.llm().ollamaModel());
@@ -101,8 +107,10 @@ public class AdministrativeInferenceService {
             StringBuilder userPrompt = new StringBuilder();
             userPrompt.append("User Query: ").append(userQuery).append("\n");
             userPrompt.append("User Role: ").append(userContext.role().name()).append("\n");
-            userPrompt.append("Multi-Tool Outputs Context:\n").append(objectMapper.writeValueAsString(toolResults)).append("\n");
-            userPrompt.append("\nSynthesize all data sources. Return the REQUIRED JSON UI response now.");
+            userPrompt.append("Intent: ").append(intent).append("\n");
+            userPrompt.append("Plan: ").append(plan).append("\n");
+            userPrompt.append("Context Data:\n").append(objectMapper.writeValueAsString(toolResults)).append("\n");
+            userPrompt.append("\nReturn the REQUIRED JSON response.");
 
             messages.addObject().put("role", "user").put("content", userPrompt.toString());
 
@@ -131,31 +139,60 @@ public class AdministrativeInferenceService {
 
     private String getSystemPrompt() {
         return """
-            You are the STRATEGIC SYNTHESIS LAYER of a production-grade School Management System.
-            You now have a NEURAL PEDAGOGY module for high-fidelity student learning visualizations.
+            You are Aura, the autonomous orchestrator of a production-grade School Management System.
+            You have access to high-fidelity platform tools and historical context.
             
-            STRICT RULES:
-            - Return ONLY valid JSON.
-            - Intent Mapping: Detect if query is ADMIN (KPIs) or STUDENT (Concepts/Simulations).
-            - Mandatory: For SCIENCE, MATH, or SUBJECT queries, use 'simulation_canvas', 'molecule_canvas', or 'step_ladder'.
+            CORE PRINCIPLES:
+            1. TOOL FIDELITY: If a query requires real-time data (fees, students, attendance, grades), ALWAYS refer to the provided tool output. 
+            2. ANTI-HALLUCINATION: NEVER make up numbers or platform data. If tools return no data, explain that you couldn't find the information.
+            3. AGENTIC REASONING: Combine tool data with your native intelligence to provide strategic insights.
+            4. STRUCTURED ONLY: You MUST return valid JSON following the CONTRACT.
             
-            EXTENDED SCHEMA:
+            CONTRACT:
             {
-              "intent": "student_learning",
-              "title": "AURA Intelligence Hub",
-              "summary": "Synthesized analysis for pedagogical excellence.",
-              "components": [
-                { "type": "simulation_canvas", "title": "Interactive Model", "logic": "physics_f_ma", "parameters": {"force": 40, "mass": 8} },
-                { "type": "molecule_canvas", "title": "Atomic Layout", "molecules": ["DNA", "C6H12O6"] },
-                { "type": "step_ladder", "title": "Scaffolding Steps", "steps": [{"title": "Step 1", "desc": "..."}] },
-                { "type": "formula_card", "latex": "E = mc^2", "title": "Foundational Law" }
+              "type": "mixed",
+              "blocks": [
+                { "type": "text", "content": "..." },
+                { "type": "table", "headers": ["Label", "Value"], "rows": [["Item", "100"]] },
+                { "type": "chart", "chartType": "line", "data": [{"name": "Jan", "value": 10}] }
               ],
-              "insights": ["Scientific insight 1"],
-              "quiz": [{"q": "Concept check?", "options": ["Yes", "No"], "correct": 0}]
+              "meta": { "intent": "...", "confidence": 0.98, "model_routing": "high_reasoning" }
             }
             
-            When students ask about Science/Math, prioritize 'simulation_canvas', 'step_ladder', and 'formula_card'.
+            FORMATTING RULES:
+            - Use :::info, :::warning, :::success in text blocks for emphasis.
+            - Tables are preferred for multi-item comparisons.
+            - Charts are mandatory for trends, growth, or distribution data.
+            - No markdown outside of text blocks.
             """;
+    }
+
+    private String detectIntent(String query) {
+        String q = query.toLowerCase();
+        if (q.contains("compare") || q.contains("vs") || q.contains("difference")) return "comparison";
+        if (q.contains("trend") || q.contains("growth") || q.contains("chart") || q.contains("data") || q.contains("stats")) return "analysis";
+        if (q.contains("code") || q.contains("script") || q.contains("api") || q.contains("example") || q.contains("query")) return "code";
+        if (q.contains("how to") || q.contains("steps") || q.contains("process") || q.contains("explain")) return "explanation";
+        return "general_operations";
+    }
+
+    private String selectModel(String intent) {
+        // Step 10: Model Routing Strategy
+        return switch (intent) {
+            case "analysis" -> "gemini-2.0-pro-experimental"; // High reasoning for data
+            case "code" -> "gemini-2.0-flash-code"; // Specialized code model
+            default -> "gemini-2.0-flash"; // Fast model for general queries
+        };
+    }
+
+    private String planResponse(String intent) {
+        return switch (intent) {
+            case "comparison" -> "Synthesize tool data into a comparative table and provide strategic takeaways.";
+            case "analysis" -> "Project trends using available data tools and visualize with a chart block.";
+            case "code" -> "Draft a precise implementation or query example based on platform schemas.";
+            case "explanation" -> "Explain the operational workflow or concept with clear procedural blocks.";
+            default -> "Execute requested operation and summarize results with high fidelity.";
+        };
     }
 
     private JsonNode tryParseJson(String raw) {
@@ -167,7 +204,12 @@ public class AdministrativeInferenceService {
             }
             return objectMapper.readTree(raw);
         } catch (Exception ex) {
-            return null;
+            log.warn("JSON parse failed, returning as text block", ex);
+            ObjectNode fallback = objectMapper.createObjectNode();
+            fallback.put("type", "mixed");
+            ArrayNode blocks = fallback.putArray("blocks");
+            blocks.addObject().put("type", "text").put("content", raw);
+            return fallback;
         }
     }
 

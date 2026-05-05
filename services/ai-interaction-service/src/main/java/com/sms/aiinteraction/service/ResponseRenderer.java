@@ -64,7 +64,7 @@ public class ResponseRenderer {
         }
 
         String type = rendered.type() == null ? "text" : rendered.type();
-        if ("composed".equals(type) || "action".equals(type) || "status".equals(type) || "error".equals(type)) {
+        if ("composed".equals(type) || "mixed".equals(type) || "action".equals(type) || "status".equals(type) || "error".equals(type)) {
             return rendered;
         }
 

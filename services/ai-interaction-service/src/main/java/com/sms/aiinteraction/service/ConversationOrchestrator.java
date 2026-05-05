@@ -178,34 +178,32 @@ public class ConversationOrchestrator {
         List<ToolCall> plan = toolPlanningService.plan(message, userContext, descriptors, history);
         
         if (plan.isEmpty()) {
-            if (thoughtConsumer != null) thoughtConsumer.accept("No direct platform tool matched. Attempting model-native reasoning...");
+            if (thoughtConsumer != null) thoughtConsumer.accept("Applying neural reasoning to direct inquiry...");
             JsonNode directReasoning = inferenceService.infer(message, userContext, objectMapper.createObjectNode());
+            
+            logOrchestration(userContext, message, conversationId, "direct_inference", null, 0);
+            
             if (isMeaningfulDirectReasoning(directReasoning)) {
                 return responseRenderer.renderWithThought(
-                        "smart_ui",
+                        "mixed",
                         directReasoning,
                         objectMapper.createObjectNode(),
                         false,
                         "direct_reasoning",
-                        "Model-native synthesis without tool execution",
-                        "I could not map this cleanly to a platform action, so I generated a direct reasoning response instead."
+                        "Autonomous Inference",
+                        "I have analyzed your request using my foundational knowledge base as no specific platform tool was required."
                 );
             }
-            if (thoughtConsumer != null) thoughtConsumer.accept("No confident reasoning path found. Formulating clarification...");
-            return responseRenderer.clarificationResponse("I can help with platform operations, analytics, school workflows, or concept explanations. Tell me the exact report, task, or topic you want.");
+            return responseRenderer.clarificationResponse("I am trained on school operations, analytics, and pedagogy. Please specify a report, concept, or administrative task.");
         }
 
-        StringBuilder thoughtBuilder = new StringBuilder();
         ObjectNode allResults = objectMapper.createObjectNode();
+        long startTime = System.currentTimeMillis();
         
         for (ToolCall tc : plan) {
-            String status = "Executing strategic capability: " + tc.toolName() + "...";
-            if (thoughtConsumer != null) thoughtConsumer.accept(status);
-            thoughtBuilder.append(status).append("\n");
-
+            if (thoughtConsumer != null) thoughtConsumer.accept("Activating platform capability: " + tc.toolName() + "...");
             JsonNode stepResult = executeSingleTool(userContext, tc, message, conversationId, false);
             
-            // Check for confirmation required
             if (stepResult.has("__type") && "CONFIRMATION_REQUIRED".equals(stepResult.get("__type").asText())) {
                 String token = pendingActionService.register(userContext, tc, conversationId);
                 ObjectNode meta = objectMapper.createObjectNode();
@@ -216,11 +214,22 @@ public class ConversationOrchestrator {
             allResults.set(tc.toolName(), stepResult);
         }
 
-        if (thoughtConsumer != null) thoughtConsumer.accept("Synthesizing multi-dimensional intelligence...");
+        if (thoughtConsumer != null) thoughtConsumer.accept("Synthesizing multi-tool intelligence into strategic UI...");
         JsonNode smartUiData = inferenceService.infer(message, userContext, allResults);
         
-        String finalThought = "I have integrated data from " + plan.size() + " neural tools. The following high-fidelity dashboard represents my current strategic analysis.";
-        return responseRenderer.renderWithThought("smart_ui", smartUiData, objectMapper.createObjectNode(), false, "multi_tool_orchestrator", "Neural Synthesis", finalThought);
+        logOrchestration(userContext, message, conversationId, "tool_augmented", plan.stream().map(ToolCall::toolName).toList(), System.currentTimeMillis() - startTime);
+
+        String finalThought = "I have successfully integrated insights from " + plan.size() + " platform tools to provide this comprehensive analysis.";
+        return responseRenderer.renderWithThought("mixed", smartUiData, objectMapper.createObjectNode(), false, "autonomous_orchestrator", "Neural Synthesis", finalThought);
+    }
+
+    private void logOrchestration(UserContext user, String input, UUID conversationId, String mode, List<String> tools, long latency) {
+        // Step 9: Observability & Telemetry
+        log.info("[AURA-ORCHESTRATOR] REQUEST_ID: {} | USER: {} | MODE: {} | TOOLS: {} | LATENCY: {}ms",
+                conversationId, user.userId(), mode, tools != null ? String.join(",", tools) : "NONE", latency);
+        
+        // This could also push to a persistent audit store or Prometheus/Grafana metrics
+        auditEventService.requestReceived(user, "Aura Orchestration: " + mode + " (Tools: " + (tools != null ? tools.size() : 0) + ")", conversationId.toString());
     }
 
     private JsonNode executeSingleTool(UserContext userContext, ToolCall toolCall, String message, UUID conversationId, boolean confirmed) {

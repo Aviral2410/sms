@@ -195,7 +195,8 @@ function OnboardingRequestCard({ req, onReview, onDelete, reviewingId }: {
                 className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-bold text-blue-400 flex items-center gap-2"
               >
                 <Mail size={14}/> Mail
-             <button 
+              </motion.button>
+              <button 
                onClick={() => {
                  const subject = encodeURIComponent(`Welcome to ElevateSmart - ${req.schoolName}`);
                  const body = encodeURIComponent(`Hello Admin,\n\nYour school "${req.schoolName}" has been provisioned on ElevateSmart.\n\nLogin Email: ${req.adminEmail}\nSchool Code: ${req.schoolCode}\nActivation Code: ${req.activationCode}\n\nPlease visit the platform and use the activation code to set your password.\n\nBest regards,\nPlatform Administration`);

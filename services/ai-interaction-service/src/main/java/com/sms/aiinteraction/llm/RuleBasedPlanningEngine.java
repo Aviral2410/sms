@@ -52,11 +52,13 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         List<ToolCall> calls = new ArrayList<>();
         Set<String> chosenTools = new LinkedHashSet<>();
 
+        handleGlobalInfoFlows(message, normalized, availableTools, calls, chosenTools);
+        if (!calls.isEmpty()) {
+            return calls;
+        }
+
         if (isPublicRole(userContext.role())) {
-            handlePublicFlows(message, normalized, availableTools, calls, chosenTools);
-            if (!calls.isEmpty()) {
-                return calls;
-            }
+            // Already handled global flows above, if anything else specific to public remains
         }
 
         if (userContext.role() == UserRole.PLATFORM_ADMIN) {
@@ -80,7 +82,7 @@ public class RuleBasedPlanningEngine implements LlmPlanningEngine {
         return trim(calls);
     }
 
-    private void handlePublicFlows(
+    private void handleGlobalInfoFlows(
             String message,
             String normalized,
             Set<String> availableTools,

@@ -745,6 +745,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
         commitFinalResponse(fallback.conversationId, fallback.response as RenderedResponse);
       } else {
         await readSseStream(response.body, {
+          onEvent: (event, data) => {
             if (event === 'token' || event === 'chunk') {
               const parsed = tryParseJson<{ text?: string; chunk?: string }>(data);
               const textChunk = parsed.ok ? (parsed.value.text || parsed.value.chunk || '') : data;
@@ -1134,6 +1135,34 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               type="button"
               onClick={() => setSidebarOpen((current) => !current)}
               className="aura-icon-button p-2 text-white/50 hover:text-white transition-colors"
+              title="Toggle sidebar"
+            >
+              <Sidebar size={18} />
+            </button>
+          </div>
+        </div>
+
+        <div className="aura-thread">
+          {showEmptyState ? (
+            <div className="aura-thread__empty">
+              <div className="aura-empty-state">
+                <div className="aura-empty-state__icon">
+                  <Bot size={32} />
+                </div>
+                <h3 className="aura-empty-state__title">How can I assist you today?</h3>
+                <p className="aura-empty-state__description">
+                  {isPublic 
+                    ? "Ask me about platform features, onboarding, modules, or pricing." 
+                    : "I can help with school analytics, operational tasks, and strategic planning."}
+                </p>
+                <div className="aura-empty-state__chips">
+                  {(isPublic ? ['Platform Pricing', 'How to join?', 'View Roadmap'] : ['Enrollment trends', 'Fee defaulters', 'Class attendance']).map((chip, i) => (
+                    <button key={i} onClick={() => void handleSend(chip)} className="aura-chip">
+                      {chip}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : (
             <div className="aura-thread__messages">
