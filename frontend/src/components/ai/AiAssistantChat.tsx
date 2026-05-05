@@ -256,6 +256,31 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const [workspaceComposerOpen, setWorkspaceComposerOpen] = useState(false);
   const [statusText, setStatusText] = useState('Ready to help');
   const [draggingConversationId, setDraggingConversationId] = useState<string | null>(null);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newWidth = Math.max(200, Math.min(600, e.clientX));
+      setSidebarWidth(newWidth);
+    };
+    const handleMouseUp = () => setIsResizing(false);
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing]);
   const [actionPendingToken, setActionPendingToken] = useState<string | null>(null);
   const [voiceListening, setVoiceListening] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
@@ -469,6 +494,21 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       setStatusText(error instanceof Error ? error.message : 'Chat could not be deleted.');
     }
   }, [activeConversationId, chats]);
+
+  const handleDeleteAllChats = useCallback(async () => {
+    if (!chats.length) return;
+    if (!confirm('Are you sure you want to clear ALL chat history in this workspace?')) return;
+    
+    try {
+      await Promise.all(chats.map(c => aiInteractionApi.deleteChat(c.conversationId)));
+      setChats([]);
+      setMessages([]);
+      setActiveConversationId(null);
+      setStatusText('History cleared');
+    } catch (error) {
+      setStatusText('Failed to clear some chats');
+    }
+  }, [chats]);
 
   const handleDeleteWorkspace = useCallback(async (workspaceId: string) => {
     const target = workspaces.find((workspace) => workspace.workspaceId === workspaceId);
@@ -937,14 +977,24 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       <div className="aura-rail__block aura-rail__block--grow">
         <div className="aura-rail__row">
           <div className="aura-rail__eyebrow">Chat History</div>
-          <button
-            type="button"
-            onClick={handleCreateDraftChat}
-            className="aura-rail__quiet-button"
-          >
-            <Plus size={14} />
-            New chat
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleDeleteAllChats}
+              className="aura-rail__quiet-button hover:text-rose-400"
+              title="Clear all chats"
+            >
+              <Trash2 size={13} />
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateDraftChat}
+              className="aura-rail__quiet-button"
+            >
+              <Plus size={14} />
+              New
+            </button>
+          </div>
         </div>
 
         <div className="aura-rail__list">
@@ -980,8 +1030,14 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               </div>
             ))
           ) : (
-            <div className="aura-empty-rail-state">
-              No chats in this workspace yet. Start a draft to create one automatically.
+            <div className="px-3 py-12 text-center flex flex-col items-center">
+              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center mb-4 rotate-3">
+                 <MessageSquare size={20} className="text-white/20" />
+              </div>
+              <div className="text-xs text-white/40 font-bold mb-1">Your Space is Ready</div>
+              <p className="text-[10px] text-white/20 leading-relaxed px-4 text-center">
+                No conversations found in this workspace. Start a new one to begin.
+              </p>
             </div>
           )}
         </div>
@@ -993,30 +1049,42 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     <div className={cx('aura-shell', sidebarOpen && 'aura-shell--rail-open', showEmptyState && 'aura-shell--empty')}>
       <AnimatePresence>
         {sidebarOpen ? (
-          <motion.aside
-            initial={{ x: -24, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -24, opacity: 0 }}
-            className={cx('aura-rail', variant !== 'page' && 'aura-rail--drawer')}
-          >
-            <div className="aura-rail__header">
-              <div>
-                <div className="aura-rail__brand">AURA</div>
-                <div className="aura-rail__brand-sub">{isPublic ? 'Evaluation workspace' : 'Operational workspace'}</div>
+          <div className="flex h-full relative group/sidebar">
+            <motion.aside
+              initial={{ x: -24, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -24, opacity: 0 }}
+              style={{ width: sidebarWidth }}
+              className={cx('aura-rail', variant !== 'page' && 'aura-rail--drawer')}
+            >
+              <div className="aura-rail__header">
+                <div>
+                  <div className="aura-rail__brand">AURA</div>
+                  <div className="aura-rail__brand-sub">{isPublic ? 'Evaluation workspace' : 'Operational workspace'}</div>
+                </div>
+                {variant !== 'page' ? (
+                  <button
+                    type="button"
+                    onClick={() => setSidebarOpen(false)}
+                    className="aura-icon-button"
+                    aria-label="Close sidebar"
+                  >
+                    <X size={16} />
+                  </button>
+                ) : null}
               </div>
-              {variant !== 'page' ? (
-                <button
-                  type="button"
-                  onClick={() => setSidebarOpen(false)}
-                  className="aura-icon-button"
-                  aria-label="Close sidebar"
-                >
-                  <X size={16} />
-                </button>
-              ) : null}
-            </div>
-            {isPublic ? renderPublicSidebar() : renderAuthenticatedSidebar()}
-          </motion.aside>
+              {isPublic ? renderPublicSidebar() : renderAuthenticatedSidebar()}
+            </motion.aside>
+
+            {/* Resize Handle */}
+            <div
+              onMouseDown={handleMouseDown}
+              className={cx(
+                "absolute top-0 right-0 w-1 h-full cursor-col-resize transition-all z-50",
+                isResizing ? "bg-emerald-500/50" : "hover:bg-white/10"
+              )}
+            />
+          </div>
         ) : null}
       </AnimatePresence>
 

@@ -81,7 +81,12 @@ public class SchoolOnboardingService {
         this.subscriptionRestClient = restClientBuilder.clone().baseUrl(this.subscriptionServiceUrl).build();
     }
 
-    public List<SchoolOnboardingResponse> listOnboardings() {
+    public List<SchoolOnboardingResponse> listOnboardings(String query) {
+        if (StringUtils.hasText(query)) {
+            return schoolOnboardingJpaRepository.searchApproved(query.toLowerCase()).stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
         return schoolOnboardingJpaRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toResponse)
                 .toList();

@@ -18,11 +18,11 @@ export default function AllSchools() {
   const [selectedPlan, setSelectedPlan] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (query?: string) => {
     setLoading(true);
     try {
       const [onboardings, subs, allPlans] = await Promise.all([
-        onboardingApi.listAll(),
+        onboardingApi.listAll(query),
         subscriptionApi.listAll(),
         subscriptionApi.listPlans()
       ]);
@@ -39,7 +39,12 @@ export default function AllSchools() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchData(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleRevoke = async (tenantId?: string | null) => {
     if (!tenantId) {
@@ -50,7 +55,7 @@ export default function AllSchools() {
     try {
       await subscriptionApi.updateStatus(tenantId, 'REVOKED');
       toast.success('Subscription revoked.');
-      await fetchData();
+      await fetchData(search);
     } catch {
       toast.error('Failed to revoke subscription.');
     }
@@ -74,7 +79,7 @@ export default function AllSchools() {
       await subscriptionApi.updatePlan(updateModal.tenantId, selectedPlan);
       setUpdateModal(null);
       toast.success('Subscription plan updated.');
-      await fetchData();
+      await fetchData(search);
     } catch {
       toast.error('Failed to update plan.');
     } finally {
@@ -91,10 +96,13 @@ export default function AllSchools() {
     EXPIRED: '#fbbf24'
   }[status || ''] || DIM);
 
-  const filtered = schools.filter(s =>
-    s.schoolName.toLowerCase().includes(search.toLowerCase()) ||
-    s.schoolCode.toLowerCase().includes(search.toLowerCase())
-  );
+  const GRID_STYLE = {
+    display: 'grid',
+    gridTemplateColumns: '1.2fr 1fr 0.6fr 0.6fr 0.6fr 0.8fr',
+    gap: '16px',
+    alignItems: 'center',
+    padding: '16px 24px'
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -125,97 +133,101 @@ export default function AllSchools() {
           style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px 12px 42px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, color: '#fff', fontSize: '0.88rem', outline: 'none', fontFamily: 'inherit' }} />
       </div>
 
-      {loading ? (
-        <div style={{ padding: 80, textAlign: 'center', color: DIM }}><Loader size={32} style={{ animation: 'spin 1s linear infinite' }} /></div>
-      ) : (
-        <div style={{ padding: '24px', borderRadius: 24, background: 'rgba(255,255,255,0.02)', border: `1px solid ${BORDER}` }}>
-          <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 8px', textAlign: 'left' }}>
-            <thead>
-              <tr style={{ color: DIM, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                <th style={{ padding: '10px 16px', fontWeight: 800 }}>School & Code</th>
-                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Admin Contact</th>
-                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Plan</th>
-                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Account Status</th>
-                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Subscription Status</th>
-                <th style={{ padding: '10px 16px', fontWeight: 800, textAlign: 'right' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(s => {
-                const sub = s.tenantId ? subscriptions[s.tenantId] : undefined;
-                const selectedPlanCode = s.selectedPlanCode || 'BASIC';
-                const plan = plans.find(p => p.planId === sub?.planId || p.planCode === selectedPlanCode);
-                const displayPlanName = sub?.planName || selectedPlanCode;
-                const features = plan?.features ? plan.features.split(',') : [];
-                const sc = statusColor(sub?.status);
-                return (
-                  <motion.tr key={s.onboardingId} whileHover={{ scale: 1.002 }}
-                    style={{ background: 'rgba(255,255,255,0.02)', borderRadius: 16, transition: 'all 0.2s' }}>
-                    <td style={{ padding: '16px', color: '#fff', borderRadius: '16px 0 0 16px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34,211,238,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(34,211,238,0.2)' }}>
-                          <Building2 size={18} color="#22d3ee" />
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>{s.schoolName}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#ffb663', fontWeight: 700, marginTop: 2 }}>{s.schoolCode}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px', color: DIM }}>
-                      <div style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 6 }}><Mail size={13} />{s.adminEmail}</div>
-                      <div style={{ fontSize: '0.72rem', opacity: 0.6, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={11} />Joined {new Date(s.createdAt).toLocaleDateString()}</div>
-                    </td>
-                    <td style={{ padding: '16px', position: 'relative' }}>
-                      <div onMouseEnter={() => setHoverPlan(s.onboardingId)} onMouseLeave={() => setHoverPlan(null)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 10, background: 'rgba(99,102,241,0.1)', color: '#a5b4fc', fontSize: '0.82rem', fontWeight: 800, border: '1px solid rgba(99,102,241,0.2)', cursor: 'help' }}>
-                        <Zap size={13} fill="#a5b4fc" />{displayPlanName}
-                        {hoverPlan === s.onboardingId && plan && (
-                          <div style={{ position: 'absolute', top: '100%', left: 16, zIndex: 100, width: 220, padding: 16, background: '#161b22', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', marginTop: 8 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.7rem', color: DIM, textTransform: 'uppercase', marginBottom: 10 }}>Plan Features</div>
-                            {features.map(f => <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: '#fff', marginBottom: 6 }}><CheckCircle2 size={11} color="#34d399" />{f.trim()}</div>)}
-                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.72rem', color: DIM }}>Max Students: <strong style={{ color: '#fff' }}>{plan.maxStudents}</strong></div>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: 'rgba(52,211,153,0.12)', color: '#34d399', fontSize: '0.72rem', fontWeight: 800, border: '1px solid rgba(52,211,153,0.25)' }}>
-                         <ShieldCheck size={12} />
-                         ACTIVATED
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: `${sc}12`, color: sc, fontSize: '0.72rem', fontWeight: 800, border: `1px solid ${sc}25` }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: sc, boxShadow: `0 0 6px ${sc}` }} />
-                        {sub?.status || 'ACTIVE'}
-                      </div>
-                    </td>
-                    <td style={{ padding: '16px', textAlign: 'right', borderRadius: '0 16px 16px 0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
-                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleOpenUpdate(s, sub)}
-                          style={{ padding: '7px 14px', borderRadius: 10, background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}`, color: '#fff', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <RefreshCw size={13} /> Update Plan
-                        </motion.button>
-                        <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleRevoke(s.tenantId)}
-                          style={{ padding: '7px 14px', borderRadius: 10, background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)', color: '#f87171', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <Ban size={13} /> Revoke
-                        </motion.button>
-                      </div>
-                    </td>
-                  </motion.tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {filtered.length === 0 && (
-            <div style={{ padding: 60, textAlign: 'center', color: DIM, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
-              <ShieldCheck size={40} opacity={0.2} />
-              <div>{search ? 'No schools match your search.' : 'No approved schools found.'}</div>
-            </div>
-          )}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Header */}
+        <div style={{ ...GRID_STYLE, paddingBottom: 8, color: DIM, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800 }}>
+           <div>School & Code</div>
+           <div>Admin Contact</div>
+           <div>Plan</div>
+           <div>Account Status</div>
+           <div>Subscription Status</div>
+           <div style={{ textAlign: 'right' }}>Actions</div>
         </div>
-      )}
+
+        {loading ? (
+          <div style={{ padding: 80, textAlign: 'center', color: DIM }}><Loader size={32} style={{ animation: 'spin 1s linear infinite' }} /></div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {schools.map(s => {
+              const sub = s.tenantId ? subscriptions[s.tenantId] : undefined;
+              const selectedPlanCode = s.selectedPlanCode || 'BASIC';
+              const plan = plans.find(p => p.planId === sub?.planId || p.planCode === selectedPlanCode);
+              const displayPlanName = sub?.planName || selectedPlanCode;
+              const features = plan?.features ? plan.features.split(',') : [];
+              const sc = statusColor(sub?.status);
+              return (
+                <motion.div key={s.onboardingId} whileHover={{ scale: 1.002, x: 4 }}
+                  style={{ ...GRID_STYLE, background: 'rgba(255,255,255,0.02)', borderRadius: 20, border: `1px solid ${BORDER}`, transition: 'all 0.2s' }}>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34,211,238,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(34,211,238,0.2)' }}>
+                      <Building2 size={18} color="#22d3ee" />
+                    </div>
+                    <div className="min-w-0">
+                      <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.schoolName}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#ffb663', fontWeight: 700, marginTop: 2 }}>{s.schoolCode}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ color: DIM, min-w: 0 }}>
+                    <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, color: '#e2e8f0' }}><Mail size={13} />{s.adminEmail}</div>
+                    <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={11} />Joined {new Date(s.createdAt).toLocaleDateString()}</div>
+                  </div>
+
+                  <div style={{ position: 'relative' }}>
+                    <div onMouseEnter={() => setHoverPlan(s.onboardingId)} onMouseLeave={() => setHoverPlan(null)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 12px', borderRadius: 10, background: 'rgba(99,102,241,0.08)', color: '#a5b4fc', fontSize: '0.78rem', fontWeight: 800, border: '1px solid rgba(99,102,241,0.2)', cursor: 'help' }}>
+                      <Zap size={12} fill="#a5b4fc" />{displayPlanName}
+                      {hoverPlan === s.onboardingId && plan && (
+                        <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 100, width: 220, padding: 16, background: '#0a0f18', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 16, boxShadow: '0 20px 40px rgba(0,0,0,0.5)', marginTop: 8 }}>
+                          <div style={{ fontWeight: 800, fontSize: '0.7rem', color: DIM, textTransform: 'uppercase', marginBottom: 10 }}>Plan Features</div>
+                          {features.slice(0, 5).map(f => <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', color: '#fff', marginBottom: 6 }}><CheckCircle2 size={11} color="#34d399" />{f.trim()}</div>)}
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.72rem', color: DIM }}>Max Students: <strong style={{ color: '#fff' }}>{plan.maxStudents}</strong></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: 'rgba(52,211,153,0.08)', color: '#34d399', fontSize: '0.7rem', fontWeight: 800, border: '1px solid rgba(52,211,153,0.2)' }}>
+                       <ShieldCheck size={11} />
+                       ACTIVATED
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, background: `${sc}08`, color: sc, fontSize: '0.7rem', fontWeight: 800, border: `1px solid ${sc}20` }}>
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: sc, boxShadow: `0 0 6px ${sc}` }} />
+                      {sub?.status || 'ACTIVE'}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                      <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleOpenUpdate(s, sub)}
+                        style={{ p: '6px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <RefreshCw size={12} /> Plan
+                      </motion.button>
+                      <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleRevoke(s.tenantId)}
+                        style={{ p: '6px 12px', borderRadius: 10, background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)', color: '#f87171', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <Ban size={12} />
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+            {schools.length === 0 && (
+              <div style={{ padding: 60, textAlign: 'center', color: DIM, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center' }}>
+                <ShieldCheck size={40} opacity={0.2} />
+                <div>{search ? 'No schools match your search.' : 'No approved schools found.'}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      </div>
+
 
       {/* Update Plan Modal */}
       <AnimatePresence>

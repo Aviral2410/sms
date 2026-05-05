@@ -25,4 +25,7 @@ public interface SchoolOnboardingJpaRepository extends JpaRepository<SchoolOnboa
     Optional<SchoolOnboardingEntity> findBySchoolId(UUID schoolId);
 
     Optional<SchoolOnboardingEntity> findByTenantId(UUID tenantId);
+ 
+    @org.springframework.data.jpa.repository.Query("SELECT s FROM SchoolOnboardingEntity s WHERE (LOWER(s.schoolName) LIKE %:q% OR LOWER(s.schoolCode) LIKE %:q%) AND s.status = 'APPROVED' ORDER BY s.createdAt DESC")
+    List<SchoolOnboardingEntity> searchApproved(@org.springframework.data.repository.query.Param("q") String q);
 }

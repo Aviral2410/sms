@@ -400,7 +400,7 @@ export const onboardingApi = {
     }>('/onboarding/schools/public/logo', formData, { method: 'POST', skipAuth: true });
   },
 
-  listAll: () => request<OnboardingResponse[]>('/onboarding/schools'),
+  listAll: (query?: string) => request<OnboardingResponse[]>(`/onboarding/schools${query ? `?query=${encodeURIComponent(query)}` : ''}`),
 
   review: (onboardingId: string, action: 'START_REVIEW' | 'APPROVE' | 'REJECT', reviewerName: string, comment: string) =>
     request<OnboardingResponse>(`/onboarding/schools/${onboardingId}/review`, {

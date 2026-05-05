@@ -46,9 +46,12 @@ public class SchoolOnboardingController {
     }
 
     @GetMapping
-    public List<SchoolOnboardingResponse> listOnboardings(@RequestHeader(value = "X-User-Role", required = false) String role) {
+    public List<SchoolOnboardingResponse> listOnboardings(
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @RequestParam(value = "query", required = false) String query
+    ) {
         checkAdminRole(role);
-        return schoolOnboardingService.listOnboardings();
+        return schoolOnboardingService.listOnboardings(query);
     }
 
     @GetMapping("/public/{schoolCode}")
