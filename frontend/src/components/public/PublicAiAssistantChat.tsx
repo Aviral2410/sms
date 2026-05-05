@@ -9,21 +9,79 @@ export function PublicAiAssistantChat() {
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: 'easeOut' }}
-      className="fixed bottom-5 right-5 z-50"
+      style={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        zIndex: 50,
+      }}
     >
-      <div className="pointer-events-none absolute inset-0 rounded-[1.75rem] bg-emerald-400/30 blur-xl animate-pulse" aria-hidden="true" />
+      <div 
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: 28,
+          background: 'rgba(52, 211, 153, 0.3)',
+          filter: 'blur(20px)',
+          animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          pointerEvents: 'none',
+        }} 
+        aria-hidden="true" 
+      />
       <Link
         to="/assistant"
-        className="relative inline-flex items-center gap-3 rounded-[1.35rem] border border-emerald-300/30 bg-slate-950/90 px-4 py-3 text-sm font-semibold text-white shadow-[0_22px_60px_rgba(2,6,23,0.45)] backdrop-blur-xl transition hover:-translate-y-0.5 hover:border-emerald-200/45 hover:bg-slate-900"
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 12,
+          borderRadius: 22,
+          border: '1px solid rgba(110, 231, 183, 0.3)',
+          background: 'rgba(2, 6, 23, 0.9)',
+          padding: '12px 16px',
+          fontSize: '0.875rem',
+          fontWeight: 600,
+          color: 'white',
+          textDecoration: 'none',
+          boxShadow: '0 22px 60px rgba(2, 6, 23, 0.45)',
+          backdropFilter: 'blur(24px)',
+          WebkitBackdropFilter: 'blur(24px)',
+          transition: 'all 0.2s ease-out',
+          cursor: 'pointer',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.borderColor = 'rgba(167, 243, 208, 0.45)';
+          e.currentTarget.style.background = 'rgba(15, 23, 42, 0.95)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.borderColor = 'rgba(110, 231, 183, 0.3)';
+          e.currentTarget.style.background = 'rgba(2, 6, 23, 0.9)';
+        }}
       >
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-400 text-slate-950 shadow-[0_12px_30px_rgba(52,211,153,0.35)]">
+        <span 
+          style={{
+            display: 'flex',
+            height: 40,
+            width: 40,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 16,
+            background: '#34d399',
+            color: '#020617',
+            boxShadow: '0 12px 30px rgba(52, 211, 153, 0.35)',
+          }}
+        >
           <Bot size={18} />
         </span>
-        <span className="flex flex-col leading-tight">
-          <span className="text-[11px] uppercase tracking-[0.22em] text-emerald-200/70">AI Assistant</span>
-          <span>Ask Aura</span>
+        <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+          <span style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.22em', color: 'rgba(167, 243, 208, 0.7)' }}>
+            AI Assistant
+          </span>
+          <span style={{ color: '#fff' }}>Ask Aura</span>
         </span>
-        <Sparkles size={16} className="text-emerald-200/80" />
+        <Sparkles size={16} color="rgba(167, 243, 208, 0.8)" />
       </Link>
     </motion.div>
   );

@@ -776,48 +776,20 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       : 'Fast insight and operational reasoning without leaving the page.';
 
   const renderPublicSidebar = () => (
-    <div className="aura-rail__section">
-      <div className="aura-rail__block">
-        <div className="aura-rail__eyebrow">Aura History</div>
-        <div className="aura-rail__title">Recent school conversations</div>
+    <div className="aura-rail__section" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="aura-rail__block" style={{ flexShrink: 0, paddingBottom: 16 }}>
         <button
           type="button"
           onClick={handleCreateDraftChat}
           className="aura-rail__primary-button"
+          style={{ width: '100%', justifyContent: 'center' }}
         >
           <Plus size={16} />
           New chat
         </button>
       </div>
 
-      <div className="aura-note">
-        <div className="aura-note__eyebrow">Evaluation mode</div>
-        <p className="aura-note__copy">
-          Explore product fit, rollout logic, and school ERP use cases in a focused workspace.
-        </p>
-      </div>
-
-      <div className="aura-rail__block">
-        <div className="aura-rail__eyebrow">Capabilities</div>
-        <div className="aura-pill-grid">
-          {capabilityActions.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.label}
-                type="button"
-                onClick={() => void handleSend(item.prompt)}
-                className="aura-capability-pill aura-capability-pill--action"
-              >
-                <Icon size={13} />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="aura-rail__list">
+      <div className="aura-rail__list" style={{ overflowY: 'auto', flexGrow: 1 }}>
         {publicChats.length ? (
           publicChats.map((chat) => (
             <div
@@ -836,22 +808,11 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 <div className="aura-history-card__title">{chat.title}</div>
                 <div className="aura-history-card__meta">{new Date(chat.updatedAt).toLocaleDateString()}</div>
               </button>
-              <button
-                type="button"
-                onClick={() => deletePublicConversation(chat.conversationId)}
-                className="aura-history-card__delete"
-                aria-label={`Delete ${chat.title}`}
-              >
-                <Trash2 size={14} />
-              </button>
             </div>
           ))
         ) : (
           <div className="aura-empty-rail-state">
-            <div className="aura-empty-rail-state__title">No public chats yet</div>
-            <p className="aura-empty-rail-state__copy">
-              Your public Aura chats will appear here so you can revisit product questions during evaluation.
-            </p>
+            <div className="aura-empty-rail-state__title">No chats yet</div>
           </div>
         )}
       </div>
@@ -1054,10 +1015,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       <section className="aura-main">
         <div className={cx('aura-main__header', !showEmptyState && 'aura-main__header--compact')}>
           <div className="aura-main__header-copy">
-            <div className="aura-main__eyebrow">
-              <Sparkles size={12} />
-              {isPublic ? 'Neural Assistant' : 'Workspace Assistant'}
-            </div>
+            {/* eyebrow removed as requested */}
             <h2 className="aura-main__title">{shellTitle}</h2>
             <p className="aura-main__subtitle">{shellSubtitle}</p>
           </div>
@@ -1086,84 +1044,14 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
         <div ref={scrollRef} className="aura-thread">
           {showEmptyState ? (
-            <div className="aura-empty-state">
-              <div className="aura-empty-state__hero">
-                <div className="aura-empty-state__badge">
-                  <Brain size={15} />
-                  {isPublic ? 'Start with an evaluation question' : 'Start with an operational question'}
-                </div>
-                <h3 className="aura-empty-state__title">
-                  {isPublic ? 'A calmer school ERP assistant for product evaluation.' : 'A quieter workspace for operational reasoning.'}
+            <div className="aura-empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
+              <div className="aura-empty-state__hero" style={{ textAlign: 'center' }}>
+                <h3 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '16px' }}>
+                  Welcome
                 </h3>
-                <p className="aura-empty-state__subtitle">
-                  {isPublic
-                    ? 'Ask how admissions, attendance, finance, parent communication, and rollout come together. Aura responds with structured answers, streaming replies, and leadership-ready summaries.'
-                    : 'Ask for school insights, workflow summaries, policy help, and structured analysis without losing the workspace context.'}
+                <p style={{ fontSize: '1rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                  How can I help you today?
                 </p>
-              </div>
-
-              <div className="aura-empty-state__meta">
-                <div className="aura-capabilities">
-                  {capabilityActions.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.label}
-                        type="button"
-                        onClick={() => void handleSend(item.prompt)}
-                        className="aura-capability-card aura-capability-card--action"
-                      >
-                        <Icon size={16} />
-                        <span>{item.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                {isPublic ? (
-                  <div className="aura-tool-row">
-                    {ERP_TOOL_LABELS.map((tool) => (
-                      <span key={tool} className="aura-tool-pill">{tool}</span>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="aura-tool-row">
-                    <span className="aura-tool-pill">Workspace history</span>
-                    <span className="aura-tool-pill">Saved chats</span>
-                    <span className="aura-tool-pill">Structured replies</span>
-                    <span className="aura-tool-pill">Confirmation flows</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="aura-prompt-grid">
-                {examplePrompts.map((prompt) => (
-                  <button
-                    key={prompt}
-                    type="button"
-                    onClick={() => void handleSend(prompt)}
-                    className="aura-prompt-card"
-                  >
-                    <span className="aura-prompt-card__label">Try asking</span>
-                    <span className="aura-prompt-card__text">{prompt}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="aura-starter-grid">
-                {starterCards.map((card) => {
-                  const Icon = card.icon;
-                  return (
-                    <div key={card.title} className="aura-starter-card">
-                      <div className="aura-starter-card__icon">
-                        <Icon size={18} />
-                      </div>
-                      <div>
-                        <div className="aura-starter-card__title">{card.title}</div>
-                        <p className="aura-starter-card__body">{card.body}</p>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
           ) : (
@@ -1182,21 +1070,12 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                         </div>
                       </div>
 
-                      {message.thought ? (
-                        <details className="aura-thought">
-                          <summary>Reasoning trace</summary>
-                          <div className="aura-thought__body">{message.thought}</div>
-                        </details>
-                      ) : null}
-
-                      {message.timeline && message.timeline.length > 1 ? (
-                        <div className="aura-response-timeline">
-                          {message.timeline.map((event, index) => (
-                            <div key={`${message.id}-timeline-${index}`} className="aura-response-timeline__item">
-                              <div className="aura-response-timeline__dot" />
-                              <div className="aura-response-timeline__text">{event}</div>
-                            </div>
-                          ))}
+                      {message.streaming && message.thought ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '12px' }}>
+                          <Sparkles size={14} className="text-emerald-400" style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                          <span className="text-xs font-medium text-emerald-400/80" style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>
+                            {message.thought}
+                          </span>
                         </div>
                       ) : null}
 

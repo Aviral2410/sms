@@ -57,17 +57,6 @@ const KpiCard: React.FC<{ title: string; value: string; subtitle?: string; color
 
 const SmartTable: React.FC<{ title: string; columns: string[]; rows: any[] }> = ({ title, columns, rows }) => (
   <div className={`${GLASS_BG} rounded-[2rem] overflow-hidden my-6 group`}>
-    <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-            <Layers size={14} />
-        </div>
-        <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-white/70">{title}</h4>
-      </div>
-      <span className="text-[10px] px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-black border border-emerald-500/20">
-        {rows?.length || 0} NEURAL RECORDS
-      </span>
-    </div>
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs border-collapse">
         <thead className="bg-white/[0.01] text-white/30 font-black uppercase tracking-widest text-[9px]">

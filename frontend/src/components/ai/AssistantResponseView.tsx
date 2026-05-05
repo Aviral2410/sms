@@ -78,36 +78,7 @@ function extractColumns(rows: any[]) {
 }
 
 function ResponseToolbar({ response }: { response: RenderedResponse }) {
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <div className="aura-response__toolbar">
-      <button
-        type="button"
-        className="aura-response__toolbar-btn"
-        onClick={async () => {
-          await copyArtifactSummary(response);
-          setCopied(true);
-          window.setTimeout(() => setCopied(false), 1600);
-        }}
-      >
-        <Copy size={14} />
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-      <button type="button" className="aura-response__toolbar-btn" onClick={() => printArtifact(response)}>
-        <FileText size={14} />
-        Print / PDF
-      </button>
-      <button type="button" className="aura-response__toolbar-btn" onClick={() => downloadArtifactMarkdown(response)}>
-        <Download size={14} />
-        Markdown
-      </button>
-      <button type="button" className="aura-response__toolbar-btn" onClick={() => downloadArtifactDoc(response)}>
-        <FileText size={14} />
-        Doc
-      </button>
-    </div>
-  );
+  return null;
 }
 
 function ChecklistSection({ section }: { section: any }) {
@@ -228,20 +199,7 @@ function ComposedResponseView({ response }: { response: RenderedResponse }) {
 }
 
 function KeyValueSnapshot({ data }: { data: Record<string, any> }) {
-  const rows = extractSnapshotEntries(data);
-
-  if (!rows.length) return null;
-
-  return (
-    <div className="aura-response__snapshot">
-      {rows.map((row) => (
-        <div key={row.key} className="aura-response__snapshot-item">
-          <div className="aura-response__snapshot-key">{row.key}</div>
-          <div className="aura-response__snapshot-value">{row.value}</div>
-        </div>
-      ))}
-    </div>
-  );
+  return null;
 }
 
 function ConfirmationCard({
