@@ -86,7 +86,7 @@ class SchoolOnboardingControllerTest {
 
     @Test
     void shouldListOnboardingsForPlatformAdmin() throws Exception {
-        when(schoolOnboardingService.listOnboardings()).thenReturn(List.of(sampleResponse(OnboardingStatus.SUBMITTED)));
+        when(schoolOnboardingService.listOnboardings(any())).thenReturn(List.of(sampleResponse(OnboardingStatus.SUBMITTED)));
 
         mockMvc.perform(get("/api/v1/onboarding/schools")
                         .header("X-User-Role", "PLATFORM_ADMIN"))
