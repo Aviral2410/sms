@@ -45,7 +45,8 @@ class JwtAuthFilterPublicEndpointsTest {
         assertTrue(filter.isPublicEndpoint("/api/v1/auth/admin/login", HttpMethod.POST));
         assertTrue(filter.isPublicEndpoint("/api/v1/auth/school/login", HttpMethod.POST));
         assertTrue(filter.isPublicEndpoint("/api/v1/auth/school/activate", HttpMethod.POST));
-        assertTrue(filter.isPublicEndpoint("/api/v1/auth/activation-details", HttpMethod.GET));
+        // Activation details should be PROTECTED (requires Platform Admin role)
+        assertFalse(filter.isPublicEndpoint("/api/v1/auth/admin/activation-details", HttpMethod.GET));
     }
 }
 

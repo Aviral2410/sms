@@ -75,6 +75,8 @@ spring:
             - Path=/public/tenant/resolve
 
 app:
+  jwt:
+    secret: ${JWT_SECRET_KEY:default_development_secret_key_change_in_production}
   subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://subscription-service:8086}
   platform-domain: ${PLATFORM_DOMAIN:platform.com}
   auth-service-url: ${AUTH_SERVICE_URL:http://auth-service:8082}
