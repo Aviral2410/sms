@@ -2,17 +2,20 @@ package com.sms.onboarding.api;
 
 import com.sms.onboarding.domain.OnboardingStatus;
 
+import java.util.UUID;
 import java.time.Instant;
 
 public record SchoolStatusLookupResponse(
         String schoolName,
         String schoolCode,
         OnboardingStatus status,
-        String reviewComment,
+        String statusMessage,
         Instant reviewedAt,
         Instant createdAt,
-        boolean loginEnabled,
+        boolean activated,
         String loginEmail,
-        String dashboardPath
+        String dashboardPath,
+        UUID tenantId,
+        UUID schoolId
 ) {
 }

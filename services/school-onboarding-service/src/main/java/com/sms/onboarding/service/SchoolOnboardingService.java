@@ -108,7 +108,9 @@ public class SchoolOnboardingService {
                 onboarding.getCreatedAt(),
                 onboarding.getStatus() == OnboardingStatus.APPROVED && onboarding.getTenantId() != null,
                 onboarding.getAdminEmail(),
-                "/school"
+                "/school",
+                onboarding.getTenantId(),
+                onboarding.getSchoolId()
         );
     }
 

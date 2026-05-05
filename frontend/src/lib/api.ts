@@ -1898,7 +1898,7 @@ export const schoolOpsApi = {
 
 export const onboardingStatusApi = {
   lookup: (schoolCode: string, adminEmail: string) =>
-    request<{ schoolName: string; status: string; schoolId?: string; tenantId?: string }>(
+    request<{ schoolName: string; status: string; statusMessage: string; activated: boolean; schoolId?: string; tenantId?: string }>(
       `/onboarding/schools/status?schoolCode=${schoolCode}&adminEmail=${adminEmail}`
     ),
 };

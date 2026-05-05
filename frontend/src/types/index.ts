@@ -29,12 +29,14 @@ export type SchoolStatusLookupResponse = {
   schoolName: string;
   schoolCode: string;
   status: OnboardingStatus;
-  reviewComment: string | null;
+  statusMessage: string | null;
   reviewedAt: string | null;
   createdAt: string;
-  loginEnabled: boolean;
+  activated: boolean;
   loginEmail: string;
   dashboardPath: string;
+  schoolId?: string | null;
+  tenantId?: string | null;
 };
 
 export type AdminSession = { email: string; fullName: string; role: string };
