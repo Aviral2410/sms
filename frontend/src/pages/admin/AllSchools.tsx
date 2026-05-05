@@ -169,7 +169,7 @@ export default function AllSchools() {
                     </div>
                   </div>
 
-                  <div style={{ color: DIM, min-w: 0 }}>
+                  <div style={{ color: DIM, minWidth: 0 }}>
                     <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, color: '#e2e8f0' }}><Mail size={13} />{s.adminEmail}</div>
                     <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={11} />Joined {new Date(s.createdAt).toLocaleDateString()}</div>
                   </div>
@@ -205,11 +205,11 @@ export default function AllSchools() {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
                       <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleOpenUpdate(s, sub)}
-                        style={{ p: '6px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
+                        style={{ padding: '6px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: `1px solid ${BORDER}`, color: '#fff', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <RefreshCw size={12} /> Plan
                       </motion.button>
                       <motion.button whileHover={{ scale: 1.05 }} onClick={() => handleRevoke(s.tenantId)}
-                        style={{ p: '6px 12px', borderRadius: 10, background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)', color: '#f87171', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        style={{ padding: '6px 12px', borderRadius: 10, background: 'rgba(248,113,113,0.05)', border: '1px solid rgba(248,113,113,0.15)', color: '#f87171', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                         <Ban size={12} />
                       </motion.button>
                     </div>
@@ -226,8 +226,6 @@ export default function AllSchools() {
           </div>
         )}
       </div>
-      </div>
-
 
       {/* Update Plan Modal */}
       <AnimatePresence>
