@@ -119,7 +119,9 @@ class SchoolOnboardingControllerTest {
                         Instant.parse("2026-03-30T10:15:30Z"),
                         true,
                         "admin@sunrise.edu",
-                        "/school"
+                        "/school",
+                        UUID.randomUUID(),
+                        UUID.randomUUID()
                 ));
 
         mockMvc.perform(get("/api/v1/onboarding/schools/status")
@@ -128,7 +130,7 @@ class SchoolOnboardingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.schoolCode").value("SPS-001"))
                 .andExpect(jsonPath("$.status").value("APPROVED"))
-                .andExpect(jsonPath("$.loginEnabled").value(true))
+                .andExpect(jsonPath("$.activated").value(true))
                 .andExpect(jsonPath("$.loginEmail").value("admin@sunrise.edu"));
     }
 
@@ -200,9 +202,9 @@ class SchoolOnboardingControllerTest {
         UUID onboardingId = UUID.fromString("10000000-0000-0000-0000-000000000001");
         doNothing().when(schoolOnboardingService).sendActivationEmail(onboardingId);
 
-        mockMvc.perform(post("/api/v1/onboarding/schools/{onboardingId}/activation-email", onboardingId)
+        mockMvc.perform(post("/api/v1/onboarding/schools/{id}/send-activation", onboardingId)
                         .header("X-User-Role", "PLATFORM_ADMIN"))
-                .andExpect(status().isAccepted());
+                .andExpect(status().isOk());
     }
 
     @Test

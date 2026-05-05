@@ -407,9 +407,11 @@ export const onboardingApi = {
       method: 'PATCH',
       body: JSON.stringify({ action, reviewerName, comment }),
     }),
-  sendEmail: (onboardingId: string) => request<void>(`/onboarding/schools/${onboardingId}/activation-email`, { method: 'POST' }),
-  delete: (onboardingId: string) =>
-    request<void>(`/onboarding/schools/${onboardingId}`, { method: 'DELETE' }),
+  sendEmail: (id: string) =>
+    request<void>(`/onboarding/schools/${id}/send-activation`, { method: 'POST' }),
+
+  delete: (id: string) =>
+    request<void>(`/onboarding/schools/${id}`, { method: 'DELETE' }),
   listPublicInquiries: () => request<PlatformPublicInquiryResponse[]>('/platform/public-inquiries'),
   updatePublicInquiryStatus: (inquiryId: string, status: string) =>
     request<PlatformPublicInquiryResponse>(`/platform/public-inquiries/${inquiryId}`, { method: 'PATCH', body: JSON.stringify({ status }) }),

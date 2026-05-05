@@ -67,9 +67,10 @@ function extractTableRows(data: Record<string, any> | null | undefined) {
 }
 
 function extractColumns(rows: any[]) {
+  if (!Array.isArray(rows)) return [];
   const columnKeys = new Set<string>();
   rows.forEach((row) => {
-    if (row && typeof row === 'object' && !Array.isArray(row)) {
+    if (row && typeof row === 'object') {
       Object.keys(row).forEach((key) => columnKeys.add(key));
     }
   });

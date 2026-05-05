@@ -65,18 +65,18 @@ const SmartTable: React.FC<{ title: string; columns: string[]; rows: any[] }> = 
         <h4 className="text-[12px] font-black uppercase tracking-[0.2em] text-white/70">{title}</h4>
       </div>
       <span className="text-[10px] px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-black border border-emerald-500/20">
-        {rows.length} NEURAL RECORDS
+        {rows?.length || 0} NEURAL RECORDS
       </span>
     </div>
     <div className="overflow-x-auto">
       <table className="w-full text-left text-xs border-collapse">
         <thead className="bg-white/[0.01] text-white/30 font-black uppercase tracking-widest text-[9px]">
           <tr>
-            {columns.map(col => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
+            {columns?.map(col => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
-          {rows.map((row, i) => (
+          {rows?.map((row, i) => (
             <tr key={i} className="hover:bg-white/[0.03] transition-all duration-300">
               {columns.map(col => (
                 <td key={col} className="px-6 py-4">
@@ -195,7 +195,7 @@ const ComponentRegistry: Record<string, React.FC<any>> = {
   form_prefill: FormReview,
   quiz: (props: { quiz: Array<{q: string, options: string[], correct: number}> }) => (
     <div className="space-y-6">
-      {props.quiz.map((q, i) => (
+      {props.quiz?.map((q, i) => (
         <motion.div 
           key={i}
           initial={{ opacity: 0, scale: 0.95 }}

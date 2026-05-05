@@ -135,7 +135,8 @@ export default function AllSchools() {
                 <th style={{ padding: '10px 16px', fontWeight: 800 }}>School & Code</th>
                 <th style={{ padding: '10px 16px', fontWeight: 800 }}>Admin Contact</th>
                 <th style={{ padding: '10px 16px', fontWeight: 800 }}>Plan</th>
-                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Status</th>
+                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Account Status</th>
+                <th style={{ padding: '10px 16px', fontWeight: 800 }}>Subscription Status</th>
                 <th style={{ padding: '10px 16px', fontWeight: 800, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
@@ -176,6 +177,12 @@ export default function AllSchools() {
                             <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.72rem', color: DIM }}>Max Students: <strong style={{ color: '#fff' }}>{plan.maxStudents}</strong></div>
                           </div>
                         )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 20, background: 'rgba(52,211,153,0.12)', color: '#34d399', fontSize: '0.72rem', fontWeight: 800, border: '1px solid rgba(52,211,153,0.25)' }}>
+                         <ShieldCheck size={12} />
+                         ACTIVATED
                       </div>
                     </td>
                     <td style={{ padding: '16px' }}>

@@ -1021,9 +1021,9 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   );
 
   const shellBody = (
-    <div className={cx('aura-shell', (sidebarOpen || variant === 'page') && 'aura-shell--rail-open', showEmptyState && 'aura-shell--empty')}>
+    <div className={cx('aura-shell', sidebarOpen && 'aura-shell--rail-open', showEmptyState && 'aura-shell--empty')}>
       <AnimatePresence>
-        {(variant === 'page' || sidebarOpen) ? (
+        {sidebarOpen ? (
           <motion.aside
             initial={{ x: -24, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
@@ -1300,12 +1300,32 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       {!open ? (
         <motion.button
           type="button"
-          initial={{ scale: 0.92, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ scale: 0.9, opacity: 0, y: 10 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          whileHover={{ scale: 1.05, y: -4 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => setOpen(true)}
           className="aura-launcher"
+          style={{ 
+            width: 'auto', 
+            padding: '0 24px', 
+            gap: '12px',
+            borderRadius: '24px'
+          }}
         >
-          <MessageSquare size={22} />
+          <div className="aura-launcher__icon-wrapper" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            width: '32px',
+            height: '32px',
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '12px'
+          }}>
+            <Bot size={20} />
+          </div>
+          <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.02em' }}>Ask Aura</span>
+          <Sparkles size={16} style={{ opacity: 0.8 }} />
         </motion.button>
       ) : null}
 
