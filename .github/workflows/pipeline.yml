@@ -37,9 +37,11 @@ jobs:
               - 'gradle/**'
               - 'build.gradle'
               - 'settings.gradle'
+              - 'tests/**'
             any_service:
               - 'services/**'
               - 'frontend/**'
+              - 'tests/**'
             helm:
               - 'infra/helm/**'
             auth-service: 'services/auth-service/**'
