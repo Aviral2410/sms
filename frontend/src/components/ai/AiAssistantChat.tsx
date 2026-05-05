@@ -805,24 +805,14 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
 
   const renderPublicSidebar = () => (
     <div className="aura-rail__section" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="aura-rail__block" style={{ flexShrink: 0, paddingBottom: 16 }}>
-        <button
-          type="button"
-          onClick={handleCreateDraftChat}
-          className="aura-rail__primary-button"
-          style={{ width: '100%', justifyContent: 'center' }}
-        >
-          <Plus size={16} />
-          New chat
-        </button>
-      </div>
+      {/* New chat button moved to header */}
 
       <div className="aura-rail__list" style={{ overflowY: 'auto', flexGrow: 1 }}>
         {publicChats.length ? (
           publicChats.map((chat) => (
             <div
               key={chat.conversationId}
-              className={cx('aura-history-card', chat.conversationId === activeConversationId && 'is-active')}
+              className={cx('group flex items-center justify-between px-3 py-2 -mx-3 rounded-lg cursor-pointer transition-colors', chat.conversationId === activeConversationId ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:bg-white/5 hover:text-white')}
             >
               <button
                 type="button"
@@ -831,10 +821,9 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                   setMessages(chat.messages);
                   if (variant !== 'page') setSidebarOpen(false);
                 }}
-                className="aura-history-card__main"
+                className="flex-1 text-left truncate text-sm"
               >
-                <div className="aura-history-card__title">{chat.title}</div>
-                <div className="aura-history-card__meta">{new Date(chat.updatedAt).toLocaleDateString()}</div>
+                {chat.title}
               </button>
             </div>
           ))
@@ -910,43 +899,35 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 event.preventDefault();
                 void handleMoveChatToWorkspace(draggingConversationId, workspace.workspaceId);
               }}
-              className={cx('aura-workspace-card-wrap', draggingConversationId && 'is-droppable')}
-            >
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => {
+              className={cx('group flex items-center justify-between px-3 py-2 -mx-3 rounded-lg cursor-pointer transition-colors mb-1', draggingConversationId && 'bg-emerald-500/10 ring-1 ring-emerald-500/50', workspace.workspaceId === activeWorkspaceId ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:bg-white/5 hover:text-white')}
+              role="button"
+              tabIndex={0}
+              onClick={() => {
+                setActiveWorkspaceId(workspace.workspaceId);
+                setSidebarOpen(variant === 'page');
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
                   setActiveWorkspaceId(workspace.workspaceId);
-                  setSidebarOpen(variant === 'page');
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setActiveWorkspaceId(workspace.workspaceId);
-                  }
-                }}
-                className={cx('aura-workspace-card', workspace.workspaceId === activeWorkspaceId && 'is-active')}
-              >
-                <div className="aura-workspace-card__copy">
-                  <div className="aura-workspace-card__title">{workspace.name}</div>
-                  <div className="aura-workspace-card__meta">{new Date(workspace.updatedAt).toLocaleDateString()}</div>
-                </div>
-                <div className="aura-workspace-card__actions">
-                  {workspaces.length > 1 ? (
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        void handleDeleteWorkspace(workspace.workspaceId);
-                      }}
-                      className="aura-history-card__delete"
-                      aria-label={`Delete workspace ${workspace.name}`}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  ) : null}
-                  <ChevronRight size={14} />
-                </div>
+                }
+              }}
+            >
+              <div className="flex-1 truncate text-sm">{workspace.name}</div>
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {workspaces.length > 1 ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      void handleDeleteWorkspace(workspace.workspaceId);
+                    }}
+                    className="p-1 hover:bg-white/10 rounded text-white/40 hover:text-rose-400"
+                    aria-label={`Delete workspace ${workspace.name}`}
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                ) : null}
               </div>
             </div>
           ))}
@@ -976,7 +957,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 draggable
                 onDragStart={() => setDraggingConversationId(chat.conversationId)}
                 onDragEnd={() => setDraggingConversationId(null)}
-                className={cx('aura-history-card', chat.conversationId === activeConversationId && 'is-active')}
+                className={cx('group flex items-center justify-between px-3 py-2 -mx-3 rounded-lg cursor-pointer transition-colors', chat.conversationId === activeConversationId ? 'bg-white/10 text-white font-medium' : 'text-white/60 hover:bg-white/5 hover:text-white')}
               >
                 <button
                   type="button"
@@ -984,18 +965,17 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                     setActiveConversationId(chat.conversationId);
                     if (variant !== 'page') setSidebarOpen(false);
                   }}
-                  className="aura-history-card__main"
+                  className="flex-1 text-left truncate text-sm"
                 >
-                  <div className="aura-history-card__title">{chat.title || 'Untitled chat'}</div>
-                  <div className="aura-history-card__meta">{new Date(chat.updatedAt).toLocaleDateString()}</div>
+                  {chat.title || 'Untitled chat'}
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleDeleteChat(chat.conversationId)}
-                  className="aura-history-card__delete"
+                  className="p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 rounded text-white/40 hover:text-rose-400"
                   aria-label={`Delete ${chat.title}`}
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={12} />
                 </button>
               </div>
             ))
@@ -1048,11 +1028,20 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             <p className="aura-main__subtitle">{shellSubtitle}</p>
           </div>
 
-          <div className="aura-main__controls">
+          <div className="aura-main__controls flex items-center gap-1">
+            <button
+              type="button"
+              onClick={handleCreateDraftChat}
+              className="aura-icon-button p-2 text-white/50 hover:text-white transition-colors"
+              aria-label="New chat"
+              title="New chat"
+            >
+              <Edit3 size={18} />
+            </button>
             <button
               type="button"
               onClick={() => setSidebarOpen((current) => !current)}
-              className="aura-icon-button"
+              className="aura-icon-button p-2 text-white/50 hover:text-white transition-colors"
               aria-label="Toggle sidebar"
             >
               <PanelLeft size={18} />
@@ -1070,14 +1059,14 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           </div>
         </div>
 
-        <div ref={scrollRef} className="aura-thread">
+        <div ref={scrollRef} className="aura-thread relative">
           {showEmptyState ? (
-            <div className="aura-empty-state" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' }}>
-              <div className="aura-empty-state__hero" style={{ textAlign: 'center' }}>
-                <h3 style={{ fontSize: '2rem', fontWeight: 800, color: 'white', marginBottom: '16px' }}>
-                  Welcome
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 pointer-events-none">
+              <div className="text-center pointer-events-auto">
+                <h3 className="text-[2rem] font-black text-white mb-4">
+                  {isPublic ? 'Welcome' : `Welcome${session?.fullName ? `, ${session.fullName.split(' ')[0]}` : ''}`}
                 </h3>
-                <p style={{ fontSize: '1rem', color: 'rgba(255, 255, 255, 0.6)' }}>
+                <p className="text-base text-white/60">
                   How can I help you today?
                 </p>
               </div>
@@ -1118,16 +1107,23 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                       )}
 
                       {!message.streaming && message.id === messages[messages.length - 1]?.id && (
-                        <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-white/5">
-                          {['Draft email to parents', 'Show fee breakdown', 'Summarize anomalies'].map((chip, i) => (
-                            <button 
-                              key={i} 
-                              onClick={() => void handleSend(chip)} 
-                              className="px-3.5 py-1.5 rounded-full bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400/80 hover:text-emerald-300 text-[11px] font-bold tracking-wide border border-emerald-500/10 hover:border-emerald-500/30 transition-all"
-                            >
-                              {chip}
-                            </button>
-                          ))}
+                        <div className="mt-5 pt-3 border-t border-white/5 relative inline-block group/sugg">
+                          <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-emerald-500/50 hover:text-emerald-400 transition-all px-3 py-1.5 rounded-full hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20">
+                             <Sparkles size={12} />
+                             Suggested Follow-ups
+                          </button>
+                          <div className="absolute left-0 bottom-full mb-3 w-64 bg-[#0a0f18] border border-white/10 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] opacity-0 translate-y-2 group-hover/sugg:opacity-100 group-hover/sugg:translate-y-0 group-hover/sugg:pointer-events-auto pointer-events-none transition-all z-50 flex flex-col p-1.5 backdrop-blur-xl">
+                             <div className="px-3 py-2 text-[9px] font-black uppercase tracking-widest text-white/20 border-b border-white/5 mb-1">Aura Recommendations</div>
+                             {['Draft email to parents', 'Show fee breakdown', 'Summarize anomalies'].map((chip, i) => (
+                               <button 
+                                 key={i} 
+                                 onClick={() => void handleSend(chip)} 
+                                 className="text-left px-3 py-2.5 hover:bg-white/[0.04] transition-colors text-white/60 hover:text-white text-xs rounded-lg border-l-2 border-transparent hover:border-emerald-500 font-medium"
+                               >
+                                 {chip}
+                               </button>
+                             ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1213,7 +1209,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             />
             <div className="aura-composer__actions">
               <label className="aura-composer__icon cursor-pointer hover:text-white transition-colors" aria-label="Upload file">
-                <input type="file" accept=".csv,.txt,.json" className="hidden" onChange={handleFileUpload} />
+                <input type="file" accept=".csv,.txt,.json" style={{ display: 'none' }} onChange={handleFileUpload} />
                 <Paperclip size={18} />
               </label>
               <button

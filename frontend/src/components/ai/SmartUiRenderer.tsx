@@ -55,32 +55,48 @@ const KpiCard: React.FC<{ title: string; value: string; subtitle?: string; color
   </motion.div>
 );
 
-const SmartTable: React.FC<{ title: string; columns: string[]; rows: any[] }> = ({ title, columns, rows }) => (
-  <div className={`${GLASS_BG} rounded-[2rem] overflow-hidden my-6 group`}>
-    <div className="overflow-x-auto">
-      <table className="w-full text-left text-xs border-collapse">
-        <thead className="bg-white/[0.01] text-white/30 font-black uppercase tracking-widest text-[9px]">
-          <tr>
-            {columns?.map(col => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-white/5">
-          {rows?.map((row, i) => (
-            <tr key={i} className="hover:bg-white/[0.03] transition-all duration-300">
-              {columns.map(col => (
-                <td key={col} className="px-6 py-4">
-                  <div className="text-white/80 font-medium truncate max-w-[200px]">
-                    {typeof row[col] === 'object' ? JSON.stringify(row[col]) : (row[col]?.toString() || '—')}
-                  </div>
-                </td>
-              ))}
+const SmartTable: React.FC<any> = ({ title, columns, rows, data }) => {
+  let finalRows = rows;
+  let finalColumns = columns;
+  if (!finalRows && data) {
+     if (Array.isArray(data)) {
+         finalRows = data;
+     } else if (typeof data === 'object') {
+         const arrayVal = Object.values(data).find(Array.isArray);
+         if (arrayVal) finalRows = arrayVal as any[];
+     }
+  }
+  if (!finalColumns && finalRows?.length > 0) {
+      finalColumns = Object.keys(finalRows[0]).filter(k => typeof finalRows[0][k] !== 'object' && !Array.isArray(finalRows[0][k]));
+  }
+
+  return (
+    <div className={`${GLASS_BG} rounded-[2rem] overflow-hidden my-6 group`}>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-xs border-collapse">
+          <thead className="bg-white/[0.01] text-white/30 font-black uppercase tracking-widest text-[9px]">
+            <tr>
+              {finalColumns?.map(col => <th key={col} className="px-6 py-4 border-r border-white/5 last:border-0">{col}</th>)}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {finalRows?.map((row, i) => (
+              <tr key={i} className="hover:bg-white/[0.03] transition-all duration-300">
+                {finalColumns?.map(col => (
+                  <td key={col} className="px-6 py-4">
+                    <div className="text-white/80 font-medium truncate max-w-[200px]">
+                      {typeof row[col] === 'object' ? JSON.stringify(row[col]) : (row[col]?.toString() || '—')}
+                    </div>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 import { ProfessionalBarChart, ProfessionalAreaChart, ProfessionalPieChart } from './ProfessionalCharts';
 import { FormReview } from './FormReview';
@@ -223,8 +239,8 @@ export const SmartUiRenderer: React.FC<{ response: any; isLoading?: boolean; var
     show: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } } 
   };
   const item = { 
-    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' }, 
-    show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { type: 'spring', stiffness: 200, damping: 20 } } 
+    hidden: { opacity: 0, y: 30 }, 
+    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 200, damping: 20 } } 
   };
 
   return (
