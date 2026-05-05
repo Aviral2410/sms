@@ -172,7 +172,7 @@ export default function TeacherWorkspacePage() {
             className="flex items-center gap-2 px-5 py-3 rounded-2xl text-slate-950 font-black text-sm hover:scale-105 active:scale-95 transition-all"
             style={{ background: accentColor, boxShadow: `0 0 20px ${accentColor}40` }}
           >
-            <Sparkles size={18} /> Ask AI assistant
+            <Sparkles size={18} /> Ask Aura
           </button>
         </div>
       </header>

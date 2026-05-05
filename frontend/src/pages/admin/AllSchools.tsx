@@ -159,18 +159,18 @@ export default function AllSchools() {
                 <motion.div key={s.onboardingId} whileHover={{ scale: 1.002, x: 4 }}
                   style={{ ...GRID_STYLE, background: 'rgba(255,255,255,0.02)', borderRadius: 20, border: `1px solid ${BORDER}`, transition: 'all 0.2s' }}>
                   
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34,211,238,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(34,211,238,0.2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(34,211,238,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(34,211,238,0.2)', flexShrink: 0 }}>
                       <Building2 size={18} color="#22d3ee" />
                     </div>
                     <div className="min-w-0">
                       <div style={{ fontWeight: 800, fontSize: '0.9rem', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.schoolName}</div>
-                      <div style={{ fontSize: '0.7rem', color: '#ffb663', fontWeight: 700, marginTop: 2 }}>{s.schoolCode}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#ffb663', fontWeight: 700, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.schoolCode}</div>
                     </div>
                   </div>
 
                   <div style={{ color: DIM, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, color: '#e2e8f0' }}><Mail size={13} />{s.adminEmail}</div>
+                    <div style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={s.adminEmail}><Mail size={13} style={{ flexShrink: 0 }} />{s.adminEmail}</div>
                     <div style={{ fontSize: '0.7rem', opacity: 0.6, marginTop: 3, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={11} />Joined {new Date(s.createdAt).toLocaleDateString()}</div>
                   </div>
 

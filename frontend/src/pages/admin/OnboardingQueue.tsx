@@ -184,16 +184,17 @@ function OnboardingRequestCard({ req, onReview, onDelete, reviewingId }: {
               </div>
            </div>
            <div style={{ display: 'flex', gap: 8 }}>
-             <button 
+             <motion.button
+                whileHover={{ scale: 1.02, boxShadow: '0 0 15px rgba(59,130,246,0.3)' }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => {
                   const subject = encodeURIComponent(`Welcome to ElevateSmart - ${req.schoolName}`);
                   const body = encodeURIComponent(`Hello Admin,\n\nYour school "${req.schoolName}" has been provisioned on ElevateSmart.\n\nLogin Email: ${req.adminEmail}\nSchool Code: ${req.schoolCode}\nActivation Code: ${req.activationCode}\n\nPlease visit the platform and use the activation code to set your password.\n\nBest regards,\nPlatform Administration`);
                   window.location.href = `mailto:${req.adminEmail}?subject=${subject}&body=${body}`;
                 }}
-                style={{ padding: '10px 16px', borderRadius: 8, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+                className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs font-bold text-blue-400 flex items-center gap-2"
               >
                 <Mail size={14}/> Mail
-             </button>
              <button 
                onClick={() => {
                  const subject = encodeURIComponent(`Welcome to ElevateSmart - ${req.schoolName}`);
@@ -228,14 +229,16 @@ function OnboardingRequestCard({ req, onReview, onDelete, reviewingId }: {
           <button onClick={() => onReview(req.onboardingId, 'REJECT', req.status, comment)} disabled={!!reviewingId} style={{ padding: '0 24px', borderRadius: 10, background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.3)', color: '#fb7185', fontWeight: 800, cursor: reviewingId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
             <XCircle size={16}/> Reject
           </button>
-          <button 
+          <motion.button 
+            whileHover={{ scale: 1.05, boxShadow: '0 0 20px rgba(244,63,94,0.2)' }} 
+            whileTap={{ scale: 0.95 }}
             onClick={() => onDelete(req.onboardingId, req.schoolName)} 
             disabled={!!reviewingId} 
-            style={{ padding: '0 16px', borderRadius: 10, background: 'rgba(244,63,94,0.05)', border: '1px solid rgba(244,63,94,0.1)', color: '#fb7185', cursor: reviewingId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+            style={{ padding: '0 16px', borderRadius: 10, background: 'rgba(244,63,94,0.1)', border: '1px solid rgba(244,63,94,0.2)', color: '#fb7185', cursor: reviewingId ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
             title="Delete Record"
           >
             <Trash2 size={16} />
-          </button>
+          </motion.button>
         </div>
       )}
 

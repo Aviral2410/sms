@@ -1,4 +1,4 @@
-export type TextWhiteSpace = 'normal' | 'pre-wrap';
+export type TextWhiteSpace = 'normal' | 'pre-wrap' | 'nowrap';
 export type TextWordBreak = 'normal' | 'keep-all';
 
 export type TextLayoutConfig = {

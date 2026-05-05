@@ -1,3 +1,55 @@
 {{- if .Values.services.mcpServer.enabled }}
-{{ include "sms.serviceDeployment" (dict "root" . "service" .Values.services.mcpServer "serviceName" "mcp-server") }}
+{{- $root := . -}}
+{{- $service := .Values.services.mcpServer -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $service.workloadName }}
+  labels:
+{{ include "sms.commonLabels" (dict "root" $root "serviceName" $service.workloadName) | indent 4 }}
+spec:
+  replicas: {{ $service.replicaCount }}
+  selector:
+    matchLabels:
+{{ include "sms.selectorLabels" (dict "root" $root "serviceName" $service.workloadName) | indent 6 }}
+  template:
+    metadata:
+      labels:
+{{ include "sms.selectorLabels" (dict "root" $root "serviceName" $service.workloadName) | indent 8 }}
+    spec:
+{{ include "sms.podSettings" $root | indent 6 }}
+{{ include "sms.initContainers" (dict "service" $service) | indent 6 }}
+      containers:
+        - name: {{ $service.workloadName }}
+          image: {{ include "sms.image" (dict "root" $root "image" $service.image) }}
+          imagePullPolicy: {{ $service.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ $service.containerPort }}
+          env:
+{{ tpl (toYaml $service.env) $root | indent 12 }}
+          {{- if $service.probes.startup }}
+          startupProbe:
+{{ toYaml $service.probes.startup | indent 12 }}
+          {{- end }}
+          {{- if $service.probes.readiness }}
+          readinessProbe:
+{{ toYaml $service.probes.readiness | indent 12 }}
+          {{- end }}
+          {{- if $service.probes.liveness }}
+          livenessProbe:
+{{ toYaml $service.probes.liveness | indent 12 }}
+          {{- end }}
+          {{- if $service.resources }}
+          resources:
+{{ toYaml $service.resources | indent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
 {{- end }}

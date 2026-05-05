@@ -41,6 +41,12 @@ spring:
           uri: ${MCP_SERVER_URL:http://mcp-server:8084}
           predicates:
             - Path=/api/v1/mcp/**
+        - id: mcp-server-http
+          uri: ${MCP_SERVER_URL:http://mcp-server:8084}
+          predicates:
+            - Path=/mcp-http/**
+          filters:
+            - StripPrefix=1
         - id: finance-service
           uri: ${FINANCE_SERVICE_URL:http://finance-service:8085}
           predicates:

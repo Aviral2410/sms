@@ -430,12 +430,14 @@ export function PublicSiteStudio() {
             <div className="text-white font-bold text-lg">Testimonials Thread</div>
             <div className="text-sm text-slate-400">Add social proof to the landing page and control who appears, in what order, and with which avatar.</div>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, boxShadow: '0 0 15px rgba(52,211,153,0.3)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => updateDraft('testimonials', [...draft.testimonials, createEmptyTestimonial(draft.testimonials.length + 1)])}
-            className="rounded-xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-200"
+            className="rounded-xl border border-emerald-400/40 bg-emerald-500/20 px-5 py-2.5 text-sm font-bold text-emerald-100 shadow-lg shadow-emerald-500/10 backdrop-blur-sm transition-all"
           >
             Add Testimonial
-          </button>
+          </motion.button>
         </div>
         <div className="space-y-4">
           {draft.testimonials.map((testimonial, index) => {
@@ -452,15 +454,12 @@ export function PublicSiteStudio() {
                     Remove
                   </button>
                 </div>
-                <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr] gap-4">
-                  <div className="space-y-3">
-                    <div className="aspect-square overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
-                      <img src={imagePreview(testimonial.avatarUrl)} alt={testimonial.authorName || `Testimonial ${index + 1}`} className="h-full w-full object-cover" />
-                    </div>
-                    <label className="rounded-2xl border border-dashed border-emerald-400/35 bg-emerald-500/5 px-4 py-3 text-sm text-slate-300 cursor-pointer block">
-                      <div className="flex items-center gap-2 font-semibold text-emerald-200">
-                        {isUploading ? <Loader size={16} className="animate-spin" /> : <ImagePlus size={16} />}
-                        Upload avatar
+                <div className="grid grid-cols-1 xl:grid-cols-[180px_1fr] gap-6">
+                  <div className="relative group aspect-square rounded-2xl border border-white/10 bg-slate-900/70 overflow-hidden">
+                    <img src={imagePreview(testimonial.avatarUrl)} alt={testimonial.authorName || `Testimonial ${index + 1}`} className="h-full w-full object-cover" />
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <div className="text-white p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 scale-150">
+                        {isUploading ? <Loader size={20} className="animate-spin" /> : <UploadCloud size={20} />}
                       </div>
                       <input
                         type="file"
@@ -489,14 +488,6 @@ export function PublicSiteStudio() {
                       <input value={testimonial.organization} onChange={(e) => updateTestimonial(index, { organization: e.target.value })} style={INPUT_STYLE} />
                     </label>
                     <label>
-                      <span style={LABEL_STYLE}>Accent Color</span>
-                      <input value={testimonial.accentColor} onChange={(e) => updateTestimonial(index, { accentColor: e.target.value })} style={INPUT_STYLE} />
-                    </label>
-                    <label>
-                      <span style={LABEL_STYLE}>Avatar URL</span>
-                      <input value={testimonial.avatarUrl} onChange={(e) => updateTestimonial(index, { avatarUrl: e.target.value })} style={INPUT_STYLE} />
-                    </label>
-                    <label>
                       <span style={LABEL_STYLE}>Sort Order</span>
                       <input
                         type="number"
@@ -507,7 +498,7 @@ export function PublicSiteStudio() {
                     </label>
                     <label className="md:col-span-2">
                       <span style={LABEL_STYLE}>Quote</span>
-                      <textarea value={testimonial.quote} onChange={(e) => updateTestimonial(index, { quote: e.target.value })} style={{ ...TEXTAREA_STYLE, minHeight: 120 }} />
+                      <textarea value={testimonial.quote} onChange={(e) => updateTestimonial(index, { quote: e.target.value })} style={{ ...TEXTAREA_STYLE, minHeight: 80 }} />
                     </label>
                   </div>
                 </div>
@@ -528,43 +519,36 @@ export function PublicSiteStudio() {
             const isUploading = uploadingKey === assetKey;
             return (
               <div key={media.sectionKey} className="rounded-3xl border border-white/10 bg-slate-950/45 p-4 flex flex-col gap-4">
-                <div className="aspect-[16/10] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80">
+                <div className="relative group aspect-[16/10] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/80">
                   <img src={imagePreview(media.imageUrl)} alt={media.altText || media.sectionKey} className="h-full w-full object-cover" />
+                  <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <div className="text-white p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 scale-150">
+                      {isUploading ? <Loader size={24} className="animate-spin" /> : <UploadCloud size={24} />}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        handleUpload(assetKey, file, (publicUrl) => updateMedia(media.sectionKey, { imageUrl: publicUrl }));
+                        event.currentTarget.value = '';
+                      }}
+                    />
+                  </label>
                 </div>
-                <div className="text-white font-semibold capitalize">{media.sectionKey}</div>
-                <label>
-                  <span style={LABEL_STYLE}>Image URL</span>
-                  <input value={media.imageUrl} onChange={(e) => updateMedia(media.sectionKey, { imageUrl: e.target.value })} style={INPUT_STYLE} />
-                </label>
-                <label>
-                  <span style={LABEL_STYLE}>Fallback URL</span>
-                  <input value={media.fallbackImageUrl} onChange={(e) => updateMedia(media.sectionKey, { fallbackImageUrl: e.target.value })} style={INPUT_STYLE} />
-                </label>
+                <div className="text-white font-semibold capitalize flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-fuchsia-400"></span>
+                  {media.sectionKey} Lane
+                </div>
                 <label>
                   <span style={LABEL_STYLE}>Alt Text</span>
                   <input value={media.altText} onChange={(e) => updateMedia(media.sectionKey, { altText: e.target.value })} style={INPUT_STYLE} />
                 </label>
                 <label>
                   <span style={LABEL_STYLE}>Caption</span>
-                  <textarea value={media.caption} onChange={(e) => updateMedia(media.sectionKey, { caption: e.target.value })} style={{ ...TEXTAREA_STYLE, minHeight: 96 }} />
-                </label>
-                <label className="rounded-2xl border border-dashed border-fuchsia-400/35 bg-fuchsia-500/5 px-4 py-3 text-sm text-slate-300 cursor-pointer">
-                  <div className="flex items-center gap-2 font-semibold text-fuchsia-200">
-                    {isUploading ? <Loader size={16} className="animate-spin" /> : <UploadCloud size={16} />}
-                    Upload image
-                  </div>
-                  <div className="text-xs text-slate-400 mt-1">PNG, JPG, or WebP up to 8 MB.</div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (!file) return;
-                      handleUpload(assetKey, file, (publicUrl) => updateMedia(media.sectionKey, { imageUrl: publicUrl }));
-                      event.currentTarget.value = '';
-                    }}
-                  />
+                  <input value={media.caption} onChange={(e) => updateMedia(media.sectionKey, { caption: e.target.value })} style={INPUT_STYLE} />
                 </label>
               </div>
             );
@@ -578,12 +562,14 @@ export function PublicSiteStudio() {
             <div className="text-white font-bold text-lg">Feature Cards</div>
             <div className="text-sm text-slate-400">Edit every public feature lane, including card imagery and hover-story details.</div>
           </div>
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02, boxShadow: '0 0 15px rgba(56,189,248,0.3)' }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => updateDraft('featureCards', [...draft.featureCards, createEmptyFeatureCard(draft.featureCards.length + 1)])}
-            className="rounded-xl border border-sky-400/25 bg-sky-500/10 px-4 py-2 text-sm font-semibold text-sky-200"
+            className="rounded-xl border border-sky-400/40 bg-sky-500/20 px-5 py-2.5 text-sm font-bold text-sky-100 shadow-lg shadow-sky-500/10 backdrop-blur-sm transition-all"
           >
             Add Feature Card
-          </button>
+          </motion.button>
         </div>
         <div className="space-y-4">
           {draft.featureCards.map((feature, index) => {
@@ -600,15 +586,12 @@ export function PublicSiteStudio() {
                     Remove
                   </button>
                 </div>
-                <div className="grid grid-cols-1 xl:grid-cols-[220px_1fr] gap-4">
-                  <div className="space-y-3">
-                    <div className="aspect-[4/3] overflow-hidden rounded-2xl border border-white/10 bg-slate-900/70">
-                      <img src={imagePreview(feature.imageUrl)} alt={feature.title || `Feature ${index + 1}`} className="h-full w-full object-cover" />
-                    </div>
-                    <label className="rounded-2xl border border-dashed border-sky-400/35 bg-sky-500/5 px-4 py-3 text-sm text-slate-300 cursor-pointer block">
-                      <div className="flex items-center gap-2 font-semibold text-sky-200">
-                        {isUploading ? <Loader size={16} className="animate-spin" /> : <ImagePlus size={16} />}
-                        Upload feature image
+                <div className="grid grid-cols-1 xl:grid-cols-[180px_1fr] gap-6">
+                  <div className="relative group aspect-[4/3] rounded-2xl border border-white/10 bg-slate-900/70 overflow-hidden">
+                    <img src={imagePreview(feature.imageUrl)} alt={feature.title || `Feature ${index + 1}`} className="h-full w-full object-cover" />
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <div className="text-white p-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 scale-150">
+                        {isUploading ? <Loader size={20} className="animate-spin" /> : <UploadCloud size={20} />}
                       </div>
                       <input
                         type="file"
@@ -633,10 +616,6 @@ export function PublicSiteStudio() {
                       <input value={feature.category} onChange={(e) => updateFeature(index, { category: e.target.value })} style={INPUT_STYLE} />
                     </label>
                     <label>
-                      <span style={LABEL_STYLE}>Image URL</span>
-                      <input value={feature.imageUrl} onChange={(e) => updateFeature(index, { imageUrl: e.target.value })} style={INPUT_STYLE} />
-                    </label>
-                    <label>
                       <span style={LABEL_STYLE}>Accent Color</span>
                       <input value={feature.accentColor} onChange={(e) => updateFeature(index, { accentColor: e.target.value })} style={INPUT_STYLE} />
                     </label>
@@ -651,14 +630,14 @@ export function PublicSiteStudio() {
                     </label>
                     <label className="md:col-span-2">
                       <span style={LABEL_STYLE}>Description</span>
-                      <textarea value={feature.description} onChange={(e) => updateFeature(index, { description: e.target.value })} style={{ ...TEXTAREA_STYLE, minHeight: 110 }} />
+                      <textarea value={feature.description} onChange={(e) => updateFeature(index, { description: e.target.value })} style={{ ...TEXTAREA_STYLE, minHeight: 60 }} />
                     </label>
                     <label className="md:col-span-2">
                       <span style={LABEL_STYLE}>Bullet Points (one per line)</span>
                       <textarea
                         value={feature.bullets.join('\n')}
                         onChange={(e) => updateFeature(index, { bullets: e.target.value.split('\n') })}
-                        style={{ ...TEXTAREA_STYLE, minHeight: 110 }}
+                        style={{ ...TEXTAREA_STYLE, minHeight: 80 }}
                       />
                     </label>
                   </div>

@@ -153,8 +153,10 @@ export function measureTextBlock(config: TextLayoutConfig): TextLayoutResult {
   const text = config.text ?? '';
   const maxWidth = Number.isFinite(config.maxWidth) ? config.maxWidth : 0;
   const lineHeight = Number.isFinite(config.lineHeight) ? config.lineHeight : 0;
+  const whiteSpace = config.whiteSpace ?? 'normal';
+  const wordBreak = config.wordBreak ?? 'normal';
 
-  if (!text || maxWidth <= 0 || lineHeight <= 0) {
+  if (!text || (whiteSpace !== 'nowrap' && (maxWidth <= 0 || lineHeight <= 0))) {
     return {
       height: 0,
       lineCount: 0,
@@ -164,8 +166,15 @@ export function measureTextBlock(config: TextLayoutConfig): TextLayoutResult {
     };
   }
 
-  const whiteSpace = config.whiteSpace ?? 'normal';
-  const wordBreak = config.wordBreak ?? 'normal';
+  if (whiteSpace === 'nowrap') {
+    return {
+      height: lineHeight,
+      lineCount: 1,
+      lines: [text],
+      maxLineWidth: measureTextWidth(text, config.font),
+      isOverflowing: false,
+    };
+  }
   const { prepared } = prepareText(config);
   const lines: string[] = [];
   const lineWidths: number[] = [];

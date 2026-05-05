@@ -42,6 +42,13 @@ spec:
                 name: api-gateway
                 port:
                   number: {{ .Values.services.apiGateway.service.port }}
+          - path: /mqtt
+            pathType: Prefix
+            backend:
+              service:
+                name: emqx
+                port:
+                  number: 8083
     - host: {{ .Values.networking.ingress.mcpHost }}
       http:
         paths:

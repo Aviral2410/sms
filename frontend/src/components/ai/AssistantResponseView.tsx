@@ -11,12 +11,19 @@ type RenderedResponse = {
   data: Record<string, any> | null;
   meta?: Record<string, any> | null;
   thought?: string | null;
+  blocks?: Array<{
+    type: string;
+    content?: string;
+    data?: any;
+    meta?: any;
+  }>;
 };
 
 type Props = {
   response?: RenderedResponse | null;
   onConfirmAction?: (confirmationToken: string) => void | Promise<void>;
   actionPending?: boolean;
+  isStreaming?: boolean;
 };
 
 function toText(data: Record<string, any> | null | undefined) {
@@ -100,34 +107,48 @@ function ChecklistSection({ section }: { section: any }) {
   );
 }
 
-function ComposedResponseView({ response }: { response: RenderedResponse }) {
-  const sections = Array.isArray(response.data?.sections) ? response.data.sections : [];
+function ComposedResponseView({ response, isStreaming }: { response: RenderedResponse; isStreaming?: boolean }) {
+  const sections = useMemo(() => {
+    if (response.type === 'composed' && Array.isArray(response.data?.sections)) {
+      return response.data.sections;
+    }
+    if (response.type === 'mixed' && Array.isArray(response.blocks)) {
+      return response.blocks.map(b => ({
+        kind: b.type === 'text' ? 'markdown' : b.type,
+        content: b.content,
+        ...b
+      }));
+    }
+    return [];
+  }, [response]);
 
   return (
-    <div className="aura-composed-response">
+    <div className="aura-composed-response space-y-6">
       {typeof response.data?.summary === 'string' && response.data.summary.trim() ? (
         <div className="aura-response">
-          <AiRichText content={response.data.summary} className="aura-response__content" />
+          <AiRichText content={response.data.summary} className="aura-response__content" isStreaming={isStreaming} />
         </div>
       ) : null}
 
       {sections.map((section: any, index: number) => {
-        if (section?.kind === 'markdown' && typeof section.content === 'string') {
+        const isLastSection = index === sections.length - 1;
+        if ((section?.kind === 'markdown' || section?.kind === 'text') && typeof (section.content || section.text) === 'string') {
           return (
-            <div key={`section-${index}`} className="aura-response">
+            <div key={`section-${index}`} className="aura-response animate-in fade-in slide-in-from-bottom-2 duration-500">
               {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
-              <AiRichText content={section.content} className="aura-response__content" />
+              <AiRichText content={section.content || section.text} className="aura-response__content" isStreaming={isStreaming && isLastSection} />
             </div>
           );
         }
 
-        if (section?.kind === 'table' && Array.isArray(section.rows)) {
-          const columns = extractColumns(section.rows);
+        if (section?.kind === 'table' && (Array.isArray(section.rows) || Array.isArray(section.data?.rows))) {
+          const rows = section.rows || section.data?.rows;
+          const columns = extractColumns(rows);
           return (
-            <div key={`section-${index}`} className="aura-composed-response__artifact">
+            <div key={`section-${index}`} className="aura-composed-response__artifact glass-card p-0 overflow-hidden">
               <SaaSTable
                 columns={columns.length ? columns : [{ key: 'value', label: 'Value' }]}
-                data={section.rows}
+                data={rows}
                 title={section?.title || 'Structured table'}
                 description={section?.description || 'Assistant-generated table'}
               />
@@ -135,16 +156,16 @@ function ComposedResponseView({ response }: { response: RenderedResponse }) {
           );
         }
 
-        if (section?.kind === 'chart' && section?.chart?.points?.length) {
-          const chart = section.chart;
+        if (section?.kind === 'chart' && (section?.chart?.points?.length || section?.data?.points?.length)) {
+          const chart = section.chart || section.data;
           const labels = chart.points.map((point: any) => String(point[chart.xKey || 'label'] ?? '—'));
           const series = chart.points.map((point: any) => Number(point[chart.yKey || 'value'] ?? 0));
           return chart.points.length > 7 ? (
-            <div key={`section-${index}`} className="aura-composed-response__artifact">
+            <div key={`section-${index}`} className="aura-composed-response__artifact glass-card p-6">
               <ProfessionalAreaChart title={section?.title || 'Trend'} labels={labels} series={series} />
             </div>
           ) : (
-            <div key={`section-${index}`} className="aura-composed-response__artifact">
+            <div key={`section-${index}`} className="aura-composed-response__artifact glass-card p-6">
               <ProfessionalBarChart title={section?.title || 'Chart'} labels={labels} series={series} />
             </div>
           );
@@ -154,33 +175,36 @@ function ComposedResponseView({ response }: { response: RenderedResponse }) {
           return <ChecklistSection key={`section-${index}`} section={section} />;
         }
 
-        if (section?.kind === 'snapshot' && section?.data && typeof section.data === 'object') {
+        if (section?.kind === 'snapshot' && (section?.data || section?.content) && typeof (section.data || section.content) === 'object') {
           return (
-            <div key={`section-${index}`} className="aura-response">
-              {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
-              <KeyValueSnapshot data={section.data} />
+            <div key={`section-${index}`} className="aura-response glass-card p-6">
+              {section?.title ? <div className="aura-response__eyebrow mb-4">{section.title}</div> : null}
+              <KeyValueSnapshot data={section.data || section.content} />
             </div>
           );
         }
 
-        if (section?.kind === 'smart_ui' && section?.response && typeof section.response === 'object') {
+        if (section?.kind === 'smart_ui' && (section?.response || section?.data) && typeof (section.response || section.data) === 'object') {
           return (
             <div key={`section-${index}`} className="aura-composed-response__artifact">
               {section?.title ? <div className="aura-response__eyebrow aura-response__eyebrow--spaced">{section.title}</div> : null}
-              <SmartUiRenderer response={section.response} variant="aura" embedded />
+              <SmartUiRenderer response={section.response || section.data} variant="aura" embedded />
             </div>
           );
         }
 
         if (section?.kind === 'suggestions' && Array.isArray(section.items)) {
           return (
-            <div key={`section-${index}`} className="aura-response">
+            <div key={`section-${index}`} className="aura-response mt-4">
               {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
-              <div className="aura-composed-suggestions">
+              <div className="aura-composed-suggestions flex flex-wrap gap-2">
                 {section.items.map((item: any, itemIndex: number) => (
-                  <div key={`${index}-suggestion-${itemIndex}`} className="aura-composed-suggestions__item">
+                  <button 
+                    key={`${index}-suggestion-${itemIndex}`} 
+                    className="aura-composed-suggestions__item px-4 py-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-sm text-white/80"
+                  >
                     {typeof item === 'string' ? item : item?.label || 'Next step'}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -188,9 +212,14 @@ function ComposedResponseView({ response }: { response: RenderedResponse }) {
         }
 
         return (
-          <div key={`section-${index}`} className="aura-response">
-            {section?.title ? <div className="aura-response__eyebrow">{section.title}</div> : null}
-            <pre className="aura-composed-response__fallback">{JSON.stringify(section, null, 2)}</pre>
+          <div key={`section-${index}`} className="aura-response bg-white/5 border border-white/5 p-4 rounded-xl flex items-center gap-3 animate-in fade-in duration-500">
+            <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white/20">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <div className="text-xs font-black uppercase tracking-widest text-white/30">Unsupported content</div>
+              <div className="text-sm text-white/50">{section?.title || 'This block contains a format not yet supported by the viewer.'}</div>
+            </div>
           </div>
         );
       })}
@@ -240,7 +269,7 @@ function ConfirmationCard({
   );
 }
 
-export function AssistantResponseView({ response, onConfirmAction, actionPending }: Props) {
+export function AssistantResponseView({ response, onConfirmAction, actionPending, isStreaming }: Props) {
   const chartData = response?.data?.chart as { points?: Array<Record<string, any>>; xKey?: string; yKey?: string } | undefined;
   const tableRows = useMemo(() => extractTableRows(response?.data), [response?.data]);
   const tableColumns = useMemo(() => extractColumns(tableRows), [tableRows]);
@@ -260,11 +289,11 @@ export function AssistantResponseView({ response, onConfirmAction, actionPending
     );
   }
 
-  if (response.type === 'composed') {
+  if (response.type === 'composed' || response.type === 'mixed') {
     return (
       <>
         <ResponseToolbar response={response} />
-        <ComposedResponseView response={response} />
+        <ComposedResponseView response={response} isStreaming={isStreaming} />
       </>
     );
   }

@@ -9,6 +9,7 @@ type PublicPretextFlowTextProps = {
   readonly accentColor?: string;
   readonly delayStep?: number;
   readonly layoutKey?: string;
+  readonly whiteSpace?: 'normal' | 'nowrap' | 'pre-wrap';
 };
 
 export function PublicPretextFlowText({
@@ -19,6 +20,7 @@ export function PublicPretextFlowText({
   accentColor,
   delayStep = 0.08,
   layoutKey,
+  whiteSpace = 'normal',
 }: PublicPretextFlowTextProps) {
   const [element, setElement] = useState<HTMLElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
@@ -26,7 +28,8 @@ export function PublicPretextFlowText({
   const wasVisibleRef = useRef(false);
   const layout = useElementTextLayout(element, {
     text,
-    layoutKey: layoutKey || `flow-${variant}`,
+    whiteSpace,
+    layoutKey: layoutKey || `flow-${variant}-${whiteSpace}`,
   });
   const renderedLines = useMemo(
     () => (layout.lines && layout.lines.length ? layout.lines : [text]),

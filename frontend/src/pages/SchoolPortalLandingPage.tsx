@@ -110,17 +110,17 @@ function featureCopy(landing: SchoolLandingPagePayload | null) {
   return [
     {
       label: 'Academic excellence',
-      value: landing?.academicContent?.curriculum ? 'Curriculum-led pathways' : 'Structured academic pathways',
+      value: landing?.academicContent?.curriculum ? 'Curriculum-led pathways' : 'Excellence in learning',
       accent: CYAN,
     },
     {
       label: 'Admissions',
-      value: landing?.admissionInfo?.overview ? 'Application guidance is live' : 'Admission assistance ready',
+      value: landing?.admissionInfo?.overview ? 'Application guidance is live' : 'Apply for next session',
       accent: AMBER,
     },
     {
       label: 'Campus experience',
-      value: landing?.infrastructure?.length ? `${landing.infrastructure.length} curated campus highlights` : 'Campus showcase coming soon',
+      value: landing?.infrastructure?.length ? `${landing.infrastructure.length} curated campus highlights` : 'Modern infrastructure',
       accent: VIOLET,
     },
   ];
@@ -315,9 +315,9 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
     <PublicPageShell mode="hero" density={1.18} showOrbs textStream flareTrail contentWidth={1440}>
       <div className="public-site-frame">
         <nav className={`public-site-nav${mobileNavOpen ? ' is-open' : ''}`}>
-          <button type="button" className="public-site-nav__brand" onClick={() => scrollToSection('home')} style={{ background: 'none', border: 'none', padding: 0 }}>
-            <SchoolMark school={{ schoolName, schoolCode: schoolCode.toUpperCase(), logoUrl: branding?.logoUrl || undefined }} />
-            <span>{schoolName}</span>
+          <button type="button" className="public-site-nav__brand" onClick={() => scrollToSection('home')} style={{ background: 'none', border: 'none', padding: 0, height: 44 }}>
+            <SchoolMark size="xs" school={{ schoolName, schoolCode: schoolCode.toUpperCase(), logoUrl: branding?.logoUrl || undefined }} />
+            <span style={{ fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{schoolName}</span>
           </button>
 
           <div className="public-site-nav__links">
@@ -329,10 +329,10 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
           </div>
 
           <div className="public-site-nav__actions">
-            <Link to="/login" className="public-ghost-button public-site-nav__ghost">Sign In</Link>
-            <button type="button" className="public-primary-button public-site-nav__cta" onClick={() => scrollToSection('admissions')}>
+            <Link to="/login" className="public-ghost-button public-site-nav__ghost" style={{ fontWeight: 800 }}>Sign In</Link>
+            <button type="button" className="public-primary-button public-site-nav__cta" onClick={() => scrollToSection('admissions')} style={{ minHeight: 44, padding: '0 20px', borderRadius: 14 }}>
               Admission Enquiry
-              <ArrowRight size={16} />
+              <ArrowRight size={15} />
             </button>
             <button
               type="button"
@@ -377,7 +377,7 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
         </nav>
 
         <main className="public-site-frame__body">
-          <section id="home" className="public-site-section" style={{ paddingTop: 132 }}>
+          <section id="home" className="public-site-section" style={{ paddingTop: 160 }}>
             <div className="public-site-hero">
               <div className="public-site-hero__content">
                 <ScrollReveal>
@@ -390,8 +390,8 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
                 <ScrollReveal delay={0.06}>
                   <PublicPretextHeading
                     eyebrow={schoolCode.toUpperCase()}
-                    pretext="School Site"
-                    title={profile?.shortName ? `${profile.shortName} School Portal` : schoolName}
+                    pretext="Official Site"
+                    title={profile?.schoolName || schoolName}
                     description={profile?.shortDescription || branding?.vision || 'Admissions, campus life, academic excellence, and parent-ready communication all live inside one consistent school experience.'}
                     effect="flow"
                     accentColor={AMBER}
@@ -948,26 +948,58 @@ export default function SchoolPortalLandingPage({ initialSection }: SchoolPortal
           </section>
         </main>
 
-        <footer className="public-site-footer">
-          <div className="public-soft-card" style={{ padding: 24 }}>
-            <div className="public-title" style={{ fontSize: '1.05rem' }}>{schoolName}</div>
-            <p className="public-muted" style={{ margin: '8px 0 0' }}>
-              School landing page, admissions, and sign-in all share the same tenant context on <strong style={{ color: 'var(--public-text-main)' }}>{schoolCode.toUpperCase()}</strong>.
-            </p>
-          </div>
-          <div className="public-soft-card" style={{ padding: 24 }}>
-            <div className="public-site-hero__visual-label">Quick links</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 10 }}>
-              {navLinks.map((item) => (
-                <button key={item.id} type="button" className="public-ghost-button" onClick={() => scrollToSection(item.id)}>
-                  {item.label}
-                </button>
-              ))}
-              <Link to="/login" className="public-primary-button">
-                Portal login
-                <ArrowRight size={16} />
-              </Link>
+        <footer className="public-site-footer" style={{ marginTop: 64, background: 'var(--public-panel-strong-bg)', padding: '64px 32px' }}>
+          <div className="public-site-footer__content" style={{ maxWidth: 1440, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 48 }}>
+            <div style={{ display: 'grid', gap: 20 }}>
+              <div className="public-site-nav__brand" style={{ pointerEvents: 'none' }}>
+                <SchoolMark size="xs" school={{ schoolName, schoolCode: schoolCode.toUpperCase(), logoUrl: branding?.logoUrl || undefined }} />
+                <span style={{ fontSize: '1.25rem' }}>{schoolName}</span>
+              </div>
+              <p className="public-muted" style={{ lineHeight: 1.8 }}>
+                The official portal for {schoolName}. Admissions, academics, and parent communications are all managed through this platform.
+              </p>
+              <div className="public-status-chip" style={{ width: 'fit-content' }}>
+                School Code: {schoolCode.toUpperCase()}
+              </div>
             </div>
+
+            <div style={{ display: 'grid', gap: 20 }}>
+              <div className="public-site-footer__label" style={{ color: AMBER, fontWeight: 900, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Quick links</div>
+              <nav style={{ display: 'grid', gap: 12 }}>
+                {navLinks.map((item) => (
+                  <button key={item.id} type="button" className="public-ghost-button" onClick={() => scrollToSection(item.id)} style={{ justifyContent: 'flex-start', padding: 0, minHeight: 'auto', background: 'none' }}>
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            <div style={{ display: 'grid', gap: 20 }}>
+              <div className="public-site-footer__label" style={{ color: CYAN, fontWeight: 900, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Contact Us</div>
+              <div style={{ display: 'grid', gap: 14 }}>
+                <span className="public-muted" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><MapPin size={16} /> {profile?.city || branding?.city || 'Location Details'}</span>
+                <span className="public-muted" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Phone size={16} /> {profile?.phone || 'Call Us'}</span>
+                <span className="public-muted" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Mail size={16} /> {profile?.email || 'Email Support'}</span>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gap: 20 }}>
+              <div className="public-site-footer__label" style={{ color: ROSE, fontWeight: 900, textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Portals</div>
+              <div style={{ display: 'grid', gap: 12 }}>
+                <Link to="/login" className="public-primary-button" style={{ width: 'fit-content' }}>
+                  Student & Parent Portal
+                  <ArrowRight size={16} />
+                </Link>
+                <Link to="/login/admin" className="public-secondary-button" style={{ width: 'fit-content' }}>
+                  Admin Staff Login
+                </Link>
+              </div>
+            </div>
+          </div>
+          <div style={{ maxWidth: 1440, margin: '48px auto 0', paddingTop: 32, borderTop: '1px solid var(--public-border)', textAlign: 'center' }}>
+            <p className="public-muted" style={{ fontSize: '0.9rem' }}>
+              &copy; {new Date().getFullYear()} {schoolName}. Powered by Antigravity Platform.
+            </p>
           </div>
         </footer>
       </div>

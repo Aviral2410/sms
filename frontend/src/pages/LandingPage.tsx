@@ -294,6 +294,7 @@ export default function LandingPage() {
             compact
             effect="flow"
             accentColor="#34d399"
+            whiteSpace="nowrap"
           />
         </div>
         {overviewCards.length ? (
@@ -401,6 +402,7 @@ export default function LandingPage() {
               compact
               effect="flow"
             accentColor="#10b981"
+            whiteSpace="nowrap"
           />
         </div>
         <div className="public-grid-3 public-site-feature-grid">
@@ -447,6 +449,7 @@ export default function LandingPage() {
               compact
               effect="flow"
               accentColor="#34d399"
+              whiteSpace="nowrap"
             />
           </div>
           <div className="public-testimonial-thread">
@@ -513,6 +516,7 @@ export default function LandingPage() {
               compact
               effect="flow"
               accentColor="#84cc16"
+              whiteSpace="nowrap"
             />
           </div>
           <div className="public-launch-grid">

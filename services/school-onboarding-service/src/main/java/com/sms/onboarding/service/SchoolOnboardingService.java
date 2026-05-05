@@ -81,9 +81,10 @@ public class SchoolOnboardingService {
         this.subscriptionRestClient = restClientBuilder.clone().baseUrl(this.subscriptionServiceUrl).build();
     }
 
+    @Transactional(readOnly = true)
     public List<SchoolOnboardingResponse> listOnboardings(String query) {
         if (StringUtils.hasText(query)) {
-            return schoolOnboardingJpaRepository.searchApproved(query.toLowerCase()).stream()
+            return schoolOnboardingJpaRepository.searchOnboardings(query).stream()
                     .map(this::toResponse)
                     .toList();
         }
@@ -92,6 +93,7 @@ public class SchoolOnboardingService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public SchoolOnboardingResponse getOnboarding(UUID onboardingId) {
         if (onboardingId == null) throw new IllegalArgumentException("onboardingId cannot be null");
         return schoolOnboardingJpaRepository.findById(onboardingId)

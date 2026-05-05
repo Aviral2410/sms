@@ -50,7 +50,16 @@ public class PublicInquiryService {
         entity.setStatus(request.status().trim().toUpperCase(Locale.ROOT));
         PublicInquiryEntity saved = repository.save(entity);
         PlatformPublicInquiryResponse response = toPlatformResponse(saved);
-        mqttEventPublisher.publish("platform/public-inquiries/status", response);
+        
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mqttEventPublisher.publish("platform/public-inquiries/status", response);
+                }
+            }
+        );
+        
         return response;
     }
 
@@ -76,7 +85,16 @@ public class PublicInquiryService {
         event.put("fullName", saved.getFullName());
         event.put("schoolName", saved.getSchoolName());
         event.put("createdAt", saved.getCreatedAt());
-        mqttEventPublisher.publish("platform/public-inquiries/created", event);
+
+        org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+            new org.springframework.transaction.support.TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    mqttEventPublisher.publish("platform/public-inquiries/created", event);
+                }
+            }
+        );
+
         return new PublicInquiryResponse(saved.getInquiryId(), saved.getInquiryType(), saved.getStatus(), saved.getCreatedAt());
     }
 

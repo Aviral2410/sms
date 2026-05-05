@@ -56,6 +56,7 @@ type ChatMessage = {
   timestamp: string;
   streaming?: boolean;
   error?: boolean;
+  fullResponse?: RenderedResponse | null;
 };
 
 type PublicHistoryEntry = {
@@ -134,6 +135,14 @@ const PUBLIC_STARTER_CARDS = [
     icon: Library,
   },
 ];
+
+const TypingIndicator = () => (
+  <div className="flex gap-1 px-4 py-3 bg-white/5 rounded-2xl w-fit border border-white/5 animate-in fade-in zoom-in duration-300">
+    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.3s]" />
+    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce [animation-delay:-0.15s]" />
+    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-bounce" />
+  </div>
+);
 
 const AUTHENTICATED_STARTER_CARDS = [
   {
@@ -250,6 +259,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [inputRows, setInputRows] = useState(1);
   const [bootstrapping, setBootstrapping] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [workspaceDraft, setWorkspaceDraft] = useState('');
@@ -514,7 +524,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     const target = workspaces.find((workspace) => workspace.workspaceId === workspaceId);
     if (!target) return;
 
-    const confirmed = window.confirm(`Delete workspace "${target.name}"? Its chats will be moved to another workspace when possible.`);
+    const confirmed = window.confirm(`Delete workspace "${target.name}"? This action cannot be undone.`);
     if (!confirmed) return;
 
     try {
@@ -673,6 +683,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       workspaceId,
       conversationId: currentConversationId,
       message: messageText,
+      stream: true,
       context: {
         route: assistantRoute,
       },
@@ -689,6 +700,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                 ...message,
                 text: buildAssistantSummary(response),
                 response,
+                fullResponse: response,
                 thought: response.thought ?? message.thought ?? null,
                 streaming: false,
               }
@@ -733,7 +745,20 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
         commitFinalResponse(fallback.conversationId, fallback.response as RenderedResponse);
       } else {
         await readSseStream(response.body, {
-          onEvent: ({ event, data }) => {
+            if (event === 'token' || event === 'chunk') {
+              const parsed = tryParseJson<{ text?: string; chunk?: string }>(data);
+              const textChunk = parsed.ok ? (parsed.value.text || parsed.value.chunk || '') : data;
+              
+              setMessages((current) =>
+                current.map((message) =>
+                  message.id === assistantId
+                    ? { ...message, text: message.text + textChunk }
+                    : message
+                )
+              );
+              return;
+            }
+
             if (event === 'thought') {
               const parsed = tryParseJson<{ text?: string }>(data);
               if (parsed.ok && parsed.value.text) {
@@ -1091,7 +1116,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
       <section className="aura-main">
         <div className={cx('aura-main__header', !showEmptyState && 'aura-main__header--compact')}>
           <div className="aura-main__header-copy">
-            {/* eyebrow removed as requested */}
             <h2 className="aura-main__title">{shellTitle}</h2>
             <p className="aura-main__subtitle">{shellSubtitle}</p>
           </div>
@@ -1110,34 +1134,6 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               type="button"
               onClick={() => setSidebarOpen((current) => !current)}
               className="aura-icon-button p-2 text-white/50 hover:text-white transition-colors"
-              aria-label="Toggle sidebar"
-            >
-              <PanelLeft size={18} />
-            </button>
-            {variant === 'drawer' || variant === 'page' ? (
-              <button
-                type="button"
-                onClick={handleCloseAssistant}
-                className="aura-icon-button"
-                aria-label="Close assistant"
-              >
-                <X size={18} />
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div ref={scrollRef} className="aura-thread relative">
-          {showEmptyState ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center p-8 pointer-events-none">
-              <div className="text-center pointer-events-auto">
-                <h3 className="text-[2rem] font-black text-white mb-4">
-                  {isPublic ? 'Welcome' : `Welcome${session?.fullName ? `, ${session.fullName.split(' ')[0]}` : ''}`}
-                </h3>
-                <p className="text-base text-white/60">
-                  How can I help you today?
-                </p>
-              </div>
             </div>
           ) : (
             <div className="aura-thread__messages">
@@ -1164,15 +1160,12 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                         </div>
                       ) : null}
 
-                      {message.response ? (
-                        <AssistantResponseView
-                          response={message.response}
-                          onConfirmAction={(token) => handleConfirmAction(token)}
-                          actionPending={actionPendingToken === message.response?.meta?.confirmationToken}
-                        />
-                      ) : (
-                        <div className="aura-response-block__plain">{message.text || (message.streaming ? statusText : '')}</div>
-                      )}
+                      <AssistantResponseView
+                        response={message.response || { type: 'text', data: { text: message.text } }}
+                        onConfirmAction={(token) => handleConfirmAction(token)}
+                        actionPending={actionPendingToken === message.response?.meta?.confirmationToken}
+                        isStreaming={message.streaming}
+                      />
 
                       {!message.streaming && message.id === messages[messages.length - 1]?.id && (
                         <div className="mt-5 pt-3 border-t border-white/5 relative inline-block group/sugg">
@@ -1350,7 +1343,7 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
           }}>
             <Bot size={20} />
           </div>
-          <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.02em' }}>Ask Aura</span>
+          <span style={{ fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.02em' }}>AURA Platform Assistant</span>
           <Sparkles size={16} style={{ opacity: 0.8 }} />
         </motion.button>
       ) : null}

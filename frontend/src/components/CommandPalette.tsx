@@ -258,7 +258,7 @@ export function CommandPalette() {
                   display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.2s' 
                 }}
               >
-                <Sparkles size={11} /> AI {paletteAiMode ? 'ACTIVE' : 'MODAL'}
+                <Sparkles size={11} /> Aura {paletteAiMode ? 'ACTIVE' : 'MODAL'}
               </button>
               
               <button onClick={() => setSearchOpen(false)} style={{ color: 'var(--text-muted)', cursor: 'pointer', background: 'none', border: 'none' }}>
@@ -447,8 +447,8 @@ export function CommandPalette() {
             flexShrink: 0 
           }}>
             <div style={{ display: 'flex', gap: 16 }}>
-              <span><kbd style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>Tab</kbd> Toggle AI</span>
-              <span><kbd style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>↵</kbd> {paletteAiMode ? 'Ask AI' : 'Navigate'}</span>
+              <span><kbd style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>Tab</kbd> Toggle Aura</span>
+              <span><kbd style={{ background: 'var(--surface-elevated)', border: '1px solid var(--glass-border)', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>↵</kbd> {paletteAiMode ? 'Ask Aura' : 'Navigate'}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <Mic size={12} />

@@ -3,6 +3,7 @@ import { PublicPageShell } from './PublicPageShell';
 import { PublicSiteFooter } from './PublicSiteFooter';
 import { PublicSiteNav } from './PublicSiteNav';
 import { PublicGuidedTour } from './PublicGuidedTour';
+import { AiAssistantChat } from '../ai/AiAssistantChat';
 import type { PublicSiteContentResponse } from '../../lib/publicSiteApi';
 
 interface PublicSiteFrameProps {
@@ -42,6 +43,7 @@ export function PublicSiteFrame({
         <main className="public-site-frame__body">{children}</main>
         <PublicSiteFooter content={content} />
         <PublicGuidedTour />
+        <AiAssistantChat accessMode="public" />
       </div>
     </PublicPageShell>
   );

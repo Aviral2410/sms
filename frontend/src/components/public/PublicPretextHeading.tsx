@@ -13,6 +13,7 @@ interface PublicPretextHeadingProps {
   readonly titleClassName?: string;
   readonly effect?: 'none' | 'flow';
   readonly accentColor?: string;
+  readonly whiteSpace?: 'normal' | 'nowrap' | 'pre-wrap';
 }
 
 export function PublicPretextHeading({
@@ -26,10 +27,12 @@ export function PublicPretextHeading({
   titleClassName = '',
   effect = 'none',
   accentColor,
+  whiteSpace = 'normal',
 }: PublicPretextHeadingProps) {
   const [titleElement, setTitleElement] = useState<HTMLHeadingElement | null>(null);
   const layout = useElementTextLayout(titleElement, {
     text: title,
+    whiteSpace,
     layoutKey: compact ? 'compact' : 'default',
   });
   const renderedLines = useMemo(
@@ -50,7 +53,8 @@ export function PublicPretextHeading({
             variant={compact ? 'heading' : 'display'}
             className={`public-pretext-heading__title public-pretext-heading__title--flow ${titleClassName}`.trim()}
             accentColor={accentColor}
-            layoutKey={`heading-${compact ? 'compact' : 'default'}`}
+            whiteSpace={whiteSpace}
+            layoutKey={`heading-${compact ? 'compact' : 'default'}-${whiteSpace}`}
           />
         ) : (
           <h1
@@ -75,8 +79,9 @@ export function PublicPretextHeading({
             variant="body"
             className="public-pretext-heading__description public-pretext-heading__description--flow"
             accentColor={accentColor}
+            whiteSpace={whiteSpace}
             delayStep={0.06}
-            layoutKey={`heading-description-${compact ? 'compact' : 'default'}`}
+            layoutKey={`heading-description-${compact ? 'compact' : 'default'}-${whiteSpace}`}
           />
         ) : (
           <p className="public-pretext-heading__description">{description}</p>

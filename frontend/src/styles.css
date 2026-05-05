@@ -1455,13 +1455,13 @@ label span {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 48px;
+  gap: 80px;
 }
 
 .public-site-frame__body {
   display: flex;
   flex-direction: column;
-  gap: 56px;
+  gap: 120px;
   padding-top: 120px;
 }
 
@@ -1492,6 +1492,7 @@ label span {
   text-decoration: none;
   font-weight: 900;
   letter-spacing: -0.02em;
+  height: 100%;
 }
 
 .public-site-nav__brand-mark {
@@ -1710,7 +1711,7 @@ label span {
 .public-site-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 48px;
 }
 
 .public-site-section__heading {
@@ -2716,9 +2717,14 @@ label span {
   flex: 0 0 auto;
 }
 
+.school-mark--xs {
+  --school-mark-size: 38px;
+  border-radius: 12px;
+}
+
 .school-mark--sm {
-  --school-mark-size: 56px;
-  border-radius: 18px;
+  --school-mark-size: 52px;
+  border-radius: 16px;
 }
 
 .school-mark--lg {
