@@ -202,9 +202,9 @@ class SchoolOnboardingControllerTest {
         UUID onboardingId = UUID.fromString("10000000-0000-0000-0000-000000000001");
         doNothing().when(schoolOnboardingService).sendActivationEmail(onboardingId);
 
-        mockMvc.perform(post("/api/v1/onboarding/schools/{id}/send-activation", onboardingId)
+        mockMvc.perform(post("/api/v1/onboarding/schools/{onboardingId}/activation-email", onboardingId)
                         .header("X-User-Role", "PLATFORM_ADMIN"))
-                .andExpect(status().isOk());
+                .andExpect(status().isAccepted());
     }
 
     @Test

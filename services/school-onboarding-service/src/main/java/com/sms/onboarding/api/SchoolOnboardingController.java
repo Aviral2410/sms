@@ -132,9 +132,19 @@ public class SchoolOnboardingController {
         return schoolOnboardingService.reviewOnboarding(onboardingId, request);
     }
 
-    @PostMapping("/{id}/send-activation")
-    public void sendActivationEmail(@PathVariable UUID id) {
-        schoolOnboardingService.sendActivationEmail(id);
+    @PostMapping("/{onboardingId}/activation-email")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void sendActivationEmail(
+            @PathVariable UUID onboardingId,
+            @RequestHeader(value = "X-User-Role", required = false) String role
+    ) {
+        checkAdminRole(role);
+        schoolOnboardingService.sendActivationEmail(onboardingId);
+    }
+
+    @PostMapping("/internal/mark-activated")
+    public void markActivated(@RequestParam String schoolCode, @RequestParam String email) {
+        schoolOnboardingService.markActivated(schoolCode, email);
     }
 
     @DeleteMapping("/{onboardingId}")

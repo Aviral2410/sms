@@ -35,8 +35,8 @@ springdoc:
     path: /swagger-ui.html
 
 app:
-  auth-service-url: ${AUTH_SERVICE_URL:http://localhost:8082}
-  communication-service-url: ${COMMUNICATION_SERVICE_URL:http://localhost:8089}
-  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
+  auth-service-url: ${AUTH_SERVICE_URL:http://auth-service:8082}
+  communication-service-url: ${COMMUNICATION_SERVICE_URL:http://communication-service:8089}
+  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://subscription-service:8086}
   internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key}
   platform-config-encryption-key: ${PLATFORM_CONFIG_ENCRYPTION_KEY:dev-platform-config-encryption-key}

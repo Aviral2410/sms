@@ -30,11 +30,11 @@ springdoc:
     path: /swagger-ui.html
 
 app:
-  auth-service-url: ${AUTH_SERVICE_URL:http://localhost:8082}
-  communication-service-url: ${COMMUNICATION_SERVICE_URL:http://localhost:8089}
-  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
-  mcp-server-url: ${MCP_SERVER_URL:http://localhost:8084}
-  platform-config-service-url: ${PLATFORM_CONFIG_SERVICE_URL:http://localhost:8081}
+  auth-service-url: ${AUTH_SERVICE_URL:http://auth-service:8082}
+  communication-service-url: ${COMMUNICATION_SERVICE_URL:http://communication-service:8089}
+  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://subscription-service:8086}
+  mcp-server-url: ${MCP_SERVER_URL:http://mcp-server:8084}
+  platform-config-service-url: ${PLATFORM_CONFIG_SERVICE_URL:http://school-onboarding-service:8081}
   internal-api-key: ${INTERNAL_API_KEY:dev-internal-api-key}
   # LLM Providers — set the key(s) you have; omit the rest
   # llm-provider: auto | gemini | openai | anthropic   (auto = first key found wins)

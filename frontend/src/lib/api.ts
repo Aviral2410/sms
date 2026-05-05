@@ -407,8 +407,8 @@ export const onboardingApi = {
       method: 'PATCH',
       body: JSON.stringify({ action, reviewerName, comment }),
     }),
-  sendEmail: (id: string) =>
-    request<void>(`/onboarding/schools/${id}/send-activation`, { method: 'POST' }),
+  sendEmail: (onboardingId: string) =>
+    request<void>(`/onboarding/schools/${onboardingId}/activation-email`, { method: 'POST' }),
 
   delete: (id: string) =>
     request<void>(`/onboarding/schools/${id}`, { method: 'DELETE' }),

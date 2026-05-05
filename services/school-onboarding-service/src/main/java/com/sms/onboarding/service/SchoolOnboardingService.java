@@ -106,7 +106,7 @@ public class SchoolOnboardingService {
                 buildSchoolStatusMessage(onboarding),
                 onboarding.getReviewedAt(),
                 onboarding.getCreatedAt(),
-                onboarding.getStatus() == OnboardingStatus.APPROVED && onboarding.getTenantId() != null,
+                onboarding.getActivatedAt() != null,
                 onboarding.getAdminEmail(),
                 "/school",
                 onboarding.getTenantId(),
@@ -205,7 +205,6 @@ public class SchoolOnboardingService {
                 if (provisioned != null) {
                     onboarding.setTenantId(provisioned.tenantId());
                     onboarding.setSchoolId(provisioned.schoolId());
-                    onboarding.setActivatedAt(Instant.now());
                     onboarding.setActivationCode(provisioned.activationCode());
                     onboarding.setReviewComment(buildApprovalComment(request.comment(), provisioned));
                 }
@@ -220,6 +219,18 @@ public class SchoolOnboardingService {
         mqttEventPublisher.publish("platform/onboarding/updated", response);
         
         return response;
+    }
+
+    @Transactional
+    public void markActivated(String schoolCode, String email) {
+        SchoolOnboardingEntity onboarding = schoolOnboardingJpaRepository.findBySchoolCodeIgnoreCaseAndAdminEmailIgnoreCase(schoolCode, email)
+                .orElseThrow(() -> new IllegalArgumentException("Onboarding record not found for " + schoolCode));
+
+        if (onboarding.getActivatedAt() == null) {
+            onboarding.setActivatedAt(Instant.now());
+            schoolOnboardingJpaRepository.save(onboarding);
+            mqttEventPublisher.publish("platform/onboarding/updated", toResponse(onboarding));
+        }
     }
 
     @Transactional

@@ -70,14 +70,14 @@ spring:
           predicates:
             - Path=/api/v1/public/**
         - id: tenant-resolution
-          uri: ${AUTH_SERVICE_URL:http://localhost:8082}
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8082}
           predicates:
             - Path=/public/tenant/resolve
 
 app:
-  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8086}
+  subscription-service-url: ${SUBSCRIPTION_SERVICE_URL:http://subscription-service:8086}
   platform-domain: ${PLATFORM_DOMAIN:platform.com}
-  auth-service-url: ${AUTH_SERVICE_URL:http://localhost:8082}
+  auth-service-url: ${AUTH_SERVICE_URL:http://auth-service:8082}
 server:
   port: ${SERVER_PORT:8080}
 

@@ -24,17 +24,21 @@ public class AccountActivationService {
     private final SchoolAccountRepository schoolAccountRepository;
     private final TenantUserAccountRepository tenantUserAccountRepository;
     private final PasswordService passwordService;
+    private final org.springframework.web.client.RestClient onboardingRestClient;
 
     public AccountActivationService(
             AccountActivationTokenRepository accountActivationTokenRepository,
             SchoolAccountRepository schoolAccountRepository,
             TenantUserAccountRepository tenantUserAccountRepository,
-            PasswordService passwordService
+            PasswordService passwordService,
+            org.springframework.web.client.RestClient.Builder restClientBuilder,
+            @org.springframework.beans.factory.annotation.Value("${app.school-onboarding-service-url:http://school-onboarding-service:8081}") String onboardingServiceUrl
     ) {
         this.accountActivationTokenRepository = accountActivationTokenRepository;
         this.schoolAccountRepository = schoolAccountRepository;
         this.tenantUserAccountRepository = tenantUserAccountRepository;
         this.passwordService = passwordService;
+        this.onboardingRestClient = restClientBuilder.baseUrl(onboardingServiceUrl).build();
     }
 
     @Transactional
@@ -57,6 +61,23 @@ public class AccountActivationService {
             schoolAccountRepository.save(account);
             token.setConsumedAt(Instant.now());
             accountActivationTokenRepository.save(token);
+
+            // Notify onboarding service that the school admin has activated
+            try {
+                onboardingRestClient.post()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/api/v1/onboarding/schools/internal/mark-activated")
+                                .queryParam("schoolCode", account.getSchoolCode())
+                                .queryParam("email", account.getEmail())
+                                .build())
+                        .retrieve()
+                        .toBodilessEntity();
+            } catch (Exception e) {
+                // Log and continue, as auth activation is the source of truth for login
+                org.slf4j.LoggerFactory.getLogger(AccountActivationService.class)
+                        .warn("Failed to notify onboarding service of activation for {}: {}", account.getSchoolCode(), e.getMessage());
+            }
+
             return new SchoolActivationResponse(account.getSchoolCode(), account.getEmail(), account.getFullName(), account.getAccountStatus().name());
         }
 
