@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BadgeDollarSign, RefreshCw, Save, Sparkles, Zap, 
   ShieldCheck, ArrowRight, BadgeCheck, Eye, Edit3, 
-  ChevronRight, Info, Layers
+  ChevronRight, Info, Layers, Users
 } from 'lucide-react';
 import { platformSettingsApi, subscriptionApi, type SubscriptionPlanResponse } from '../../lib/api';
 import { hiddenFeatures } from '../../lib/features';

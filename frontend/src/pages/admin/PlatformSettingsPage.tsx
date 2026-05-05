@@ -264,7 +264,7 @@ export default function PlatformSettingsPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', grid_template_columns: '1fr 1fr', gap: 24 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                     <div style={{ background: 'rgba(255,255,255,0.02)', padding: 24, borderRadius: 20, border: '1px solid rgba(255,255,255,0.05)' }}>
                       <label style={{ fontSize: '0.75rem', fontWeight: 800, color: '#fff', marginBottom: 16, display: 'block' }}>Glassmorphism Intensity</label>
                       <input 
