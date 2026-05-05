@@ -26,6 +26,7 @@ jobs:
       any_java: ${{ steps.filter.outputs.any_java }}
       helm: ${{ steps.filter.outputs.helm }}
       owner_lc: ${{ steps.owner.outputs.owner_lc }}
+      has_functional_secrets: ${{ steps.secrets-check.outputs.has_functional_secrets }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -54,13 +55,22 @@ jobs:
             ai-interaction-service: 'services/ai-interaction-service/**'
             mcp-server: 'services/mcp-server/**'
             frontend: 'frontend/**'
-
       - name: Resolve GHCR owner (lowercase)
         id: owner
         shell: bash
         run: |
           owner_lc="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
           echo "owner_lc=$owner_lc" >> "$GITHUB_OUTPUT"
+
+      - name: Check for functional secrets
+        id: secrets-check
+        shell: bash
+        run: |
+          if [ -n "${{ secrets.FUNCTIONAL_BASE_URL }}" ] && [ -n "${{ secrets.FUNCTIONAL_ADMIN_EMAIL }}" ] && [ -n "${{ secrets.FUNCTIONAL_ADMIN_PASSWORD }}" ]; then
+            echo "has_functional_secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_functional_secrets=false" >> "$GITHUB_OUTPUT"
+          fi
 
   frontend-tests:
     name: Frontend Tests
@@ -99,7 +109,7 @@ jobs:
   backend-functional-api:
     name: Backend Functional API
     needs: [metadata, backend-tests]
-    if: ${{ (needs.metadata.outputs.any_java == 'true' || github.event.inputs.force_build_all == 'true') && secrets.FUNCTIONAL_BASE_URL != '' && secrets.FUNCTIONAL_ADMIN_EMAIL != '' && secrets.FUNCTIONAL_ADMIN_PASSWORD != '' }}
+    if: ${{ (needs.metadata.outputs.any_java == 'true' || github.event.inputs.force_build_all == 'true') && needs.metadata.outputs.has_functional_secrets == 'true' }}
     runs-on: ubuntu-latest
     env:
       FUNCTIONAL_BASE_URL: ${{ secrets.FUNCTIONAL_BASE_URL }}
