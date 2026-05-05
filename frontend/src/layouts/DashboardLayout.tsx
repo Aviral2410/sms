@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from './Sidebar';
 import { ViewMode } from '../types';
 import { useStore } from '../store/useStore';
+import { CommandPalette } from '../components/ui/CommandPalette';
 
 interface DashboardLayoutProps {
   viewMode: ViewMode;
@@ -17,6 +18,7 @@ const DashboardLayout = ({ children, ...sidebarProps }: DashboardLayoutProps) =>
   
   return (
     <div className={`dashboard-shell-v2 theme-${theme === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme}`}>
+      <CommandPalette />
       <div className="layout-grid-v2">
         <Sidebar {...sidebarProps} />
 

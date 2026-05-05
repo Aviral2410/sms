@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronRight,
   Compass,
+  Edit3,
   FolderPlus,
   GraduationCap,
   History,
@@ -16,6 +17,7 @@ import {
   Mic,
   MicOff,
   PanelLeft,
+  Paperclip,
   Plus,
   Send,
   Sparkles,
@@ -571,6 +573,32 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
     setOpen(false);
   }, [isPublic, navigate, stopVoiceCapture, variant]);
 
+  const handleEditMessage = useCallback((messageId: string) => {
+    setMessages((current) => {
+      const index = current.findIndex((m) => m.id === messageId);
+      if (index === -1) return current;
+      
+      const message = current[index];
+      setInput(message.text);
+      setTimeout(() => composerRef.current?.focus(), 10);
+      
+      return current.slice(0, index);
+    });
+  }, []);
+
+  const handleFileUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      setInput((curr) => `${curr}\n\n[Attached Data: ${file.name}]\n${text.slice(0, 4000)}\n[/End Data]\n`.trim());
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  }, []);
+
   const handleSend = useCallback(async (override?: string) => {
     const messageText = (override ?? input).trim();
     if (!messageText || loading) return;
@@ -1088,11 +1116,35 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
                       ) : (
                         <div className="aura-response-block__plain">{message.text || (message.streaming ? statusText : '')}</div>
                       )}
+
+                      {!message.streaming && message.id === messages[messages.length - 1]?.id && (
+                        <div className="flex flex-wrap gap-2 mt-5 pt-5 border-t border-white/5">
+                          {['Draft email to parents', 'Show fee breakdown', 'Summarize anomalies'].map((chip, i) => (
+                            <button 
+                              key={i} 
+                              onClick={() => void handleSend(chip)} 
+                              className="px-3.5 py-1.5 rounded-full bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400/80 hover:text-emerald-300 text-[11px] font-bold tracking-wide border border-emerald-500/10 hover:border-emerald-500/30 transition-all"
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="aura-user-bubble">
-                      <div className="aura-user-bubble__label">You</div>
-                      <div>{message.text}</div>
+                    <div className="aura-user-bubble group relative">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="aura-user-bubble__label">You</div>
+                        <button
+                          type="button"
+                          onClick={() => handleEditMessage(message.id)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-white/40 hover:text-white p-1 rounded hover:bg-white/10"
+                          aria-label="Edit message"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+                      </div>
+                      <div className="whitespace-pre-wrap">{message.text}</div>
                     </div>
                   )}
                 </div>
@@ -1117,7 +1169,34 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
             <div className="aura-composer__error">{voiceError}</div>
           ) : null}
 
-          <div className="aura-composer__dock">
+          <div className="aura-composer__dock" style={{ position: 'relative' }}>
+            {(() => {
+              const showSlashMenu = input.startsWith('/');
+              const slashCommands = [
+                { cmd: '/summarize', desc: 'Summarize the active view or data' },
+                { cmd: '/ticket', desc: 'Draft an IT/Support ticket' },
+                { cmd: '/broadcast', desc: 'Draft a parent/teacher broadcast' },
+              ].filter(c => c.cmd.startsWith(input));
+
+              if (showSlashMenu && slashCommands.length > 0) {
+                return (
+                  <div className="absolute bottom-[calc(100%+12px)] left-0 w-72 bg-[#0a0f18] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50 flex flex-col">
+                    <div className="px-3 py-2 border-b border-white/5 bg-white/[0.02] text-[10px] font-black uppercase tracking-widest text-white/40">Commands</div>
+                    {slashCommands.map((c, i) => (
+                      <button 
+                        key={i} 
+                        onClick={() => { setInput(c.cmd + ' '); composerRef.current?.focus(); }} 
+                        className="flex flex-col text-left px-3 py-2.5 hover:bg-white/[0.04] transition-colors border-l-2 border-transparent hover:border-emerald-500"
+                      >
+                        <div className="text-emerald-400 font-bold text-sm">{c.cmd}</div>
+                        <div className="text-white/50 text-xs mt-0.5">{c.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
             <textarea
               ref={composerRef}
               value={input}
@@ -1133,6 +1212,10 @@ export function AiAssistantChat({ variant = 'drawer', accessMode = 'authenticate
               className="aura-composer__input"
             />
             <div className="aura-composer__actions">
+              <label className="aura-composer__icon cursor-pointer hover:text-white transition-colors" aria-label="Upload file">
+                <input type="file" accept=".csv,.txt,.json" className="hidden" onChange={handleFileUpload} />
+                <Paperclip size={18} />
+              </label>
               <button
                 type="button"
                 onClick={() => {
