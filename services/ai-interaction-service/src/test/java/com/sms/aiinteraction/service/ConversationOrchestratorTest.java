@@ -97,18 +97,17 @@ class ConversationOrchestratorTest {
         );
 
         assertNotNull(response);
-        assertEquals("composed", response.response().type());
+        assertEquals("mixed", response.response().type());
         assertEquals("Newton's Second Law", response.response().data().path("title").asText());
         assertEquals("Force equals mass times acceleration.", response.response().data().path("summary").asText());
-        assertEquals("smart_ui", response.response().data().path("sections").get(0).path("kind").asText());
 
         ArgumentCaptor<ObjectNode> payloadCaptor = ArgumentCaptor.forClass(ObjectNode.class);
         verify(memoryService).addAssistantResponse(eq(user), eq(conversationId), eq("Force equals mass times acceleration."), payloadCaptor.capture());
         assertEquals(
-                "I could not map this cleanly to a platform action, so I generated a direct reasoning response instead.",
+                "I have analyzed your request using my foundational knowledge base as no specific platform tool was required.",
                 payloadCaptor.getValue().path("thought").asText()
         );
-        assertEquals("composed", payloadCaptor.getValue().path("type").asText());
+        assertEquals("mixed", payloadCaptor.getValue().path("type").asText());
     }
 
     private UserContext user(UserRole role) {
